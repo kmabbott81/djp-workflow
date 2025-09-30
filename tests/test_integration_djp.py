@@ -160,14 +160,14 @@ def test_preset_configuration_applied(sample_tasks, temp_runs_dir):
     # Verify quick preset parameters are applied
     assert params.get("max_tokens") == 800
     assert params.get("temperature") == 0.2
-    assert params.get("fastpath") == True
+    assert params.get("fastpath") is True
     assert params.get("max_debaters") == 2
     assert params.get("timeout_s") == 60
     assert params.get("margin_threshold") == 3
     assert params.get("preset_name") == "quick"
 
     # Verify artifact structure
-    assert artifact["schema_version"] == "1.0"
+    assert artifact["schema_version"] == "1.1"
     assert artifact["run_metadata"]["task"] == task
     assert "debate" in artifact
     assert "judge" in artifact
@@ -264,7 +264,7 @@ def test_mock_integration_workflow_structure():
     )
 
     # Verify artifact structure
-    assert artifact["schema_version"] == "1.0"
+    assert artifact["schema_version"] == "1.1"
     assert artifact["run_metadata"]["task"] == "Mock integration test task"
     assert artifact["run_metadata"]["parameters"]["preset_name"] == "deterministic"
     assert len(artifact["debate"]["drafts"]) == 1

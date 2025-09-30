@@ -5,7 +5,7 @@ All notable changes to djp-workflow will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2025-10-01
+## [Unreleased] - 2025-09-30
 
 ### Added
 - (placeholder for new features)
@@ -15,6 +15,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - (placeholder for fixes)
+
+## [1.1.0] - 2025-09-30
+
+### Added
+- Added "disqualified_citations" to blocking safety flags for proper draft rejection.
+
+### Changed
+- **BREAKING:** Updated `select_publish_text()` return signature to 5 values: `(status, provider, text, reason, redaction_metadata)`.
+- Artifact Schema bumped to **v1.1** (adds grounding/redaction metadata fields).
+- Updated all tests to handle new API signature and schema version.
+
+### Fixed
+- Fixed test suite to correctly handle 5-value return from `select_publish_text()`.
+- Updated schema version assertions from 1.0 to 1.1 across test suite.
+- Hardened citation disqualification validation in guardrails.
 
 ## [1.0.2] - 2025-09-30
 ### Fixed

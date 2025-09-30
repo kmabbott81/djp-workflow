@@ -75,6 +75,7 @@ def check_safety_flags(safety_flags: list[str]) -> list[str]:
         "illegal_content",
         "privacy_violation",
         "copyright_violation",
+        "disqualified_citations",
     }
 
     for flag in safety_flags:

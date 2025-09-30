@@ -37,7 +37,7 @@ def test_judgment_returning_empty():
     drafts = []
     allowed = ["openai/gpt-4o"]
 
-    status, provider, text, reason = select_publish_text(empty_judgment, drafts, allowed)
+    status, provider, text, reason, _redaction_meta = select_publish_text(empty_judgment, drafts, allowed)
 
     assert status == "none"
     assert provider == ""
@@ -72,7 +72,7 @@ def test_all_drafts_disqualified():
         )
     ]
 
-    status, provider, text, reason = select_publish_text(judgment, original_drafts, ["openai/gpt-4o"])
+    status, provider, text, reason, _redaction_meta = select_publish_text(judgment, original_drafts, ["openai/gpt-4o"])
 
     assert status == "advisory_only"
     assert provider == ""
@@ -179,7 +179,7 @@ def test_safety_flag_blocking():
         )
     ]
 
-    status, provider, text, reason = select_publish_text(judgment, original_drafts, ["openai/gpt-4o"])
+    status, provider, text, reason, _redaction_meta = select_publish_text(judgment, original_drafts, ["openai/gpt-4o"])
 
     # Should be blocked by safety validation
     assert status != "published"
@@ -215,7 +215,7 @@ def test_long_quote_blocking():
         )
     ]
 
-    status, provider, text, reason = select_publish_text(judgment, original_drafts, ["openai/gpt-4o"])
+    status, provider, text, reason, _redaction_meta = select_publish_text(judgment, original_drafts, ["openai/gpt-4o"])
 
     # Should be blocked by long quote validation
     assert status != "published"
