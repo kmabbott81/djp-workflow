@@ -1,0 +1,13 @@
+{
+  "description": "Thorough workflow with comprehensive analysis and high-quality output",
+  "args": {
+    "max_tokens": 1500,
+    "temperature": 0.3,
+    "fastpath": false,
+    "max_debaters": 4,
+    "timeout_s": 300,
+    "margin_threshold": 2,
+    "require_citations": 2,
+    "policy": "openai_only"
+  }
+}

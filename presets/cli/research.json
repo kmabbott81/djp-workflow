@@ -1,0 +1,13 @@
+{
+  "description": "Research-focused workflow with high citation requirements and diverse providers",
+  "args": {
+    "max_tokens": 1200,
+    "temperature": 0.4,
+    "fastpath": false,
+    "max_debaters": 5,
+    "timeout_s": 240,
+    "margin_threshold": 1,
+    "require_citations": 3,
+    "policy": "all_providers"
+  }
+}

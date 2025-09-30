@@ -1,0 +1,103 @@
+# Git attributes for line ending normalization
+# See: https://git-scm.com/docs/gitattributes
+
+# Set default behavior to automatically normalize line endings
+* text=auto
+
+# Python files
+*.py text eol=lf
+*.pyi text eol=lf
+*.pyx text eol=lf
+
+# Shell scripts (always LF)
+*.sh text eol=lf
+*.bash text eol=lf
+
+# PowerShell scripts (always CRLF)
+*.ps1 text eol=crlf
+*.psm1 text eol=crlf
+*.psd1 text eol=crlf
+
+# Batch files (always CRLF)
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Configuration files
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.toml text eol=lf
+*.ini text eol=lf
+*.cfg text eol=lf
+*.conf text eol=lf
+
+# Documentation
+*.md text eol=lf
+*.txt text eol=lf
+*.rst text eol=lf
+LICENSE text eol=lf
+README text eol=lf
+
+# Web files
+*.html text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+
+# Git files
+.gitattributes text eol=lf
+.gitignore text eol=lf
+.gitconfig text eol=lf
+
+# Docker files
+Dockerfile text eol=lf
+*.dockerignore text eol=lf
+
+# CI/CD files
+.travis.yml text eol=lf
+.gitlab-ci.yml text eol=lf
+Jenkinsfile text eol=lf
+
+# Makefiles
+Makefile text eol=lf
+*.mk text eol=lf
+
+# Binary files (do not normalize)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.tar binary
+*.7z binary
+*.pyc binary
+*.pyo binary
+*.pyd binary
+*.so binary
+*.dll binary
+*.exe binary
+*.whl binary
+
+# Archives
+*.db binary
+*.p binary
+*.pkl binary
+*.pickle binary
+*.dat binary
+
+# Fonts
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.eot binary
+
+# Export line ending statistics on 'git diff'
+*.py diff=python
+*.md diff=markdown

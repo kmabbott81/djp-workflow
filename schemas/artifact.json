@@ -1,0 +1,358 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DJP Workflow Run Artifact",
+  "description": "Schema for debate-judge-publish workflow run artifacts",
+  "type": "object",
+  "required": ["schema_version", "run_metadata", "debate", "judge", "publish", "provenance", "grounding"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+$",
+      "description": "Schema version for compatibility tracking. Format: MAJOR.MINOR where MAJOR increments for breaking changes, MINOR for backward-compatible additions. Current version: 1.1"
+    },
+    "run_metadata": {
+      "type": "object",
+      "required": ["timestamp", "task", "trace_name", "parameters"],
+      "properties": {
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "task": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trace_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parameters": {
+          "type": "object",
+          "required": ["max_tokens", "temperature", "allowed_models"],
+          "properties": {
+            "max_tokens": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "temperature": {
+              "type": "number",
+              "minimum": 0.0,
+              "maximum": 2.0
+            },
+            "allowed_models": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "require_citations": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "policy": {
+              "type": "string"
+            },
+            "fastpath": {
+              "type": "boolean"
+            },
+            "max_debaters": {
+              "type": ["integer", "null"],
+              "minimum": 1
+            },
+            "timeout_s": {
+              "type": ["integer", "null"],
+              "minimum": 1
+            },
+            "margin_threshold": {
+              "type": ["integer", "null"],
+              "minimum": 1
+            },
+            "seed": {
+              "type": ["integer", "null"]
+            },
+            "grounded_corpus": {
+              "type": ["string", "null"],
+              "description": "Path to corpus directory for grounded mode"
+            },
+            "grounded_required": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Minimum required corpus citations for factual tasks"
+            },
+            "redact": {
+              "type": "boolean",
+              "description": "Whether redaction is enabled"
+            },
+            "redaction_rules": {
+              "type": ["string", "null"],
+              "description": "Path to custom redaction rules (if overridden)"
+            }
+          }
+        }
+      }
+    },
+    "debate": {
+      "type": "object",
+      "required": ["drafts", "total_drafts"],
+      "properties": {
+        "drafts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["provider", "answer", "evidence", "confidence", "safety_flags"],
+            "properties": {
+              "provider": {
+                "type": "string",
+                "minLength": 1
+              },
+              "answer": {
+                "type": "string"
+              },
+              "evidence": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0.0,
+                "maximum": 1.0
+              },
+              "safety_flags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "total_drafts": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "judge": {
+      "type": "object",
+      "required": ["ranked_drafts", "winner_provider", "total_ranked"],
+      "properties": {
+        "ranked_drafts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["provider", "answer", "evidence", "confidence", "safety_flags", "score", "reasons"],
+            "properties": {
+              "provider": {
+                "type": "string",
+                "minLength": 1
+              },
+              "answer": {
+                "type": "string"
+              },
+              "evidence": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0.0,
+                "maximum": 1.0
+              },
+              "safety_flags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "score": {
+                "type": "number",
+                "minimum": 0.0,
+                "maximum": 10.0
+              },
+              "reasons": {
+                "type": "string"
+              },
+              "subscores": {
+                "type": "object",
+                "properties": {
+                  "task_fit": {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 4.0
+                  },
+                  "support": {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 4.0
+                  },
+                  "clarity": {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 2.0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "winner_provider": {
+          "type": "string"
+        },
+        "total_ranked": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "publish": {
+      "type": "object",
+      "required": ["status", "provider", "text", "text_length"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["published", "advisory_only", "none"]
+        },
+        "provider": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "text_length": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reason": {
+          "type": "string",
+          "description": "Optional reason for status (e.g., why advisory_only)"
+        },
+        "redacted": {
+          "type": "boolean",
+          "description": "Whether redaction was applied to published text"
+        },
+        "redaction_events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "rule_name": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "List of redaction events applied"
+        }
+      }
+    },
+    "grounding": {
+      "type": "object",
+      "required": ["enabled", "corpus_loaded"],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether grounded mode was enabled for this run"
+        },
+        "corpus_loaded": {
+          "type": "boolean",
+          "description": "Whether corpus was successfully loaded"
+        },
+        "corpus_docs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of documents loaded in corpus"
+        },
+        "required_citations": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Minimum required citations"
+        },
+        "citations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "doc_id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Citations extracted from published text"
+        },
+        "grounded_fail_reason": {
+          "type": ["string", "null"],
+          "description": "Reason if grounding requirements were not met"
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["git_sha", "python_version", "sdk_version", "model_usage", "estimated_costs"],
+      "properties": {
+        "git_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{7,40}$"
+        },
+        "python_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+"
+        },
+        "sdk_version": {
+          "type": "string"
+        },
+        "model_usage": {
+          "type": "object",
+          "patternProperties": {
+            "^[a-zA-Z0-9/_-]+$": {
+              "type": "object",
+              "required": ["calls", "tokens_in", "tokens_out"],
+              "properties": {
+                "calls": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "tokens_in": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "tokens_out": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        },
+        "estimated_costs": {
+          "type": "object",
+          "patternProperties": {
+            "^[a-zA-Z0-9/_-]+$": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "duration_seconds": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

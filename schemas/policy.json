@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DJP Policy Configuration",
+  "description": "Schema for allowed publish models policy files",
+  "type": "object",
+  "required": ["ALLOWED_PUBLISH_MODELS"],
+  "properties": {
+    "ALLOWED_PUBLISH_MODELS": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-zA-Z0-9/_.-]+$"
+      },
+      "uniqueItems": true
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional description of this policy"
+    },
+    "version": {
+      "type": "string",
+      "description": "Optional version identifier"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,55 @@
+# CODEOWNERS file for djp-workflow
+#
+# This file defines individuals or teams responsible for code in this repository.
+# When a pull request modifies code that has an owner, that owner will be
+# automatically requested for review.
+#
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything in the repository
+# This will be requested for review when someone opens a pull request
+* @yourusername
+
+# Core workflow modules
+/src/debate.py @yourusername
+/src/judge.py @yourusername
+/src/publish.py @yourusername
+/src/run_workflow.py @yourusername
+
+# Grounding and redaction
+/src/corpus.py @yourusername
+/src/redaction.py @yourusername
+/config/redaction_rules.json @yourusername
+
+# Observability and metrics
+/src/metrics.py @yourusername
+/src/artifacts.py @yourusername
+/dashboards/ @yourusername
+/scripts/alerts.py @yourusername
+
+# Infrastructure and configuration
+/pyproject.toml @yourusername
+/requirements*.in @yourusername
+/.github/ @yourusername
+/.pre-commit-config.yaml @yourusername
+
+# Documentation
+/docs/ @yourusername
+README.md @yourusername
+CONTRIBUTING.md @yourusername
+SECURITY.md @yourusername
+CHANGELOG.md @yourusername
+
+# Schemas and validation
+/schemas/ @yourusername
+/scripts/validate_artifacts.py @yourusername
+/scripts/schema_check.ps1 @yourusername
+
+# Tests
+/tests/ @yourusername
+
+# Scripts
+/scripts/version.py @yourusername
+/scripts/release_notes.py @yourusername
+/scripts/ci_check.sh @yourusername
+/scripts/ci_check.ps1 @yourusername

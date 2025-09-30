@@ -1,0 +1,13 @@
+{
+  "description": "Deterministic workflow with fixed seed for reproducible results",
+  "args": {
+    "max_tokens": 1000,
+    "temperature": 0.0,
+    "fastpath": false,
+    "max_debaters": 3,
+    "timeout_s": 120,
+    "margin_threshold": 2,
+    "seed": 12345,
+    "policy": "openai_only"
+  }
+}

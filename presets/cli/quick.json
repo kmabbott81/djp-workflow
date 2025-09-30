@@ -1,0 +1,12 @@
+{
+  "description": "Quick workflow with minimal settings for fast results",
+  "args": {
+    "max_tokens": 800,
+    "temperature": 0.2,
+    "fastpath": true,
+    "max_debaters": 2,
+    "timeout_s": 60,
+    "margin_threshold": 3,
+    "policy": "openai_only"
+  }
+}
