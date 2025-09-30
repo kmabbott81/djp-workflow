@@ -58,6 +58,7 @@ Issues = "https://github.com/kmabbott81/djp-workflow/issues"
 
 [project.scripts]
 djp = "src.run_workflow:main"
+djp-ui = "dashboards.app:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
