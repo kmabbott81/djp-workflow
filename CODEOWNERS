@@ -8,48 +8,48 @@
 
 # Default owner for everything in the repository
 # This will be requested for review when someone opens a pull request
-* @yourusername
+* @kylemabbott
 
 # Core workflow modules
-/src/debate.py @yourusername
-/src/judge.py @yourusername
-/src/publish.py @yourusername
-/src/run_workflow.py @yourusername
+/src/debate.py @kylemabbott
+/src/judge.py @kylemabbott
+/src/publish.py @kylemabbott
+/src/run_workflow.py @kylemabbott
 
 # Grounding and redaction
-/src/corpus.py @yourusername
-/src/redaction.py @yourusername
-/config/redaction_rules.json @yourusername
+/src/corpus.py @kylemabbott
+/src/redaction.py @kylemabbott
+/config/redaction_rules.json @kylemabbott
 
 # Observability and metrics
-/src/metrics.py @yourusername
-/src/artifacts.py @yourusername
-/dashboards/ @yourusername
-/scripts/alerts.py @yourusername
+/src/metrics.py @kylemabbott
+/src/artifacts.py @kylemabbott
+/dashboards/ @kylemabbott
+/scripts/alerts.py @kylemabbott
 
 # Infrastructure and configuration
-/pyproject.toml @yourusername
-/requirements*.in @yourusername
-/.github/ @yourusername
-/.pre-commit-config.yaml @yourusername
+/pyproject.toml @kylemabbott
+/requirements*.in @kylemabbott
+/.github/ @kylemabbott
+/.pre-commit-config.yaml @kylemabbott
 
 # Documentation
-/docs/ @yourusername
-README.md @yourusername
-CONTRIBUTING.md @yourusername
-SECURITY.md @yourusername
-CHANGELOG.md @yourusername
+/docs/ @kylemabbott
+README.md @kylemabbott
+CONTRIBUTING.md @kylemabbott
+SECURITY.md @kylemabbott
+CHANGELOG.md @kylemabbott
 
 # Schemas and validation
-/schemas/ @yourusername
-/scripts/validate_artifacts.py @yourusername
-/scripts/schema_check.ps1 @yourusername
+/schemas/ @kylemabbott
+/scripts/validate_artifacts.py @kylemabbott
+/scripts/schema_check.ps1 @kylemabbott
 
 # Tests
-/tests/ @yourusername
+/tests/ @kylemabbott
 
 # Scripts
-/scripts/version.py @yourusername
-/scripts/release_notes.py @yourusername
-/scripts/ci_check.sh @yourusername
-/scripts/ci_check.ps1 @yourusername
+/scripts/version.py @kylemabbott
+/scripts/release_notes.py @kylemabbott
+/scripts/ci_check.sh @kylemabbott
+/scripts/ci_check.ps1 @kylemabbott

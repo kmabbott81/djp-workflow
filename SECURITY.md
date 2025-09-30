@@ -19,7 +19,7 @@ We take the security of djp-workflow seriously. If you believe you have found a 
 
 Instead, please report them via email to:
 
-- **Email**: kylem@example.com
+- **Email**: kbmabb@gmail.com
 - **Subject**: [SECURITY] djp-workflow vulnerability
 
 ### What to Include
