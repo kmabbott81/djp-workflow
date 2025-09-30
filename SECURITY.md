@@ -175,7 +175,7 @@ For non-security questions, please use:
 - GitHub Discussions: Ask questions and share ideas
 
 For security issues only:
-- Email: kylem@example.com
+- Email: kbmabb@gmail.com
 - Subject: [SECURITY] djp-workflow vulnerability
 
 ---
