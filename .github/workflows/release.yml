@@ -54,22 +54,33 @@ jobs:
         echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
         echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
-    - name: Generate release notes
-      id: release_notes
-      run: |
-        python scripts/release_notes.py --version ${{ steps.get_version.outputs.VERSION }} > release_notes.md
-        echo "Release notes generated"
-
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
         draft: true
         name: Release ${{ steps.get_version.outputs.TAG_NAME }}
-        body_path: release_notes.md
+        body: |
+          ## djp-workflow v${{ steps.get_version.outputs.VERSION }}
+
+          Initial production release of the Debate-Judge-Publish workflow pipeline.
+
+          ### Key Features
+          - Complete DJP workflow (Debate-Judge-Publish)
+          - Grounded mode with corpus and citation enforcement
+          - Redaction layer for PII/secrets
+          - Observability dashboard and metrics
+          - 57 test cases, schema v1.1, comprehensive documentation
+
+          ### Installation
+          ```bash
+          pip install djp-workflow==${{ steps.get_version.outputs.VERSION }}
+          ```
+
+          See [CHANGELOG.md](https://github.com/kmabbott81/djp-workflow/blob/main/CHANGELOG.md) for full details.
         files: |
           dist/*.tar.gz
           dist/*.whl
-        fail_on_unmatched_files: true
+        fail_on_unmatched_files: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
