@@ -270,3 +270,128 @@ git push origin vX.Y.Z
 
 # 7. Review draft release on GitHub and publish
 ```
+
+---
+
+## Post-Tag Steps
+
+After pushing the tag, the GitHub Actions release workflow automatically runs. Follow these steps:
+
+### 1. Monitor GitHub Actions (~2-3 minutes)
+
+Visit: `https://github.com/kmabbott81/djp-workflow/actions`
+
+**Watch for:**
+- "Release" workflow run for your version tag
+- Green ✅ checkmark indicating success
+- Red ❌ indicates failure - check logs
+
+### 2. Inspect Draft Release
+
+Visit: `https://github.com/kmabbott81/djp-workflow/releases`
+
+**Verify the draft release contains:**
+- ✅ Correct version number in title
+- ✅ Release notes (auto-generated from workflow)
+- ✅ Attached distribution files:
+  - `djp_workflow-X.Y.Z.tar.gz` (source distribution)
+  - `djp_workflow-X.Y.Z-py3-none-any.whl` (Python wheel)
+- ✅ Tag points to correct commit
+- ✅ Target branch is `main`
+
+**If artifacts are missing:**
+- Check GitHub Actions logs for build failures
+- Verify workflow completed successfully
+- Re-run workflow if needed
+
+### 3. Publish Release
+
+Once verified:
+1. Click on the draft release
+2. Review all details one final time
+3. Click **"Publish release"** button
+4. Release becomes public immediately
+
+**After publishing:**
+- Release appears in repository sidebar
+- GitHub sends notifications to watchers
+- Users can download packages
+- Tag is permanently associated with release
+
+### 4. Verify Installation (Optional but Recommended)
+
+Test the published release:
+
+```bash
+# Install from GitHub Release
+pip install https://github.com/kmabbott81/djp-workflow/releases/download/vX.Y.Z/djp_workflow-X.Y.Z-py3-none-any.whl
+
+# Verify version
+python -c "import src; print('Version:', src.__version__)"
+# Should output: Version: X.Y.Z
+```
+
+### 5. Post-Publication
+
+**Update documentation** (if needed):
+- Update README.md with new features
+- Add migration notes if breaking changes
+- Update installation instructions
+
+**Announce release** (optional):
+- Share release URL with team/users
+- Post in relevant channels
+- Update dependent projects
+
+**Monitor feedback:**
+- Watch GitHub Issues for bug reports
+- Respond to user questions
+- Track installation problems
+
+---
+
+## Troubleshooting Post-Tag Issues
+
+### Workflow Fails
+
+**Symptom:** Red ❌ in GitHub Actions
+
+**Solutions:**
+1. Check workflow logs for specific error
+2. Common issues:
+   - Build failures: Check dependencies in `requirements.txt`
+   - Test failures: Review failing test output
+   - Artifact upload fails: Check file paths in workflow
+3. Fix issues and re-trigger:
+   ```bash
+   git tag -d vX.Y.Z
+   git push origin :refs/tags/vX.Y.Z
+   # Fix issues, commit
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
+   ```
+
+### Draft Release Not Created
+
+**Symptom:** No draft appears after workflow succeeds
+
+**Solutions:**
+1. Check workflow permissions: `contents: write` required
+2. Verify GitHub token has release permissions
+3. Check workflow logs for release creation step
+4. Manually create release if needed:
+   - Go to Releases → "Draft a new release"
+   - Choose tag: vX.Y.Z
+   - Add release notes
+   - Upload artifacts from workflow artifacts
+
+### Wrong Files Attached
+
+**Symptom:** Missing or incorrect distribution files
+
+**Solutions:**
+1. Check `dist/` directory was created during build
+2. Verify workflow `files:` section matches build output
+3. Re-run workflow or manually upload correct files
+
+```
