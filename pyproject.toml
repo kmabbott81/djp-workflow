@@ -4,14 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "djp-workflow"
-version = "1.0.1"
+version = "1.0.2"
 description = "Debate-Judge-Publish workflow pipeline with grounded mode and redaction"
 readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "MIT"}
-authors = [
-    {name = "Kyle Mabbott", email = "kylem@example.com"}
-]
+authors = [{ name = "Kyle Abbott", email = "kmabbott81@users.noreply.github.com" }]
 keywords = ["workflow", "agents", "debate", "grounding", "redaction", "observability"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -53,10 +51,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/djp-workflow"
-Documentation = "https://github.com/yourusername/djp-workflow/blob/main/docs/OPERATIONS.md"
-Repository = "https://github.com/yourusername/djp-workflow"
-Issues = "https://github.com/yourusername/djp-workflow/issues"
+Homepage = "https://github.com/kmabbott81/djp-workflow"
+Documentation = "https://github.com/kmabbott81/djp-workflow/blob/main/docs/OPERATIONS.md"
+Repository = "https://github.com/kmabbott81/djp-workflow"
+Issues = "https://github.com/kmabbott81/djp-workflow/issues"
 
 [project.scripts]
 djp = "src.run_workflow:main"
