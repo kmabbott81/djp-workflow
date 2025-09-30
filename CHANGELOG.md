@@ -92,7 +92,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Links
 
-- [Repository](https://github.com/yourusername/djp-workflow)
-- [Documentation](https://github.com/yourusername/djp-workflow/blob/main/docs/OPERATIONS.md)
-- [Issues](https://github.com/yourusername/djp-workflow/issues)
-- [Releases](https://github.com/yourusername/djp-workflow/releases)
+- [Repository](https://github.com/kmabbott81/djp-workflow)
+- [Documentation](https://github.com/kmabbott81/djp-workflow/blob/main/docs/OPERATIONS.md)
+- [Issues](https://github.com/kmabbott81/djp-workflow/issues)
+- [Releases](https://github.com/kmabbott81/djp-workflow/releases)
