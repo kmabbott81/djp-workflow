@@ -16,6 +16,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+import pandas as pd
 import streamlit as st
 
 # Add src to path for imports
@@ -25,6 +26,11 @@ from src.config_ui import DEFAULTS, load_config, save_config, to_allowed_models 
 from src.corpus import load_corpus  # noqa: E402
 from src.publish import select_publish_text  # noqa: E402
 from src.schemas import Draft, Judgment  # noqa: E402
+from src.secrets import detect_providers, load_dotenv_if_present, pricing_for  # noqa: E402
+
+# Load .env secrets early
+load_dotenv_if_present()
+PROVIDERS = detect_providers()
 
 # Real-mode autodetect: try imports + check env keys
 REAL_MODE = False
@@ -84,6 +90,36 @@ def render_redaction_metadata(meta):
                 st.json(evt)
     else:
         st.success("No redactions applied")
+
+
+def _estimate_cost(provider: str, prompt_tokens: int, completion_tokens: int) -> float:
+    """Estimate cost for a provider and token counts."""
+    p = pricing_for(provider)
+    return (prompt_tokens / 1000.0) * p.get("prompt_per_1k", 0.0) + (completion_tokens / 1000.0) * p.get(
+        "completion_per_1k", 0.0
+    )
+
+
+def _render_usage(usage_rows):
+    """Render usage metrics table with cost estimates."""
+    if not usage_rows:
+        st.info("No usage metrics available.")
+        return
+    df = pd.DataFrame(usage_rows)
+    df["$estimate"] = df.apply(
+        lambda r: _estimate_cost(
+            r.get("provider", ""), int(r.get("prompt_tokens", 0)), int(r.get("completion_tokens", 0))
+        ),
+        axis=1,
+    )
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Total Cost (est.)", f"${df['$estimate'].sum():.4f}")
+    with col2:
+        st.metric("Total Prompt Tokens", int(df["prompt_tokens"].sum()))
+    with col3:
+        st.metric("Total Completion Tokens", int(df["completion_tokens"].sum()))
+    st.dataframe(df, use_container_width=True)
 
 
 async def run_djp_workflow_mock(
@@ -148,6 +184,7 @@ async def run_djp_workflow_mock(
         "redaction_metadata": redaction_metadata,
         "citations": drafts[0].evidence if grounded else [],
         "drafts": [{"provider": d.provider, "answer": d.answer} for d in drafts],
+        "usage": [],  # Mock mode doesn't track real usage
     }
 
 
@@ -160,7 +197,7 @@ async def run_djp_workflow_real(
     max_tokens: int,
     temperature: float,
 ):
-    """Run real DJP workflow with agents package."""
+    """Run real DJP workflow with agents package, collecting usage metrics."""
     from src.debate import run_debate
     from src.judge import judge_drafts
 
@@ -168,6 +205,9 @@ async def run_djp_workflow_real(
     corpus_docs = None
     if grounded and corpus_paths:
         corpus_docs = load_corpus(corpus_paths)
+
+    # Track timing for each phase
+    t0 = time.time()
 
     # Run debate
     drafts = await run_debate(
@@ -178,6 +218,8 @@ async def run_djp_workflow_real(
         allowed_models=allowed_models,
     )
 
+    t1 = time.time()
+
     # Run judge
     judgment = await judge_drafts(
         drafts=drafts,
@@ -185,9 +227,58 @@ async def run_djp_workflow_real(
         require_citations=2 if grounded else 0,
     )
 
+    t2 = time.time()
+
     # Select publish text
     status, provider, text, reason, redaction_metadata = select_publish_text(
         judgment, drafts, allowed_models, enable_redaction=enable_redaction
+    )
+
+    t3 = time.time()
+
+    # Build usage rows (best-effort: expect per-draft meta like tokens/provider)
+    usage_rows = []
+    try:
+        for d in drafts:
+            pr = getattr(d, "provider", "openai")
+            pt = int(getattr(d, "prompt_tokens", 0))
+            ct = int(getattr(d, "completion_tokens", 0))
+            usage_rows.append(
+                {
+                    "phase": "debate",
+                    "provider": pr,
+                    "prompt_tokens": pt,
+                    "completion_tokens": ct,
+                    "latency_s": round(t1 - t0, 3),
+                }
+            )
+    except Exception:
+        pass
+
+    try:
+        pr = getattr(judgment, "provider", provider or "openai")
+        pt = int(getattr(judgment, "prompt_tokens", 0))
+        ct = int(getattr(judgment, "completion_tokens", 0))
+        usage_rows.append(
+            {
+                "phase": "judge",
+                "provider": pr,
+                "prompt_tokens": pt,
+                "completion_tokens": ct,
+                "latency_s": round(t2 - t1, 3),
+            }
+        )
+    except Exception:
+        pass
+
+    usage_rows.append(
+        {
+            "phase": "select",
+            "provider": provider or "",
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "latency_s": round(t3 - t2, 3),
+        }
     )
 
     return {
@@ -200,6 +291,7 @@ async def run_djp_workflow_real(
             [{"title": e, "snippet": ""} for d in drafts for e in getattr(d, "evidence", [])] if grounded else []
         ),
         "drafts": [{"provider": d.provider, "answer": d.answer} for d in drafts],
+        "usage": usage_rows,
     }
 
 
@@ -208,9 +300,11 @@ def main():
     st.set_page_config(page_title=APP_TITLE, layout="wide")
     st.title(APP_TITLE)
 
-    # Mode indicator
+    # Mode indicator with provider status
     mode_label = "🟢 REAL MODE" if REAL_MODE else "🔵 MOCK MODE"
-    st.caption(f"{mode_label} | Switch by setting OPENAI_API_KEY env var")
+    active_providers = [k for k, v in PROVIDERS.items() if v]
+    provider_status = ", ".join(active_providers) if active_providers else "(none)"
+    st.caption(f"{mode_label} | Providers: {provider_status}")
 
     # Initialize session state
     if "cfg" not in st.session_state:
@@ -390,6 +484,14 @@ def main():
                                 st.write(draft["answer"])
                                 st.divider()
 
+                        # Usage metrics section
+                        st.subheader("💰 Usage Metrics")
+                        usage_rows = result.get("usage", [])
+                        if usage_rows:
+                            _render_usage(usage_rows)
+                        else:
+                            st.info("Usage metrics not available for this run.")
+
                         # Save artifact
                         payload = {
                             "ts": datetime.utcnow().isoformat(),
@@ -404,6 +506,7 @@ def main():
                                 "max_tokens": max_tokens,
                                 "mode": "real" if REAL_MODE else "mock",
                             },
+                            "usage": result.get("usage", []),
                             "result": result,
                             "latency_s": round(duration, 3),
                         }
