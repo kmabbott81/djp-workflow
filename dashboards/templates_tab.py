@@ -2,13 +2,23 @@ from __future__ import annotations
 
 import json
 import time
+from datetime import date as date_type
 from pathlib import Path
 from typing import Any
 
 import streamlit as st
 
 from src.config_ui import to_allowed_models
-from src.templates import export_docx, export_markdown, list_templates, render_template
+from src.templates import (
+    InputDef,
+    TemplateRenderError,
+    export_docx,
+    export_markdown,
+    list_templates,
+    render_template,
+    to_slug,
+    validate_inputs,
+)
 
 
 # Optional: import real path; fallback to select() mock if not available
@@ -74,85 +84,182 @@ def _run_once_real(draft_text: str, grounded: bool, local_corpus, cfg: dict[str,
         return status, provider, text, reason, redaction, []
 
 
+def _render_input_widget(inp: InputDef) -> Any:
+    """
+    Render appropriate Streamlit widget based on input type.
+
+    Args:
+        inp: InputDef describing the input field
+
+    Returns:
+        User input value
+    """
+    help_text = inp.help if inp.help else None
+    label = f"{inp.label}{'*' if inp.required else ''}"
+
+    # String type
+    if inp.type == "string":
+        return st.text_input(label, value=str(inp.default or ""), help=help_text, placeholder=inp.placeholder or "")
+
+    # Text type (multiline)
+    elif inp.type == "text":
+        return st.text_area(
+            label, value=str(inp.default or ""), help=help_text, height=100, placeholder=inp.placeholder or ""
+        )
+
+    # Integer type
+    elif inp.type == "int":
+        min_val = inp.validators.get("min", 0)
+        max_val = inp.validators.get("max", 1000000)
+        default_val = int(inp.default) if inp.default is not None else min_val
+        return st.number_input(label, min_value=min_val, max_value=max_val, value=default_val, step=1, help=help_text)
+
+    # Float type
+    elif inp.type == "float":
+        min_val = float(inp.validators.get("min", 0.0))
+        max_val = float(inp.validators.get("max", 1000000.0))
+        default_val = float(inp.default) if inp.default is not None else min_val
+        return st.number_input(
+            label, min_value=min_val, max_value=max_val, value=default_val, step=0.1, format="%.2f", help=help_text
+        )
+
+    # Boolean type
+    elif inp.type == "bool":
+        default_val = bool(inp.default) if inp.default is not None else False
+        return st.checkbox(label, value=default_val, help=help_text)
+
+    # Enum type (single select)
+    elif inp.type == "enum":
+        choices = inp.validators.get("choices", [])
+        if not choices:
+            st.error(f"Enum field '{inp.label}' has no choices defined")
+            return None
+        default_idx = 0
+        if inp.default and inp.default in choices:
+            default_idx = choices.index(inp.default)
+        return st.selectbox(label, choices, index=default_idx, help=help_text)
+
+    # Multiselect type
+    elif inp.type == "multiselect":
+        choices = inp.validators.get("choices", [])
+        if not choices:
+            st.error(f"Multiselect field '{inp.label}' has no choices defined")
+            return []
+        default_val = inp.default if isinstance(inp.default, list) else []
+        return st.multiselect(label, choices, default=default_val, help=help_text)
+
+    # Date type
+    elif inp.type == "date":
+        try:
+            if inp.default:
+                from datetime import datetime
+
+                default_val = datetime.strptime(str(inp.default), "%Y-%m-%d").date()
+            else:
+                default_val = date_type.today()
+        except Exception:
+            default_val = date_type.today()
+        return st.date_input(label, value=default_val, help=help_text)
+
+    # Email type (text input with validation)
+    elif inp.type == "email":
+        return st.text_input(label, value=str(inp.default or ""), help=help_text, placeholder="user@example.com")
+
+    # URL type (text input with validation)
+    elif inp.type == "url":
+        return st.text_input(label, value=str(inp.default or ""), help=help_text, placeholder="https://example.com")
+
+    # Fallback
+    else:
+        st.warning(f"Unknown input type: {inp.type}")
+        return st.text_input(label, value=str(inp.default or ""), help=help_text)
+
+
 def render_templates_tab():
+    """Render the Templates tab with type-aware widgets and inline validation."""
     st.subheader("Template Library")
     st.caption("Pick a template, edit variables, preview, run via DJP, and export results.")
 
-    # Left: template chooser
+    # Load templates
     tdefs = list_templates()
     if not tdefs:
         st.info("No templates found. Add YAML files to ./templates/")
+        st.info("Templates must conform to schemas/template.json")
         return
-    tkeys = [f"{t.name} · ({t.key})" for t in tdefs]
+
+    # Template selector
+    tkeys = [f"{t.name} (v{t.version}) · {t.key}" for t in tdefs]
     idx = st.selectbox("Choose template", list(range(len(tdefs))), format_func=lambda i: tkeys[i])
-    tdef = tdefs[idx]
+    template = tdefs[idx]
 
-    st.write(f"**Description:** {tdef.description}")
+    # Display template info
+    st.write(f"**Description:** {template.description}")
+    st.caption(f"Context: {template.context} | Version: {template.version} | Path: {template.path.name}")
     st.markdown("---")
-    st.markdown("#### Variables")
 
-    # Editable variable form
+    # Input form
+    st.markdown("#### Input Variables")
     vars_state: dict[str, Any] = {}
-    for k, v in (tdef.variables or {}).items():
-        if isinstance(v, bool):
-            vars_state[k] = st.checkbox(k, value=v)
-        elif isinstance(v, int):
-            vars_state[k] = st.number_input(k, value=int(v))
-        elif isinstance(v, float):
-            vars_state[k] = st.number_input(k, value=float(v), format="%.2f")
-        elif isinstance(v, list):
-            vars_state[k] = st.text_area(k, value="\n".join(map(str, v)), height=100)
-        elif isinstance(v, dict):
-            vars_state[k] = st.text_area(k, value=json.dumps(v, indent=2))
-        else:
-            vars_state[k] = st.text_input(k, value=str(v))
 
-    # Normalize list/dict textareas back to Python structures
-    def _normalize(v):
-        if isinstance(v, str) and v.strip().startswith("{"):
-            try:
-                return json.loads(v)
-            except Exception:
-                return v
-        if isinstance(v, str) and "\n" in v:
-            return [ln.strip() for ln in v.splitlines() if ln.strip()]
-        return v
+    for inp in template.inputs:
+        value = _render_input_widget(inp)
+        vars_state[inp.id] = value
 
-    vars_state = {k: _normalize(v) for k, v in vars_state.items()}
+    st.markdown("---")
 
-    colA, colB, colC = st.columns(3)
-    grounded = colA.toggle("Grounded mode", value=False)
-    run_btn = colB.button("Run via DJP")
-    export_md = colC.button("Export Markdown")
-    export_dx = st.button("Export DOCX")
+    # Validate inputs
+    validation_errors = validate_inputs(template, vars_state)
+    if validation_errors:
+        st.error("**Validation Errors:**")
+        for err in validation_errors:
+            st.error(f"• {err}")
 
-    st.markdown("#### Preview")
-    preview_text = ""
-    error_text = None
-    try:
-        preview_text = render_template(tdef.prompt, vars_state)
-        st.code(preview_text or "(empty draft)")
-    except Exception as e:
-        error_text = f"{e}"
-        st.error(error_text)
+    # Action buttons
+    col1, col2, col3, col4 = st.columns(4)
+    grounded = col1.toggle("Grounded mode", value=False)
+    preview_btn = col2.button("Preview", disabled=bool(validation_errors))
+    run_btn = col3.button("Run via DJP", disabled=bool(validation_errors))
+    export_section = col4.expander("Export")
 
-    # Save artifacts here
-    out_dir = Path("runs/ui/templates")
-    out_dir.mkdir(parents=True, exist_ok=True)
+    with export_section:
+        export_md = st.button("Export Markdown")
+        export_dx = st.button("Export DOCX")
 
-    if export_md and preview_text:
-        fname = f"{tdef.key}-{int(time.time())}"
-        p = export_markdown(preview_text, fname)
-        st.success(f"Saved Markdown: {p}")
+    # Preview section
+    if preview_btn:
+        st.markdown("#### Preview")
+        try:
+            preview_text = render_template(template, vars_state)
+            st.code(preview_text, language="markdown")
+        except TemplateRenderError as e:
+            st.error(f"**Render Error:** {e}")
+        except Exception as e:
+            st.error(f"**Unexpected Error:** {e}")
 
-    if export_dx and preview_text:
-        fname = f"{tdef.key}-{int(time.time())}"
-        p = export_docx(preview_text, fname, heading=tdef.name)
-        st.success(f"Saved DOCX: {p}")
+    # Export handlers
+    if export_md and not validation_errors:
+        try:
+            preview_text = render_template(template, vars_state)
+            fname = f"{to_slug(template.name)}-{int(time.time())}"
+            p = export_markdown(preview_text, fname)
+            st.success(f"Saved Markdown: {p}")
+        except Exception as e:
+            st.error(f"Export failed: {e}")
 
-    if run_btn and preview_text and not error_text:
+    if export_dx and not validation_errors:
+        try:
+            preview_text = render_template(template, vars_state)
+            fname = f"{to_slug(template.name)}-{int(time.time())}"
+            p = export_docx(preview_text, fname, heading=template.name)
+            st.success(f"Saved DOCX: {p}")
+        except Exception as e:
+            st.error(f"Export failed: {e}")
+
+    # Run via DJP
+    if run_btn and not validation_errors:
         st.markdown("#### DJP Result")
-        # reuse corpus from History/Run style: let user upload here too
+
+        # Corpus upload
         up = st.file_uploader("Optional corpus (.txt/.md/.pdf)", type=["txt", "md", "pdf"], accept_multiple_files=True)
         local_corpus = []
         if up and grounded:
@@ -163,30 +270,43 @@ def render_templates_tab():
                 p.write_bytes(f.read())
                 local_corpus.append(str(p))
 
-        cfg = st.session_state.get("cfg", {})
-        status, provider, text, reason, redaction, usage_rows = _run_once_real(
-            preview_text, grounded, local_corpus, cfg
-        )
+        try:
+            # Render template first
+            draft_text = render_template(template, vars_state)
 
-        st.markdown(f"**Status:** `{status}`  **Provider:** `{provider}`")
-        if reason:
-            st.caption(f"Reason: {reason}")
-        st.text_area("Output", text, height=240)
-        if redaction:
-            st.json(redaction)
+            # Run DJP
+            cfg = st.session_state.get("cfg", {})
+            status, provider, text, reason, redaction, usage_rows = _run_once_real(
+                draft_text, grounded, local_corpus, cfg
+            )
 
-        # Save a JSON artifact
-        payload = {
-            "template": tdef.key,
-            "vars": vars_state,
-            "grounded": grounded,
-            "provider": provider,
-            "status": status,
-            "reason": reason,
-            "text": text,
-            "usage": usage_rows,
-            "ts": int(time.time()),
-        }
-        fp = out_dir / f"{tdef.key}-run-{payload['ts']}.json"
-        fp.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-        st.success(f"Saved run artifact: {fp}")
+            st.markdown(f"**Status:** `{status}`  **Provider:** `{provider}`")
+            if reason:
+                st.caption(f"Reason: {reason}")
+            st.text_area("Output", text, height=240)
+            if redaction:
+                st.json(redaction)
+
+            # Save artifact
+            out_dir = Path("runs/ui/templates")
+            out_dir.mkdir(parents=True, exist_ok=True)
+            payload = {
+                "template": template.key,
+                "template_version": template.version,
+                "vars": vars_state,
+                "grounded": grounded,
+                "provider": provider,
+                "status": status,
+                "reason": reason,
+                "text": text,
+                "usage": usage_rows,
+                "ts": int(time.time()),
+            }
+            fp = out_dir / f"{to_slug(template.key)}-run-{payload['ts']}.json"
+            fp.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+            st.success(f"Saved run artifact: {fp}")
+
+        except TemplateRenderError as e:
+            st.error(f"**Render Error:** {e}")
+        except Exception as e:
+            st.error(f"**Error:** {e}")

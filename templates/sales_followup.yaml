@@ -1,12 +1,42 @@
-key: sales_followup
 name: Sales Follow-up (Trust & Next Step)
+version: "1.0"
 description: Friendly follow-up that confirms value, reduces risk, and proposes one clear next step.
-variables:
-  recipient: "Taylor"
-  product: "Controls Field Services Starter"
-  value_prop: "fast startup, fewer RFIs, smoother commissioning"
-  next_step: "30-minute walkthrough Friday 10:00 AM PT"
-prompt: |
-  Write a concise, friendly follow-up email to {{ recipient }}.
-  Reiterate the value of {{ product }} ({{ value_prop }}), include social proof or a data point if available,
-  and propose {{ next_step }}. Keep it personable and specific.
+context: markdown
+
+inputs:
+  - id: recipient
+    label: Recipient Name
+    type: string
+    required: true
+    default: "Taylor"
+    help: First name of the recipient
+
+  - id: product
+    label: Product Name
+    type: string
+    required: true
+    default: "Controls Field Services Starter"
+    help: Name of the product or service
+
+  - id: value_prop
+    label: Value Proposition
+    type: text
+    required: true
+    default: "fast startup, fewer RFIs, smoother commissioning"
+    help: Key benefits (comma-separated)
+    validators:
+      min: 10
+      max: 150
+
+  - id: next_step
+    label: Proposed Next Step
+    type: string
+    required: true
+    default: "30-minute walkthrough Friday 10:00 AM PT"
+    help: Specific action with time/date
+
+rendering:
+  body: |
+    Write a concise, friendly follow-up email to {{ recipient }}.
+    Reiterate the value of {{ product }} ({{ value_prop }}), include social proof or a data point if available,
+    and propose {{ next_step }}. Keep it personable and specific.

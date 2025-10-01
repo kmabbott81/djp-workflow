@@ -1,13 +1,43 @@
-key: class_brief
 name: Class Brief (2-para + bullets)
+version: "1.0"
 description: 2-paragraph concept summary + 5 bulleted insights.
-variables:
-  course: "BA 713 Data & Decisions"
-  topic: "Simpson's Paradox"
-  reading_sources: ["OEMBA-40_Data-and-Decisions_05.pdf"]
-  why_it_matters: "It prevents false conclusions in aggregated data."
-prompt: |
-  Draft a brief for {{ course }} on "{{ topic }}".
-  Use two paragraphs to explain the concept, then 5 bullet points of practical takeaways.
-  Cite {{ reading_sources | join(", ") }} if grounded mode is enabled.
-  Conclude with why it matters: {{ why_it_matters }}
+context: markdown
+
+inputs:
+  - id: course
+    label: Course Name
+    type: string
+    required: true
+    default: "BA 713 Data & Decisions"
+    help: Full course name
+
+  - id: topic
+    label: Topic
+    type: string
+    required: true
+    default: "Simpson's Paradox"
+    help: Specific topic or concept
+
+  - id: reading_sources
+    label: Reading Sources
+    type: text
+    required: false
+    default: "OEMBA-40_Data-and-Decisions_05.pdf"
+    help: Source materials (one per line)
+
+  - id: why_it_matters
+    label: Why It Matters
+    type: text
+    required: true
+    default: "It prevents false conclusions in aggregated data."
+    help: Brief explanation of significance
+    validators:
+      min: 10
+      max: 200
+
+rendering:
+  body: |
+    Draft a brief for {{ course }} on "{{ topic }}".
+    Use two paragraphs to explain the concept, then 5 bullet points of practical takeaways.
+    {% if reading_sources %}Cite {{ reading_sources | replace("\n", ", ") }} if grounded mode is enabled.{% endif %}
+    Conclude with why it matters: {{ why_it_matters }}

@@ -1,0 +1,129 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DJP Template Schema",
+  "description": "Schema for validating DJP template YAML files",
+  "type": "object",
+  "required": ["name", "version", "description", "context", "inputs", "rendering"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable template name"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+$",
+      "description": "Semantic version (major.minor)"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Brief description of template purpose"
+    },
+    "context": {
+      "type": "string",
+      "enum": ["markdown", "docx", "html"],
+      "description": "Output context for escaping and rendering"
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "type"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "description": "Variable identifier (snake_case)"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "description": "UI label for the input"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["string", "text", "int", "float", "bool", "enum", "date", "email", "url", "multiselect"],
+            "description": "Input data type"
+          },
+          "required": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether input is required"
+          },
+          "default": {
+            "description": "Default value (type depends on input type)"
+          },
+          "help": {
+            "type": "string",
+            "description": "Help text shown to user"
+          },
+          "placeholder": {
+            "type": "string",
+            "description": "Placeholder text for text inputs"
+          },
+          "validators": {
+            "type": "object",
+            "properties": {
+              "regex": {
+                "type": "string",
+                "description": "Regex pattern for validation"
+              },
+              "min": {
+                "type": "number",
+                "description": "Minimum value (numbers) or length (strings)"
+              },
+              "max": {
+                "type": "number",
+                "description": "Maximum value (numbers) or length (strings)"
+              },
+              "choices": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Valid choices for enum/multiselect"
+              }
+            }
+          },
+          "postprocessors": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["strip", "title", "upper", "lower", "slug"]
+            },
+            "description": "Post-processing functions to apply"
+          }
+        }
+      }
+    },
+    "rendering": {
+      "type": "object",
+      "required": ["body"],
+      "properties": {
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Jinja2 template body"
+        }
+      }
+    },
+    "style": {
+      "type": "string",
+      "description": "Optional path to DOCX style base file"
+    },
+    "budget": {
+      "type": "object",
+      "properties": {
+        "max_usd": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Maximum cost in USD"
+        },
+        "max_tokens": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum total tokens"
+        }
+      }
+    }
+  }
+}
