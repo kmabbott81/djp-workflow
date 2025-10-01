@@ -1,0 +1,13 @@
+key: class_brief
+name: Class Brief (2-para + bullets)
+description: 2-paragraph concept summary + 5 bulleted insights.
+variables:
+  course: "BA 713 Data & Decisions"
+  topic: "Simpson's Paradox"
+  reading_sources: ["OEMBA-40_Data-and-Decisions_05.pdf"]
+  why_it_matters: "It prevents false conclusions in aggregated data."
+prompt: |
+  Draft a brief for {{ course }} on "{{ topic }}".
+  Use two paragraphs to explain the concept, then 5 bullet points of practical takeaways.
+  Cite {{ reading_sources | join(", ") }} if grounded mode is enabled.
+  Conclude with why it matters: {{ why_it_matters }}
