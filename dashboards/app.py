@@ -22,6 +22,7 @@ import streamlit as st
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from dashboards.batch_tab import render_batch_tab  # noqa: E402
 from src.config_ui import DEFAULTS, load_config, save_config, to_allowed_models  # noqa: E402
 from src.corpus import load_corpus  # noqa: E402
 from src.publish import select_publish_text  # noqa: E402
@@ -311,7 +312,7 @@ def main():
         st.session_state["cfg"] = load_config(None)
 
     # Create tabs
-    tabs = st.tabs(["▶️ Run", "📊 History", "⚙️ Config"])
+    tabs = st.tabs(["▶️ Run", "📊 History", "⚙️ Config", "📦 Batch"])
 
     # ========== CONFIG TAB ==========
     with tabs[2]:
@@ -612,6 +613,11 @@ def main():
                 col_d.json(d2.get("settings", {}))
             elif f1 and f2 and f1 == f2:
                 st.warning("Please select two different runs to compare")
+
+    # ========== BATCH TAB ==========
+    with tabs[3]:
+        cfg_for_batch = st.session_state.get("cfg", {})
+        render_batch_tab(cfg_for_batch)
 
 
 if __name__ == "__main__":
