@@ -9,7 +9,10 @@ from typing import Any
 import pandas as pd
 import streamlit as st
 
-from src.batch import load_tasks_from_path, run_batch
+from src.batch import corpus_hash, load_tasks_from_path, run_batch
+
+# Corpus cache: avoid reloading same corpus across tasks
+_CORPUS_CACHE: dict[str, Any] = {}
 
 
 async def _run_once(task_text: str, corpus_paths: list[str] | None, cfg: dict[str, Any]) -> dict[str, Any]:
@@ -24,7 +27,12 @@ async def _run_once(task_text: str, corpus_paths: list[str] | None, cfg: dict[st
         from src.judge import judge_drafts
         from src.publish import select_publish_text
 
-        corpus_docs = load_corpus(corpus_paths) if grounded else None
+        # Use corpus cache to avoid reloading
+        cor_hash = corpus_hash(corpus_paths)
+        corpus_docs = _CORPUS_CACHE.get(cor_hash)
+        if grounded and corpus_docs is None:
+            corpus_docs = load_corpus(corpus_paths)
+            _CORPUS_CACHE[cor_hash] = corpus_docs
         drafts = run_debate(
             task=task_text,
             max_tokens=int(cfg.get("max_tokens", 1000)),
@@ -119,6 +127,11 @@ def render_batch_tab(cfg: dict[str, Any]):
 
     st.info(f"Using policy={cfg.get('policy')}  temp={cfg.get('temperature')}  max_tokens={cfg.get('max_tokens')}")
 
+    resume_chk = st.toggle(
+        "Resume from prior results", value=True, help="Skip tasks already completed in runs/ui/batch/"
+    )
+    live_chk = st.toggle("Show live progress", value=True)
+
     run_batch_btn = st.button("Run Batch")
 
     if run_batch_btn:
@@ -145,9 +158,13 @@ def render_batch_tab(cfg: dict[str, Any]):
                 local_corpus.append(str(p))
 
         import asyncio
+        from concurrent.futures import ThreadPoolExecutor
 
-        with st.spinner("Running batch..."):
-            res = asyncio.get_event_loop().run_until_complete(
+        save_dir = "runs/ui/batch"
+        prog_file = Path(save_dir) / "progress.json"
+
+        def _runner():
+            return asyncio.get_event_loop().run_until_complete(
                 run_batch(
                     tasks,
                     _run_once,
@@ -156,9 +173,43 @@ def render_batch_tab(cfg: dict[str, Any]):
                     per_run_cap=float(per_run_cap),
                     per_batch_cap=float(per_batch_cap),
                     concurrency=int(concurrency),
-                    save_dir="runs/ui/batch",
+                    save_dir=save_dir,
+                    progress_path=str(prog_file),
+                    resume=bool(resume_chk),
                 )
             )
+
+        res = None
+        if live_chk:
+            # Show live progress
+            bar = st.progress(0.0)
+            cols = st.columns(3)
+            m_cost = cols[0].empty()
+            m_done = cols[1].empty()
+            m_eta = cols[2].empty()
+
+            with ThreadPoolExecutor(max_workers=1) as ex:
+                fut = ex.submit(_runner)
+                while not fut.done():
+                    time.sleep(0.5)
+                    try:
+                        data = json.loads(prog_file.read_text(encoding="utf-8"))
+                        total = max(1, int(data.get("total", 1)))
+                        done = int(data.get("done", 0))
+                        cost = float(data.get("cost", 0.0))
+                        eta_s = data.get("eta_s")
+                        bar.progress(min(1.0, done / total))
+                        m_cost.metric("Cost (est.)", f"${cost:.4f}")
+                        m_done.metric("Completed", f"{done}/{total}")
+                        m_eta.metric("ETA", f"{eta_s}s" if eta_s is not None else "—")
+                    except Exception:
+                        pass
+                res = fut.result()
+        else:
+            # No live progress, just spinner
+            with st.spinner("Running batch..."):
+                res = _runner()
+
         st.success("Batch complete.")
         st.json(res["summary"])
 

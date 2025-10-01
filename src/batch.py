@@ -11,6 +11,9 @@ from typing import Any
 
 from .secrets import pricing_for
 
+# Corpus cache: avoid reloading same corpus across tasks
+_CORPUS_CACHE: dict[str, Any] = {}
+
 
 def load_tasks_from_path(path: str) -> list[dict[str, Any]]:
     p = Path(path)
@@ -56,15 +59,67 @@ async def run_batch(
     per_batch_cap: float = 5.00,
     concurrency: int = 3,
     save_dir: str = "runs/ui/batch",
+    progress_path: str | None = None,
+    resume: bool = False,
 ) -> dict[str, Any]:
     Path(save_dir).mkdir(parents=True, exist_ok=True)
+
+    # Progress file setup
+    prog_file = Path(progress_path) if progress_path else Path(save_dir) / "progress.json"
+
+    # Build completed set if resuming
+    completed: set[str] = set()
+    if resume:
+        for fp in Path(save_dir).glob("batch-*.json"):
+            try:
+                d = json.loads(fp.read_text(encoding="utf-8"))
+                if d.get("id"):
+                    completed.add(str(d["id"]))
+            except Exception:
+                pass
+
+    # Helper to generate stable task IDs
+    def _tid(item: dict[str, Any]) -> str:
+        tid = (item.get("id") or "").strip()
+        if not tid:
+            tid = hashlib.sha1((item.get("task") or "").encode("utf-8")).hexdigest()[:10]
+        return tid
+
+    # Filter tasks if resuming
+    todo = [t for t in tasks if (not resume) or (_tid(t) not in completed)]
+
     q = asyncio.Queue()
-    for t in tasks:
+    for t in todo:
         q.put_nowait(t)
 
     totals = {"cost": 0.0, "prompt_tokens": 0, "completion_tokens": 0, "runs": 0}
     results = []
     cor_hash = corpus_hash(corpus_paths)
+
+    # Progress tracking
+    total = len(todo)
+    start_ts = time.time()
+
+    def _write_progress(done: int, cost: float, pt: int, ct: int):
+        avg = ((time.time() - start_ts) / done) if done else None
+        eta = (total - done) * avg if (avg and total) else None
+        payload = {
+            "total": total,
+            "done": done,
+            "cost": round(cost, 6),
+            "prompt_tokens": pt,
+            "completion_tokens": ct,
+            "eta_s": round(eta, 1) if eta else None,
+            "started": start_ts,
+        }
+        try:
+            tmp = prog_file.with_suffix(".tmp")
+            tmp.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+            tmp.replace(prog_file)
+        except Exception:
+            pass
+
+    _write_progress(0, 0.0, 0, 0)
 
     async def worker(wid: int):
         nonlocal totals
@@ -122,6 +177,10 @@ async def run_batch(
                         "corpus_hash": cor_hash,
                     }
                     results.append(out)
+                    # Update progress
+                    _write_progress(
+                        totals["runs"], totals["cost"], totals["prompt_tokens"], totals["completion_tokens"]
+                    )
                     # save each result
                     Path(save_dir, f"batch-{int(time.time()*1000)}-{tid or 'x'}.json").write_text(
                         json.dumps(out, indent=2), encoding="utf-8"
@@ -141,6 +200,9 @@ async def run_batch(
     await q.join()
     for w in workers:
         w.cancel()
+
+    # Final progress write
+    _write_progress(totals["runs"], totals["cost"], totals["prompt_tokens"], totals["completion_tokens"])
 
     summary = {
         "totals": totals,
