@@ -23,8 +23,11 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from dashboards.batch_tab import render_batch_tab  # noqa: E402
+from dashboards.chat_tab import render_chat_tab  # noqa: E402
+from dashboards.home_tab import render_home_tab  # noqa: E402
 from src.config_ui import DEFAULTS, load_config, save_config, to_allowed_models  # noqa: E402
 from src.corpus import load_corpus  # noqa: E402
+from src.ops.health_server import start_health_server  # noqa: E402
 from src.publish import select_publish_text  # noqa: E402
 from src.schemas import Draft, Judgment  # noqa: E402
 from src.secrets import detect_providers, load_dotenv_if_present, pricing_for  # noqa: E402
@@ -299,23 +302,55 @@ async def run_djp_workflow_real(
 def main():
     """Streamlit app main entry point."""
     st.set_page_config(page_title=APP_TITLE, layout="wide")
+
+    # Start health server in background (only once per session)
+    if "health_server_started" not in st.session_state:
+        try:
+            start_health_server()
+            st.session_state.health_server_started = True
+        except Exception as e:
+            print(f"Warning: Health server failed to start: {e}")
+
     st.title(APP_TITLE)
 
-    # Mode indicator with provider status
+    # Mode indicator with provider status and region info
     mode_label = "🟢 REAL MODE" if REAL_MODE else "🔵 MOCK MODE"
     active_providers = [k for k, v in PROVIDERS.items() if v]
     provider_status = ", ".join(active_providers) if active_providers else "(none)"
-    st.caption(f"{mode_label} | Providers: {provider_status}")
+
+    # Show region info if multi-region enabled
+    region_info = ""
+    if os.getenv("FEATURE_MULTI_REGION", "false").lower() == "true":
+        try:
+            from src.deploy.regions import active_regions, get_primary_region
+
+            regions = active_regions()
+            primary = get_primary_region()
+            region_info = f" | Region: {primary} (active: {', '.join(regions)})"
+        except Exception:
+            pass
+
+    st.caption(f"{mode_label} | Providers: {provider_status}{region_info}")
 
     # Initialize session state
     if "cfg" not in st.session_state:
         st.session_state["cfg"] = load_config(None)
+    if "active_tab" not in st.session_state:
+        st.session_state.active_tab = "Home"
+    if "user_id" not in st.session_state:
+        st.session_state.user_id = os.environ.get("USER_ID", "demo-user")
+    if "tenant_id" not in st.session_state:
+        st.session_state.tenant_id = os.environ.get("TENANT_ID", "default")
 
     # Create tabs
-    tabs = st.tabs(["▶️ Run", "📊 History", "⚙️ Config", "📦 Batch"])
+    tabs = st.tabs(["🏠 Home", "▶️ Run", "📊 History", "⚙️ Config", "📦 Batch", "💬 Chat"])
+
+    # ========== HOME TAB ==========
+    with tabs[0]:
+        render_home_tab()
 
     # ========== CONFIG TAB ==========
-    with tabs[2]:
+    with tabs[3]:
         st.subheader("⚙️ Configuration")
 
         cfg_path = st.text_input("YAML config path", value=str(Path("runs/ui/config.yaml")))
@@ -357,7 +392,7 @@ def main():
         st.session_state["cfg"] = cfg
 
     # ========== RUN TAB ==========
-    with tabs[0]:
+    with tabs[1]:
         st.subheader("▶️ Run Workflow")
 
         with st.sidebar:
@@ -532,7 +567,7 @@ def main():
             )
 
     # ========== HISTORY TAB ==========
-    with tabs[1]:
+    with tabs[2]:
         st.subheader("📊 Run History")
 
         # Load all run artifacts
@@ -615,9 +650,13 @@ def main():
                 st.warning("Please select two different runs to compare")
 
     # ========== BATCH TAB ==========
-    with tabs[3]:
+    with tabs[4]:
         cfg_for_batch = st.session_state.get("cfg", {})
         render_batch_tab(cfg_for_batch)
+
+    # ========== CHAT TAB ==========
+    with tabs[5]:
+        render_chat_tab(st.session_state.get("cfg", {}), REAL_MODE)
 
 
 if __name__ == "__main__":

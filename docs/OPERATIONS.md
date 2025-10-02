@@ -751,6 +751,20 @@ git push origin v1.1.0
 - Artifact retention for 30 days
 - Detailed build summaries
 
+### CI Artifacts
+
+The CI workflow (`.github/workflows/ci.yml`) automatically uploads sprint logs and test artifacts for review:
+
+- **Artifact name:** `sprint-logs-and-artifacts-py{version}`
+- **Contents:**
+  - All sprint completion logs (`*-COMPLETE.md`)
+  - Audit reports
+  - Test run metadata (from `runs/` directory)
+- **Retention:** 90 days (GitHub default)
+- **Access:** Download from Actions tab → Workflow run → Artifacts section
+
+This makes it easy to review sprint progress and test results without cloning the repository.
+
 ### Installing from Wheel
 
 Install the packaged distribution:

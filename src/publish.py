@@ -191,3 +191,102 @@ def format_publish_metadata(status: str, provider: str, judgment: Judgment, draf
     metadata.append(f"Providers: {', '.join(provider_list)}")
 
     return "\n".join(metadata)
+
+
+def create_pending_approval(
+    judgment: Judgment,
+    drafts: list[Draft],
+    allowed: list[str],
+    enable_redaction: bool = True,
+    redaction_rules: Optional[str] = None,
+) -> tuple[str, str, str, str, dict[str, Any]]:
+    """
+    Create a pending approval result that requires human review.
+
+    Args:
+        judgment: Judge's ranking and decision
+        drafts: Original list of drafts
+        allowed: List of allowed provider names
+        enable_redaction: Whether to apply redaction
+        redaction_rules: Optional path to custom redaction rules
+
+    Returns:
+        Tuple of (status, provider, text, reason, redaction_metadata) where status is "pending_approval"
+    """
+    if not judgment.ranked:
+        return ("none", "", "", "No ranked drafts available", {"redacted": False, "events": []})
+
+    # Get the top-ranked draft for preview
+    top_draft = judgment.ranked[0]
+
+    # Validate content
+    is_valid, reason = validate_draft_content(top_draft.answer, top_draft.safety_flags)
+
+    if not is_valid:
+        return ("none", "", "", f"Top draft failed validation: {reason}", {"redacted": False, "events": []})
+
+    # Apply redaction for preview
+    final_text = top_draft.answer
+    redaction_metadata = {"redacted": False, "events": []}
+
+    if enable_redaction:
+        redacted_text, redaction_events = apply_redactions(
+            top_draft.answer, strategy="label", rules_path=redaction_rules
+        )
+
+        if redaction_events:
+            final_text = redacted_text
+            redaction_metadata = {
+                "redacted": True,
+                "events": [{"type": e.type, "count": e.count, "rule_name": e.rule_name} for e in redaction_events],
+            }
+
+    # Return pending approval status
+    in_allowed = "Yes" if top_draft.provider in allowed else "No"
+    reason = f"Awaiting approval | Provider: {top_draft.provider} | In allowed list: {in_allowed}"
+
+    return ("pending_approval", top_draft.provider, final_text, reason, redaction_metadata)
+
+
+def approve_pending_result(
+    pending_status: str, pending_provider: str, pending_text: str, allowed: list[str]
+) -> tuple[str, str, str, str]:
+    """
+    Approve a pending result and finalize publishing.
+
+    Args:
+        pending_status: Current status (should be "pending_approval")
+        pending_provider: Provider of pending draft
+        pending_text: Text of pending draft
+        allowed: List of allowed providers
+
+    Returns:
+        Tuple of (status, provider, text, reason)
+    """
+    if pending_status != "pending_approval":
+        return (pending_status, pending_provider, pending_text, "Cannot approve non-pending result")
+
+    # Approve: finalize as published
+    return ("published", pending_provider, pending_text, "")
+
+
+def reject_pending_result(
+    pending_status: str, pending_provider: str, pending_text: str, rejection_reason: str
+) -> tuple[str, str, str, str]:
+    """
+    Reject a pending result.
+
+    Args:
+        pending_status: Current status (should be "pending_approval")
+        pending_provider: Provider of pending draft
+        pending_text: Text of pending draft
+        rejection_reason: Reason for rejection
+
+    Returns:
+        Tuple of (status, provider, text, reason)
+    """
+    if pending_status != "pending_approval":
+        return (pending_status, pending_provider, pending_text, "Cannot reject non-pending result")
+
+    # Reject: mark as advisory with rejection reason
+    return ("advisory_only", pending_provider, pending_text, f"Rejected by reviewer: {rejection_reason}")

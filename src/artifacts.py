@@ -1,6 +1,7 @@
 """Run artifacts system for JSON serialization and loading."""
 
 import json
+import os
 import subprocess
 import sys
 import time
@@ -18,6 +19,14 @@ except ImportError:
     JSONSCHEMA_AVAILABLE = False
 
 from .schemas import Draft, Judgment
+
+# Import storage backend (optional, falls back to local)
+try:
+    from .storage import get_storage_backend, save_artifact_content
+
+    STORAGE_AVAILABLE = True
+except ImportError:
+    STORAGE_AVAILABLE = False
 
 
 def get_git_sha() -> str:
@@ -253,19 +262,26 @@ def create_run_artifact(
     return artifact
 
 
-def save_run_artifact(artifact: dict[str, Any], runs_dir: str = "runs") -> str:
+def save_run_artifact(artifact: dict[str, Any], runs_dir: Optional[str] = None) -> str:
     """
     Save run artifact to JSON file with validation.
 
+    Supports local, S3, and GCS storage backends via RUNS_DIR configuration.
+
     Args:
         artifact: Run artifact dictionary
-        runs_dir: Directory to save artifacts (default: "runs")
+        runs_dir: Storage location override (default: uses RUNS_DIR env var or "runs")
+                 Examples: "runs", "s3://bucket/prefix", "gs://bucket/prefix"
 
     Returns:
-        Path to saved file
+        Path/URI to saved file
+
+    Environment Variables:
+        RUNS_DIR: Storage location (local path, s3://, or gs://)
     """
-    runs_path = Path(runs_dir)
-    runs_path.mkdir(exist_ok=True)
+    # Use env var if not specified
+    if runs_dir is None:
+        runs_dir = os.getenv("RUNS_DIR", "runs")
 
     # Validate artifact against schema
     if not validate_artifact(artifact):
@@ -274,11 +290,25 @@ def save_run_artifact(artifact: dict[str, Any], runs_dir: str = "runs") -> str:
     # Create filename from timestamp
     timestamp = datetime.now().strftime("%Y.%m.%d-%H%M")
     filename = f"{timestamp}.json"
+
+    # Serialize to JSON string
+    content = ujson.dumps(artifact, indent=2, escape_forward_slashes=False)
+
+    # Use cloud storage if available and configured
+    if STORAGE_AVAILABLE and (runs_dir.startswith("s3://") or runs_dir.startswith("gs://")):
+        try:
+            return save_artifact_content(content, filename, runs_dir)
+        except Exception as e:
+            print(f"Warning: Cloud storage failed ({e}), falling back to local")
+            runs_dir = "runs"
+
+    # Fallback to local storage
+    runs_path = Path(runs_dir)
+    runs_path.mkdir(exist_ok=True)
     file_path = runs_path / filename
 
-    # Save with ujson for performance
     with open(file_path, "w", encoding="utf-8") as f:
-        ujson.dump(artifact, f, indent=2, escape_forward_slashes=False)
+        f.write(content)
 
     return str(file_path)
 

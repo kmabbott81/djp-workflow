@@ -22,7 +22,11 @@ def load_runs(path: str = "runs") -> pd.DataFrame:
     if not runs_path.exists():
         return pd.DataFrame()
 
+    # Search in both main runs/ and runs/ui/templates/ for template artifacts
     artifacts = list(runs_path.glob("*.json"))
+    template_artifacts = list(runs_path.glob("ui/templates/*.json"))
+    artifacts.extend(template_artifacts)
+
     if not artifacts:
         return pd.DataFrame()
 
@@ -42,15 +46,36 @@ def load_runs(path: str = "runs") -> pd.DataFrame:
             provenance = artifact.get("provenance", {})
             grounding = artifact.get("grounding", {})
 
+            # Extract template metadata (Sprint 3)
+            template_meta = artifact.get("template", {})
+            template_name = template_meta.get("name", "")
+            template_version = template_meta.get("version", "")
+            template_key = template_meta.get("key", "")
+
+            # Extract result for template artifacts
+            result = artifact.get("result", {})
+
             # Calculate token totals
             model_usage = provenance.get("model_usage", {})
             total_tokens_in = sum(usage.get("tokens_in", 0) for usage in model_usage.values())
             total_tokens_out = sum(usage.get("tokens_out", 0) for usage in model_usage.values())
             total_tokens = total_tokens_in + total_tokens_out
 
+            # For template artifacts, also check result.usage
+            if result and "usage" in result:
+                for usage_row in result.get("usage", []):
+                    total_tokens_in += usage_row.get("prompt_tokens", 0)
+                    total_tokens_out += usage_row.get("completion_tokens", 0)
+                total_tokens = total_tokens_in + total_tokens_out
+
             # Calculate estimated cost
             estimated_costs = provenance.get("estimated_costs", {})
             total_cost = sum(estimated_costs.values())
+
+            # For template artifacts, check cost_projection
+            cost_projection = artifact.get("cost_projection", {})
+            if cost_projection and not total_cost:
+                total_cost = cost_projection.get("cost_usd", 0.0)
 
             # Check citations compliance
             citations_required = parameters.get("require_citations", 0)
@@ -63,11 +88,15 @@ def load_runs(path: str = "runs") -> pd.DataFrame:
 
             # Determine advisory reason
             advisory_reason = ""
-            status = publish.get("status", "none")
+            # For template artifacts, check result.status first
+            status = result.get("status") if result else None
+            if not status:
+                status = publish.get("status", "none")
+
             if status == "advisory_only":
-                advisory_reason = publish.get("reason", "not_from_allowed_provider")
+                advisory_reason = result.get("reason") if result else publish.get("reason", "not_from_allowed_provider")
             elif status == "none":
-                advisory_reason = publish.get("reason", "no_valid_content")
+                advisory_reason = result.get("reason") if result else publish.get("reason", "no_valid_content")
 
             # Grounding metrics
             grounded = grounding.get("enabled", False)
@@ -79,17 +108,27 @@ def load_runs(path: str = "runs") -> pd.DataFrame:
             redaction_events = publish.get("redaction_events", [])
             redaction_count = sum(event.get("count", 0) for event in redaction_events)
             redaction_types = (
-                ",".join(sorted(set(event.get("type", "") for event in redaction_events))) if redaction_events else ""
+                ",".join(sorted({event.get("type", "") for event in redaction_events})) if redaction_events else ""
             )
+
+            # Template timestamp handling
+            artifact_timestamp = metadata.get("timestamp", "")
+            if not artifact_timestamp and provenance:
+                # Template artifacts use provenance.timestamp (unix timestamp)
+                prov_ts = provenance.get("timestamp", 0)
+                if prov_ts:
+                    from datetime import datetime
+
+                    artifact_timestamp = datetime.fromtimestamp(prov_ts).isoformat()
 
             row = {
                 "artifact_file": artifact_file.name,
-                "timestamp": pd.to_datetime(metadata.get("timestamp", "")),
+                "timestamp": pd.to_datetime(artifact_timestamp) if artifact_timestamp else pd.NaT,
                 "task": metadata.get("task", ""),
                 "trace_name": metadata.get("trace_name", ""),
                 "preset_name": parameters.get("preset_name", "manual"),
                 "status": status,
-                "provider": publish.get("provider", ""),
+                "provider": result.get("provider") if result else publish.get("provider", ""),
                 "winner_provider": judge.get("winner_provider", ""),
                 "tokens_in": total_tokens_in,
                 "tokens_out": total_tokens_out,
@@ -112,6 +151,10 @@ def load_runs(path: str = "runs") -> pd.DataFrame:
                 "fastpath": parameters.get("fastpath", False),
                 "text_length": publish.get("text_length", 0),
                 "schema_version": artifact.get("schema_version", "unknown"),
+                # Template fields (Sprint 3)
+                "template_name": template_name,
+                "template_version": template_version,
+                "template_key": template_key,
             }
 
             rows.append(row)
@@ -261,6 +304,62 @@ def filter_runs_by_provider(df: pd.DataFrame, provider: str) -> pd.DataFrame:
     return df[df["provider"] == provider]
 
 
+def filter_runs_by_template(df: pd.DataFrame, template_name: str) -> pd.DataFrame:
+    """
+    Filter runs by template name.
+
+    Args:
+        df: DataFrame from load_runs()
+        template_name: Template name to filter by
+
+    Returns:
+        Filtered DataFrame
+    """
+    if df.empty:
+        return df
+
+    return df[df["template_name"] == template_name]
+
+
+def summarize_template_kpis(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calculate KPIs grouped by template.
+
+    Args:
+        df: DataFrame from load_runs()
+
+    Returns:
+        DataFrame with per-template KPIs
+    """
+    if df.empty:
+        return pd.DataFrame()
+
+    # Filter to only template runs
+    template_df = df[df["template_name"] != ""]
+
+    if template_df.empty:
+        return pd.DataFrame()
+
+    # Group by template and calculate KPIs
+    grouped = (
+        template_df.groupby(["template_name", "template_version"])
+        .agg(
+            total_runs=("artifact_file", "count"),
+            published_runs=("status", lambda x: (x == "published").sum()),
+            advisory_runs=("status", lambda x: (x == "advisory_only").sum()),
+            avg_cost=("est_cost", "mean"),
+            avg_tokens=("total_tokens", "mean"),
+            total_cost=("est_cost", "sum"),
+        )
+        .reset_index()
+    )
+
+    # Calculate success rate
+    grouped["success_rate"] = grouped["published_runs"] / grouped["total_runs"]
+
+    return grouped.sort_values("total_runs", ascending=False)
+
+
 def export_metrics(df: pd.DataFrame, path: str = "metrics.csv") -> None:
     """
     Export metrics DataFrame to CSV file.
@@ -302,6 +401,9 @@ def export_metrics(df: pd.DataFrame, path: str = "metrics.csv") -> None:
                 "fastpath",
                 "text_length",
                 "schema_version",
+                "template_name",
+                "template_version",
+                "template_key",
             ]
         )
         empty_df.to_csv(path, index=False)
