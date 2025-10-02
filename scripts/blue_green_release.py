@@ -53,7 +53,7 @@ def check_region_ready(region: str, port: int = 8086, timeout_s: int = 5) -> boo
         return response.status == 200
 
     except Exception as e:
-        print(f"❌ Region {region} readiness check failed: {e}", file=sys.stderr)
+        print(f"ERROR: Region {region} readiness check failed: {e}", file=sys.stderr)
         return False
 
 
@@ -69,15 +69,15 @@ def smoke_test_regions(regions: list[str], port: int, timeout_s: int) -> bool:
     Returns:
         True if all regions ready, False otherwise
     """
-    print(f"\n🔍 Smoke testing {len(regions)} regions...")
+    print(f"\nSmoke testing {len(regions)} regions...")
 
     all_ready = True
     for region in regions:
         print(f"  • Checking {region}...", end=" ")
         if check_region_ready(region, port, timeout_s):
-            print("✅ Ready")
+            print("[OK] Ready")
         else:
-            print("❌ Not ready")
+            print("[FAIL] Not ready")
             all_ready = False
 
     return all_ready
@@ -105,7 +105,7 @@ def execute_canary_sequence(
     Returns:
         True if successful, False if aborted
     """
-    print(f"\n🚀 Starting canary sequence: {sequence}")
+    print(f"\nStarting canary sequence: {sequence}")
 
     # Start at first weight
     first_weight = sequence[0]
@@ -119,7 +119,7 @@ def execute_canary_sequence(
     # Check regions
     if not smoke_test_regions(regions, port, timeout_s):
         if abort_on_err:
-            print("\n❌ Smoke test failed at initial canary weight", file=sys.stderr)
+            print("\nERROR: Smoke test failed at initial canary weight", file=sys.stderr)
             return False
 
     # Progress through remaining weights
@@ -134,10 +134,10 @@ def execute_canary_sequence(
         # Check regions
         if not smoke_test_regions(regions, port, timeout_s):
             if abort_on_err:
-                print(f"\n❌ Smoke test failed at {weight}% canary weight", file=sys.stderr)
+                print(f"\nERROR: Smoke test failed at {weight}% canary weight", file=sys.stderr)
                 return False
             else:
-                print(f"⚠️  Warning: Some regions not ready at {weight}%, continuing...")
+                print(f"WARNING: Some regions not ready at {weight}%, continuing...")
 
     return True
 
@@ -171,20 +171,20 @@ def main():
     try:
         canary_seq = [int(w.strip()) for w in args.canary_seq.split(",")]
     except ValueError:
-        print(f"❌ Invalid canary sequence: {args.canary_seq}", file=sys.stderr)
+        print(f"ERROR: Invalid canary sequence: {args.canary_seq}", file=sys.stderr)
         sys.exit(1)
 
     # Validate sequence
     if not all(0 <= w <= 100 for w in canary_seq):
-        print(f"❌ Canary weights must be 0-100: {canary_seq}", file=sys.stderr)
+        print(f"ERROR: Canary weights must be 0-100: {canary_seq}", file=sys.stderr)
         sys.exit(1)
 
     if canary_seq != sorted(canary_seq):
-        print(f"❌ Canary sequence must be ascending: {canary_seq}", file=sys.stderr)
+        print(f"ERROR: Canary sequence must be ascending: {canary_seq}", file=sys.stderr)
         sys.exit(1)
 
     print("=" * 60)
-    print("🔵🟢 Blue/Green Deployment")
+    print("Blue/Green Deployment")
     print("=" * 60)
     print(f"Blue (current):  {args.image_blue}")
     print(f"Green (new):     {args.image_green}")
@@ -195,34 +195,34 @@ def main():
     print("=" * 60)
 
     if args.dry_run:
-        print("\n🔍 DRY RUN - No actual deployment")
-        print("✅ Validation passed")
+        print("\nDRY RUN - No actual deployment")
+        print("Validation passed")
         sys.exit(0)
 
     # Initialize traffic manager
     try:
         manager = TrafficManager()
     except PermissionError as e:
-        print(f"\n❌ {e}", file=sys.stderr)
+        print(f"\nERROR: {e}", file=sys.stderr)
         sys.exit(1)
 
     # Provision green deployment
-    print("\n📦 Provisioning green deployment...")
+    print("\nProvisioning green deployment...")
     try:
         manager.provision_green(args.image_green)
-        print(f"✅ Green provisioned: {args.image_green}")
+        print(f"[OK] Green provisioned: {args.image_green}")
     except DeploymentError as e:
-        print(f"\n❌ Failed to provision green: {e}", file=sys.stderr)
+        print(f"\nERROR: Failed to provision green: {e}", file=sys.stderr)
         sys.exit(1)
 
     # Smoke test regions
-    print("\n🔍 Performing initial smoke test...")
+    print("\nPerforming initial smoke test...")
     if not smoke_test_regions(args.regions, args.health_port, args.timeout_s):
         if args.abort_on_err:
-            print("\n❌ Initial smoke test failed, aborting", file=sys.stderr)
+            print("\nERROR: Initial smoke test failed, aborting", file=sys.stderr)
             sys.exit(1)
         else:
-            print("⚠️  Warning: Some regions not ready, continuing...")
+            print("WARNING: Some regions not ready, continuing...")
 
     # Execute canary sequence
     success = execute_canary_sequence(
@@ -230,25 +230,25 @@ def main():
     )
 
     if not success:
-        print("\n❌ Canary deployment failed, initiating rollback...", file=sys.stderr)
+        print("\nERROR: Canary deployment failed, initiating rollback...", file=sys.stderr)
         try:
             manager.rollback_to_blue("Canary smoke test failure")
-            print("✅ Rolled back to blue")
+            print("[OK] Rolled back to blue")
         except DeploymentError as e:
-            print(f"❌ Rollback failed: {e}", file=sys.stderr)
+            print(f"ERROR: Rollback failed: {e}", file=sys.stderr)
         sys.exit(1)
 
     # Promote green to live
-    print("\n🎉 Canary successful, promoting green to live...")
+    print("\nCanary successful, promoting green to live...")
     try:
         manager.promote_green()
-        print(f"✅ Green promoted: {args.image_green} is now live")
+        print(f"[OK] Green promoted: {args.image_green} is now live")
     except DeploymentError as e:
-        print(f"\n❌ Failed to promote green: {e}", file=sys.stderr)
+        print(f"\nERROR: Failed to promote green: {e}", file=sys.stderr)
         sys.exit(1)
 
     print("\n" + "=" * 60)
-    print("✅ Deployment completed successfully")
+    print("[OK] Deployment completed successfully")
     print("=" * 60)
 
 
