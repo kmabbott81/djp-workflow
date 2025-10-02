@@ -567,6 +567,455 @@ The CSV includes:
 - Quality metrics (status, provider, citations)
 - Failure analysis (advisory reasons, safety flags)
 
+## Autoscaling Operations
+
+### Overview
+
+Sprint 24 introduces dynamic autoscaling for the worker pool to optimize throughput, latency, and cost. The autoscaler analyzes queue depth, P95 latency, and worker utilization to make scaling decisions.
+
+For comprehensive configuration and tuning details, see `docs/AUTOSCALING.md`.
+
+### Monitoring Scaling Behavior
+
+#### Key Metrics
+
+Track these metrics to understand autoscaling behavior:
+
+1. **Worker Count**
+   ```python
+   from src.scale.worker_pool import WorkerPool
+
+   pool = WorkerPool.get_instance()
+   stats = pool.get_stats()
+
+   print(f"Total workers: {stats.total_workers}")
+   print(f"Active workers: {stats.active_workers}")
+   print(f"Idle workers: {stats.idle_workers}")
+   ```
+
+2. **Queue Metrics**
+   ```python
+   print(f"Queue depth: {stats.queue_depth}")
+   print(f"Queue wait time: {calculate_avg_wait_time()}ms")
+   ```
+
+3. **Latency Metrics**
+   ```python
+   print(f"P95 latency: {get_p95_latency()}ms")
+   print(f"Target: {os.getenv('TARGET_P95_LATENCY_MS', '2000')}ms")
+   ```
+
+4. **Scaling Events**
+   ```bash
+   # Monitor scaling decisions in logs
+   tail -f logs/autoscaler.log | grep "Scale decision"
+   ```
+
+#### Observability Dashboard
+
+Add autoscaling metrics to your monitoring dashboard:
+
+```python
+# Prometheus metrics example
+worker_count_gauge.set(stats.total_workers)
+queue_depth_gauge.set(stats.queue_depth)
+p95_latency_gauge.set(calculate_p95_latency())
+scale_up_counter.inc()  # When scaling up
+scale_down_counter.inc()  # When scaling down
+```
+
+### Common Scaling Incidents
+
+#### Incident: Worker Pool Saturated
+
+**Symptoms:**
+- Workers stuck at MAX_WORKERS
+- Queue depth growing
+- P95 latency exceeding target
+
+**Diagnosis:**
+```bash
+# Check current state
+python -c "
+from src.scale.worker_pool import WorkerPool
+pool = WorkerPool.get_instance()
+stats = pool.get_stats()
+print(f'Workers: {stats.total_workers}')
+print(f'Queue: {stats.queue_depth}')
+print(f'Max: {os.getenv(\"MAX_WORKERS\", \"12\")}')
+"
+```
+
+**Resolution:**
+```bash
+# Short-term: Increase MAX_WORKERS
+export MAX_WORKERS=24
+# Restart service to apply
+
+# Long-term: Optimize job performance or add more hosts
+```
+
+#### Incident: Queue Not Draining
+
+**Symptoms:**
+- Queue depth growing despite available workers
+- Jobs failing repeatedly
+- High failure rate in stats
+
+**Diagnosis:**
+```bash
+# Check failure rate
+python -c "
+from src.scale.worker_pool import WorkerPool
+pool = WorkerPool.get_instance()
+stats = pool.get_stats()
+total = stats.jobs_completed + stats.jobs_failed
+failure_rate = stats.jobs_failed / total if total > 0 else 0
+print(f'Failure rate: {failure_rate:.2%}')
+print(f'Failed: {stats.jobs_failed}')
+"
+```
+
+**Resolution:**
+```bash
+# 1. Check retry configuration
+export MAX_RETRIES=2  # Reduce if jobs failing consistently
+
+# 2. Check downstream service health
+curl -I https://downstream-api.example.com/health
+
+# 3. Review job logs for errors
+tail -f logs/worker.log | grep ERROR
+```
+
+#### Incident: Scaling Thrashing
+
+**Symptoms:**
+- Workers rapidly scaling up and down
+- High frequency of scale decisions
+- Unstable worker count
+
+**Diagnosis:**
+```bash
+# Count scale decisions per minute
+grep "Scale decision" logs/autoscaler.log |
+  tail -100 |
+  awk '{print $1, $2}' |
+  uniq -c
+```
+
+**Resolution:**
+```bash
+# Increase cooldown period
+export SCALE_DECISION_INTERVAL_MS=3000
+
+# Widen thresholds
+export TARGET_QUEUE_DEPTH=100
+export TARGET_P95_LATENCY_MS=5000
+
+# Reduce scaling steps
+export SCALE_UP_STEP=1
+export SCALE_DOWN_STEP=1
+```
+
+#### Incident: High Latency Despite Capacity
+
+**Symptoms:**
+- P95 latency high
+- Workers idle
+- Queue shallow
+
+**Diagnosis:**
+```bash
+# Profile job execution time
+python -m cProfile -o profile.stats your_job_script.py
+python -m pstats profile.stats
+
+# Check downstream latency
+curl -w "@curl-format.txt" -o /dev/null -s https://api.example.com/endpoint
+```
+
+**Resolution:**
+- Optimize slow job functions
+- Add database indexes
+- Cache expensive operations
+- Check downstream service latency
+- Increase host resources (CPU, memory)
+
+#### Incident: Workers Not Scaling Down
+
+**Symptoms:**
+- Load drops but workers remain at peak
+- High idle worker percentage
+- Unnecessary cost
+
+**Diagnosis:**
+```bash
+# Check scale-down blockers
+python -c "
+import os
+print(f'Current workers: {get_current_workers()}')
+print(f'Min workers: {os.getenv(\"MIN_WORKERS\", \"1\")}')
+print(f'Utilization: {get_utilization():.1%}')
+print(f'Queue depth: {get_queue_depth()}')
+print(f'Queue threshold (30%): {int(os.getenv(\"TARGET_QUEUE_DEPTH\", \"50\")) * 0.3}')
+"
+```
+
+**Resolution:**
+```bash
+# Lower minimum if safe
+export MIN_WORKERS=1
+
+# Make scale-down more aggressive
+export SCALE_DOWN_STEP=2
+
+# Ensure scale-down conditions can be met
+# Queue < 30% of target, latency < 50% of target, utilization < 70%
+```
+
+### Tuning for Cost vs Latency
+
+#### Cost-Optimized Configuration
+
+Minimize costs by scaling down aggressively:
+
+```bash
+export MIN_WORKERS=1                    # Scale to zero when idle
+export MAX_WORKERS=12                   # Cap burst capacity
+export TARGET_QUEUE_DEPTH=100           # Allow deeper queue
+export TARGET_P95_LATENCY_MS=5000       # Relaxed latency
+export SCALE_DOWN_STEP=2                # Fast scale-down
+export SCALE_DECISION_INTERVAL_MS=3000  # Slower reactions
+```
+
+**Trade-offs:**
+- Lower cost during idle periods
+- Higher latency during ramp-up
+- May miss latency SLAs during spikes
+
+**Best for:**
+- Background batch jobs
+- Development/testing environments
+- Non-critical workloads
+
+#### Latency-Optimized Configuration
+
+Minimize latency with warm workers:
+
+```bash
+export MIN_WORKERS=5                    # Always warm
+export MAX_WORKERS=30                   # High burst capacity
+export TARGET_QUEUE_DEPTH=10            # Minimal queuing
+export TARGET_P95_LATENCY_MS=500        # Strict latency
+export SCALE_UP_STEP=5                  # Fast scale-up
+export SCALE_DOWN_STEP=1                # Conservative scale-down
+export SCALE_DECISION_INTERVAL_MS=1000  # Quick reactions
+```
+
+**Trade-offs:**
+- Higher cost (idle workers during off-peak)
+- Low latency even during spikes
+- Meets strict SLAs
+
+**Best for:**
+- User-facing interactive features
+- Real-time approvals
+- Chat interfaces
+
+#### Balanced Configuration (Default)
+
+Balance cost and latency:
+
+```bash
+export MIN_WORKERS=2                    # Small warm pool
+export MAX_WORKERS=12                   # Moderate ceiling
+export TARGET_QUEUE_DEPTH=50            # Moderate queue
+export TARGET_P95_LATENCY_MS=2000       # Reasonable latency
+export SCALE_UP_STEP=2                  # Standard scale-up
+export SCALE_DOWN_STEP=1                # Conservative scale-down
+```
+
+**Trade-offs:**
+- Reasonable cost
+- Acceptable latency
+- Suitable for mixed workloads
+
+**Best for:**
+- Production environments
+- Mixed realtime + batch workloads
+- General purpose
+
+### Load Testing Guidance
+
+#### Preparation
+
+1. **Define load profile**
+   ```python
+   # Example: Ramp up from 0 to 100 jobs/sec over 5 minutes
+   load_profile = {
+       "initial_rate": 0,
+       "target_rate": 100,
+       "ramp_duration": 300,  # seconds
+       "sustain_duration": 600,  # 10 minutes at peak
+   }
+   ```
+
+2. **Configure monitoring**
+   ```bash
+   # Enable detailed logging
+   export LOG_LEVEL=DEBUG
+   export AUTOSCALER_LOG_LEVEL=INFO
+
+   # Set up metrics collection
+   export METRICS_EXPORT=true
+   export METRICS_INTERVAL=10  # seconds
+   ```
+
+3. **Set test environment variables**
+   ```bash
+   # Use realistic production settings
+   export MIN_WORKERS=2
+   export MAX_WORKERS=20
+   export TARGET_P95_LATENCY_MS=2000
+   export TARGET_QUEUE_DEPTH=50
+   ```
+
+#### Running Load Tests
+
+```bash
+# 1. Start monitoring
+python scripts/monitor_autoscaler.py &
+MONITOR_PID=$!
+
+# 2. Run load test
+python scripts/load_test.py \
+  --profile ramp_and_sustain \
+  --duration 900 \
+  --max-rate 100
+
+# 3. Collect metrics
+python scripts/export_metrics.py --output load_test_results.csv
+
+# 4. Stop monitoring
+kill $MONITOR_PID
+```
+
+#### Analyzing Results
+
+Key metrics to review:
+
+1. **Scale-up speed**
+   ```bash
+   # Time to reach target capacity
+   grep "Scale decision: up" logs/autoscaler.log |
+     head -1 |
+     awk '{print $1, $2}'
+   ```
+
+2. **Latency under load**
+   ```python
+   import pandas as pd
+   df = pd.read_csv("load_test_results.csv")
+   print(f"P95 latency: {df['latency_ms'].quantile(0.95)}ms")
+   print(f"Max latency: {df['latency_ms'].max()}ms")
+   ```
+
+3. **Queue behavior**
+   ```python
+   print(f"Max queue depth: {df['queue_depth'].max()}")
+   print(f"Avg queue depth: {df['queue_depth'].mean()}")
+   ```
+
+4. **Cost efficiency**
+   ```python
+   worker_hours = df['worker_count'].sum() / 3600  # Convert to hours
+   cost_per_job = (worker_hours * WORKER_COST_PER_HOUR) / df['jobs_completed'].sum()
+   print(f"Cost per job: ${cost_per_job:.4f}")
+   ```
+
+#### Load Test Scenarios
+
+**Scenario 1: Sustained High Load**
+```python
+# Test MAX_WORKERS capacity
+load_test(rate=150, duration=600)  # 10 minutes at 150 jobs/sec
+# Verify: Workers reach MAX_WORKERS, queue stable, latency acceptable
+```
+
+**Scenario 2: Burst Traffic**
+```python
+# Test scale-up speed
+load_test(spike_rate=200, spike_duration=30)  # 30-second spike
+# Verify: Scale-up within SCALE_DECISION_INTERVAL_MS, queue drains quickly
+```
+
+**Scenario 3: Gradual Ramp**
+```python
+# Test scaling stability
+load_test(ramp_from=0, ramp_to=100, ramp_duration=600)
+# Verify: Smooth scaling, no thrashing, latency within target
+```
+
+**Scenario 4: Load Drop**
+```python
+# Test scale-down behavior
+load_test(high_load_duration=300, idle_duration=300)
+# Verify: Scale-down to MIN_WORKERS, no premature scale-down
+```
+
+### Autoscaling Runbook
+
+#### Daily Checks
+
+```bash
+# 1. Check worker pool health
+python scripts/check_worker_health.py
+
+# 2. Review scaling events
+grep "Scale decision" logs/autoscaler-$(date +%Y-%m-%d).log | tail -20
+
+# 3. Check for alerts
+python scripts/check_autoscaler_alerts.py --since 24h
+```
+
+#### Weekly Review
+
+```bash
+# 1. Export metrics
+python scripts/export_metrics.py --since 7d --output weekly_metrics.csv
+
+# 2. Analyze scaling efficiency
+python scripts/analyze_autoscaling.py --input weekly_metrics.csv
+
+# 3. Review cost trends
+python scripts/cost_report.py --since 7d
+
+# 4. Tune configuration if needed
+# Edit based on analysis
+```
+
+#### Configuration Changes
+
+When updating autoscaling parameters:
+
+```bash
+# 1. Document current configuration
+python scripts/dump_autoscaler_config.py > config_backup.json
+
+# 2. Update environment variables
+export TARGET_QUEUE_DEPTH=100  # Example change
+
+# 3. Restart service
+systemctl restart worker-pool
+
+# 4. Monitor for 1 hour
+watch -n 30 'python scripts/check_worker_health.py'
+
+# 5. Rollback if issues
+# source config_backup.sh
+```
+
 ## Best Practices
 
 1. **Always run CI checks** before committing code changes
@@ -579,6 +1028,8 @@ The CSV includes:
 8. **Monitor dashboards** regularly for performance insights
 9. **Configure alerts** for proactive issue detection
 10. **Export metrics** for long-term analysis and reporting
+11. **Load test autoscaling** before production deployment
+12. **Tune autoscaler gradually** based on observed metrics
 
 ## Release & Packaging
 

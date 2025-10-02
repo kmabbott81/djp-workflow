@@ -301,6 +301,520 @@ GitHub Actions CI automatically sets:
 
 This guarantees all test runs (local and CI) validate RBAC enforcement consistently.
 
+## Per-Tenant Concurrency & Rate Limiting
+
+Sprint 24 introduces per-tenant concurrency controls and global rate limiting to protect against abuse, ensure fair resource allocation, and maintain system stability.
+
+### Overview
+
+Multi-tenant systems require safeguards to prevent:
+- **Resource monopolization** - One tenant consuming all workers
+- **Denial of service** - Excessive requests overwhelming the system
+- **Cost overruns** - Runaway jobs draining budget
+- **Noisy neighbor** - One tenant degrading performance for others
+
+### Per-Tenant Concurrency Limits
+
+#### Environment Variable
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PER_TENANT_MAX_CONCURRENCY` | `unlimited` | Max concurrent jobs per tenant |
+
+#### Configuration
+
+```bash
+# Limit each tenant to 5 concurrent jobs
+export PER_TENANT_MAX_CONCURRENCY=5
+
+# Unlimited (default)
+export PER_TENANT_MAX_CONCURRENCY=0
+```
+
+#### How It Works
+
+The worker pool tracks active jobs per tenant:
+
+```python
+# Pseudo-code implementation
+active_jobs_by_tenant = {
+    "tenant-abc": 3,  # 3 jobs in-flight
+    "tenant-xyz": 5,  # 5 jobs in-flight (at limit)
+}
+
+def submit_job(job):
+    tenant_id = job.tenant_id
+    max_concurrency = int(os.getenv("PER_TENANT_MAX_CONCURRENCY", "0"))
+
+    if max_concurrency > 0:
+        current = active_jobs_by_tenant.get(tenant_id, 0)
+        if current >= max_concurrency:
+            # Reject or queue the job
+            raise ConcurrencyLimitExceeded(
+                f"Tenant {tenant_id} at limit: {current}/{max_concurrency}"
+            )
+
+    # Accept job
+    active_jobs_by_tenant[tenant_id] += 1
+    execute_job(job)
+```
+
+#### Use Cases
+
+**High-concurrency tenant:**
+```bash
+# Premium tier with higher limit
+export PER_TENANT_MAX_CONCURRENCY=20
+```
+
+**Trial/Free tier tenant:**
+```bash
+# Restrict free tier to 2 concurrent jobs
+export PER_TENANT_MAX_CONCURRENCY=2
+```
+
+**Multi-tenancy with fairness:**
+```bash
+# Ensure no tenant monopolizes workers
+# If MAX_WORKERS=12 and 4 tenants, limit each to 3
+export PER_TENANT_MAX_CONCURRENCY=3
+```
+
+#### Enforcement Points
+
+1. **Job submission** (`src/scale/worker_pool.py`)
+   - Check tenant's current concurrency before accepting job
+   - Return 429 Too Many Requests if limit exceeded
+
+2. **Queue routing** (`src/queue_strategy.py`)
+   - Hybrid queue router enforces tenant limits
+   - Tasks from over-limit tenants stay queued
+
+3. **API endpoints** (`src/webapi.py`)
+   - Web API rejects requests if tenant at limit
+   - Returns error with retry-after header
+
+### Global QPS Limits
+
+#### Environment Variable
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `GLOBAL_QPS_LIMIT` | `unlimited` | Global queries per second limit |
+
+#### Configuration
+
+```bash
+# Limit system to 100 requests/second
+export GLOBAL_QPS_LIMIT=100
+
+# Unlimited (default)
+export GLOBAL_QPS_LIMIT=0
+```
+
+#### How It Works
+
+Token bucket algorithm for global rate limiting:
+
+```python
+# Pseudo-code implementation
+class GlobalRateLimiter:
+    def __init__(self, qps_limit):
+        self.qps_limit = qps_limit
+        self.tokens = qps_limit
+        self.last_refill = time.time()
+
+    def allow_request(self):
+        if self.qps_limit == 0:
+            return True  # Unlimited
+
+        # Refill tokens
+        now = time.time()
+        elapsed = now - self.last_refill
+        self.tokens = min(
+            self.qps_limit,
+            self.tokens + (elapsed * self.qps_limit)
+        )
+        self.last_refill = now
+
+        # Check if tokens available
+        if self.tokens >= 1.0:
+            self.tokens -= 1.0
+            return True
+
+        return False  # Rate limited
+```
+
+#### Abuse Prevention
+
+Global QPS limits protect against:
+
+1. **DDoS attacks**
+   ```bash
+   # Limit to reasonable throughput
+   export GLOBAL_QPS_LIMIT=200
+   ```
+
+2. **Accidental loops**
+   ```bash
+   # Prevent runaway scripts
+   export GLOBAL_QPS_LIMIT=50
+   ```
+
+3. **Resource exhaustion**
+   ```bash
+   # Cap total system load
+   export GLOBAL_QPS_LIMIT=100
+   ```
+
+### How Concurrency Limits Protect Against Abuse
+
+#### Scenario 1: Malicious Tenant Flood
+
+**Attack:**
+Tenant submits 1000 jobs simultaneously to monopolize resources.
+
+**Protection:**
+```bash
+export PER_TENANT_MAX_CONCURRENCY=5
+```
+
+**Result:**
+- First 5 jobs accepted and execute
+- Remaining 995 jobs queued or rejected
+- Other tenants unaffected
+
+#### Scenario 2: Accidental Infinite Loop
+
+**Attack:**
+Buggy script submits jobs in tight loop.
+
+**Protection:**
+```bash
+export GLOBAL_QPS_LIMIT=50
+export PER_TENANT_MAX_CONCURRENCY=3
+```
+
+**Result:**
+- Global rate limiter blocks excessive requests (429 errors)
+- Tenant concurrency cap prevents resource drain
+- Alert triggered for investigation
+
+#### Scenario 3: Credential Compromise
+
+**Attack:**
+Stolen API key used to launch expensive workflows.
+
+**Protection:**
+```bash
+export PER_TENANT_MAX_CONCURRENCY=10
+export BUDGET_USD_PER_TENANT=100
+```
+
+**Result:**
+- Concurrency limit caps parallel execution
+- Budget limit stops runaway costs
+- Audit logs show suspicious activity
+
+#### Scenario 4: Multi-Tenant Noisy Neighbor
+
+**Attack:**
+One tenant's heavy load degrades performance for all.
+
+**Protection:**
+```bash
+export PER_TENANT_MAX_CONCURRENCY=3
+export MAX_WORKERS=12  # 4 tenants x 3 = fair distribution
+```
+
+**Result:**
+- Each tenant limited to fair share of workers
+- Performance isolation maintained
+- No single tenant dominates
+
+### Monitoring for Limit Violations
+
+#### Metrics to Track
+
+1. **Concurrency limit hits**
+   ```python
+   # Count how often tenants hit their limit
+   tenant_limit_hits_counter.labels(tenant_id=tenant_id).inc()
+   ```
+
+2. **Queue depth by tenant**
+   ```python
+   # Track queued jobs per tenant
+   tenant_queue_depth_gauge.labels(tenant_id=tenant_id).set(depth)
+   ```
+
+3. **Rate limit rejections**
+   ```python
+   # Count 429 responses
+   rate_limit_rejections_counter.labels(endpoint="/api/run").inc()
+   ```
+
+4. **Concurrency by tenant**
+   ```python
+   # Current in-flight jobs per tenant
+   tenant_concurrency_gauge.labels(tenant_id=tenant_id).set(count)
+   ```
+
+#### Querying Audit Logs
+
+```python
+from src.security.audit import get_audit_logger, AuditResult
+
+logger = get_audit_logger()
+
+# Find tenants hitting concurrency limits
+events = logger.query(
+    result=AuditResult.DENIED,
+    reason_contains="ConcurrencyLimitExceeded",
+    limit=100
+)
+
+for event in events:
+    print(f"Tenant {event.tenant_id} hit limit at {event.timestamp}")
+```
+
+#### Alerting on Violations
+
+**Alert 1: Tenant Repeatedly Hitting Limit**
+```bash
+# Alert if tenant hits limit >100 times in 5 minutes
+SELECT COUNT(*) FROM audit_logs
+WHERE result = 'denied'
+  AND reason LIKE '%ConcurrencyLimitExceeded%'
+  AND timestamp > NOW() - INTERVAL '5 minutes'
+GROUP BY tenant_id
+HAVING COUNT(*) > 100
+```
+
+**Alert 2: Global Rate Limit Saturation**
+```bash
+# Alert if >50% of requests rate-limited
+SELECT
+  (COUNT(*) FILTER (WHERE status = 429)) * 100.0 / COUNT(*) as rate_limit_pct
+FROM api_requests
+WHERE timestamp > NOW() - INTERVAL '1 minute'
+HAVING rate_limit_pct > 50
+```
+
+**Alert 3: Sudden Concurrency Spike**
+```bash
+# Alert if tenant jumps from 0 to max concurrency in <1 minute
+SELECT tenant_id, MAX(concurrency) as peak
+FROM metrics
+WHERE timestamp > NOW() - INTERVAL '1 minute'
+GROUP BY tenant_id
+HAVING peak >= PER_TENANT_MAX_CONCURRENCY
+  AND MIN(concurrency) = 0
+```
+
+### Configuration Matrix
+
+| Tenant Tier | Max Concurrency | QPS Limit | Budget |
+|-------------|-----------------|-----------|--------|
+| **Free** | 2 | 10/min | $1/day |
+| **Basic** | 5 | 50/min | $10/day |
+| **Pro** | 20 | 200/min | $100/day |
+| **Enterprise** | 100 | 1000/min | Custom |
+
+Example configuration for Basic tier:
+
+```bash
+export PER_TENANT_MAX_CONCURRENCY=5
+export QUEUE_RATE_LIMIT=50  # Per minute
+export BUDGET_USD=10
+export BUDGET_WINDOW=86400  # 24 hours
+```
+
+### Integration with Worker Pool
+
+The autoscaler respects per-tenant limits when scaling:
+
+```python
+from src.scale.autoscaler import make_scale_decision, EngineState
+
+# Build state with tenant-aware metrics
+state = EngineState(
+    current_workers=stats.total_workers,
+    queue_depth=stats.queue_depth,
+    p95_latency_ms=get_p95_latency(),
+    in_flight_jobs=stats.active_workers,
+)
+
+decision = make_scale_decision(state)
+
+# Scale up respects tenant distribution
+if decision.direction == ScaleDirection.UP:
+    # Ensure new workers can serve waiting tenants
+    # without violating per-tenant limits
+    pool.scale_to(decision.desired_workers)
+```
+
+### Best Practices
+
+1. **Set Conservative Defaults**
+   ```bash
+   # Start restrictive, relax based on monitoring
+   export PER_TENANT_MAX_CONCURRENCY=3
+   export GLOBAL_QPS_LIMIT=100
+   ```
+
+2. **Monitor Before Enforcing**
+   ```bash
+   # Track metrics for 1 week before enabling limits
+   # Determine appropriate thresholds from P95 usage
+   ```
+
+3. **Gradual Rollout**
+   ```bash
+   # Enable for one tenant tier at a time
+   # Free tier → Basic → Pro → Enterprise
+   ```
+
+4. **Provide Clear Error Messages**
+   ```python
+   # When rejecting due to limits
+   raise ConcurrencyLimitExceeded(
+       f"Tenant {tenant_id} has {current} jobs in-flight. "
+       f"Limit: {max_concurrency}. Please wait for jobs to complete."
+   )
+   ```
+
+5. **Document Limits in API**
+   ```
+   Rate Limits:
+   - Per-tenant concurrency: 5 concurrent jobs
+   - Global rate limit: 100 requests/second
+   - Retry-After header provided on 429 responses
+   ```
+
+6. **Allow Override for Support**
+   ```bash
+   # Temporary override for tenant (audit logged)
+   export TENANT_abc123_MAX_CONCURRENCY=50
+   ```
+
+### Troubleshooting
+
+#### Issue: Legitimate tenant hitting limits
+
+**Symptoms:**
+- Frequent 429 responses
+- Jobs queued for long periods
+- User complaints about slowness
+
+**Resolution:**
+```bash
+# 1. Verify tenant's usage pattern
+python scripts/analyze_tenant_usage.py --tenant-id tenant-abc
+
+# 2. Check if limit is too restrictive
+# Compare to tenant's tier allocation
+
+# 3. Temporarily increase limit
+export PER_TENANT_MAX_CONCURRENCY=10
+
+# 4. Consider tier upgrade if justified
+```
+
+#### Issue: Limits not being enforced
+
+**Symptoms:**
+- Tenant exceeding documented limits
+- No 429 responses in logs
+- Resource monopolization
+
+**Resolution:**
+```bash
+# 1. Verify environment variables set
+echo $PER_TENANT_MAX_CONCURRENCY
+echo $GLOBAL_QPS_LIMIT
+
+# 2. Check enforcement is enabled
+export FEATURE_RATE_LIMITING=true
+
+# 3. Restart services to apply
+systemctl restart worker-pool webapi
+
+# 4. Verify in logs
+tail -f logs/webapi.log | grep "ConcurrencyLimitExceeded"
+```
+
+#### Issue: False positive rate limiting
+
+**Symptoms:**
+- Legitimate requests rejected
+- Rate limit hit during normal usage
+- No actual abuse
+
+**Resolution:**
+```bash
+# 1. Analyze request patterns
+python scripts/analyze_rate_limits.py --since 24h
+
+# 2. Increase limits if too strict
+export GLOBAL_QPS_LIMIT=200
+
+# 3. Consider per-endpoint limits
+export API_RUN_QPS_LIMIT=100
+export API_STATUS_QPS_LIMIT=500
+
+# 4. Implement backoff/retry in clients
+```
+
+### Testing Concurrency Limits
+
+```python
+import pytest
+from src.scale.worker_pool import WorkerPool, Job, ConcurrencyLimitExceeded
+
+def test_per_tenant_concurrency_limit(monkeypatch):
+    """Test that per-tenant concurrency limit is enforced."""
+    monkeypatch.setenv("PER_TENANT_MAX_CONCURRENCY", "3")
+
+    pool = WorkerPool(initial_workers=10)
+    tenant_id = "test-tenant"
+
+    # Submit 3 jobs (should succeed)
+    for i in range(3):
+        job = Job(
+            job_id=f"job-{i}",
+            task=lambda: time.sleep(5),
+            tenant_id=tenant_id
+        )
+        pool.submit_job(job)
+
+    # 4th job should be rejected
+    with pytest.raises(ConcurrencyLimitExceeded):
+        job = Job(
+            job_id="job-4",
+            task=lambda: time.sleep(5),
+            tenant_id=tenant_id
+        )
+        pool.submit_job(job)
+
+def test_global_qps_limit(monkeypatch):
+    """Test that global QPS limit is enforced."""
+    monkeypatch.setenv("GLOBAL_QPS_LIMIT", "10")
+
+    limiter = GlobalRateLimiter(qps_limit=10)
+
+    # First 10 requests in same second should succeed
+    for i in range(10):
+        assert limiter.allow_request() is True
+
+    # 11th request should be rate limited
+    assert limiter.allow_request() is False
+
+    # After 1 second, tokens refilled
+    time.sleep(1.1)
+    assert limiter.allow_request() is True
+```
+
 ## Next Steps
 
 1. Enable RBAC enforcement: `FEATURE_RBAC_ENFORCE=true`
@@ -308,3 +822,6 @@ This guarantees all test runs (local and CI) validate RBAC enforcement consisten
 3. Set up audit log monitoring and alerts
 4. Review and assign roles to existing users
 5. Document tenant onboarding process
+6. Configure per-tenant concurrency limits based on tier
+7. Enable global rate limiting: `GLOBAL_QPS_LIMIT=100`
+8. Set up monitoring for limit violations
