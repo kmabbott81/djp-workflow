@@ -15,7 +15,12 @@ def render_observability_tab():
     """Render observability dashboard with region tiles and cost tracking."""
     st.subheader("📊 Observability")
 
+    # Orchestrator section (Sprint 27C)
+    st.markdown("### 🔀 Orchestrator (DAGs & Schedules)")
+    _render_orchestrator()
+
     # Cost tracking section (always visible)
+    st.markdown("---")
     st.markdown("### 💰 API Cost Tracking")
     _render_cost_tracking()
 
@@ -412,3 +417,160 @@ def _render_deployment_log():
 
     except Exception as e:
         st.error(f"Error loading deployment log: {e}")
+
+
+def _render_orchestrator():
+    """Render orchestrator observability section (Sprint 27C)."""
+    try:
+        import sys
+
+        sys.path.insert(0, str(Path(__file__).parent.parent))
+        from src.orchestrator.analytics import (
+            get_events_path,
+            get_state_path,
+            load_events,
+            per_tenant_load,
+            summarize_dags,
+            summarize_schedules,
+            summarize_tasks,
+        )
+
+        # Load events
+        events_path = get_events_path()
+        state_path = get_state_path()
+
+        events = load_events(events_path, limit=5000)
+        state_events = load_events(state_path, limit=5000)
+
+        if not events and not state_events:
+            st.info(
+                "No orchestrator data yet. Run DAGs with `python scripts/run_dag_min.py` "
+                "or start scheduler with `python -m src.orchestrator.scheduler --serve`"
+            )
+            return
+
+        # Task KPIs (last 24h)
+        st.markdown("#### Task Metrics (Last 24 Hours)")
+
+        task_stats = summarize_tasks(events, window_hours=24)
+        recent = task_stats.get("last_24h", {})
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            st.metric("✅ Tasks OK", recent.get("tasks_ok", 0))
+
+        with col2:
+            st.metric("❌ Tasks Failed", recent.get("tasks_fail", 0))
+
+        with col3:
+            avg_dur = recent.get("avg_duration", 0)
+            st.metric("⏱️ Avg Duration", f"{avg_dur:.2f}s" if avg_dur > 0 else "N/A")
+
+        with col4:
+            error_rate = recent.get("error_rate", 0)
+            st.metric("📊 Error Rate", f"{error_rate * 100:.1f}%")
+
+        # Recent DAG runs
+        st.markdown("#### Recent DAG Runs")
+
+        dag_runs = summarize_dags(events, limit=15)
+
+        if dag_runs:
+            import pandas as pd
+
+            table_data = []
+            for run in dag_runs:
+                status_icon = "✅" if run["status"] == "completed" else "🔄"
+                table_data.append(
+                    {
+                        "Status": f"{status_icon} {run['status']}",
+                        "DAG": run["dag_name"],
+                        "Started": run["start"][:19] if run.get("start") else "N/A",
+                        "Duration": f"{run.get('duration', 0):.1f}s",
+                        "Tasks OK": run.get("tasks_ok", 0),
+                        "Tasks Failed": run.get("tasks_fail", 0),
+                    }
+                )
+
+            df = pd.DataFrame(table_data)
+            st.dataframe(df, use_container_width=True, hide_index=True)
+        else:
+            st.info("No DAG runs recorded yet")
+
+        # Schedules
+        if state_events:
+            st.markdown("#### Schedules")
+
+            schedules = summarize_schedules(state_events)
+
+            if schedules:
+                import pandas as pd
+
+                sched_data = []
+                for sched in schedules:
+                    status_icon = (
+                        "✅"
+                        if sched.get("last_status") == "success"
+                        else "❌"
+                        if sched.get("last_status") == "failed"
+                        else "⏸️"
+                    )
+
+                    sched_data.append(
+                        {
+                            "Schedule ID": sched["schedule_id"],
+                            "Last Run": sched.get("last_run", "Never")[:19] if sched.get("last_run") else "Never",
+                            "Status": f"{status_icon} {sched.get('last_status', 'N/A')}",
+                            "Enqueued": sched.get("enqueued_count", 0),
+                            "Success": sched.get("success_count", 0),
+                            "Failed": sched.get("failed_count", 0),
+                        }
+                    )
+
+                df = pd.DataFrame(sched_data)
+                st.dataframe(df, use_container_width=True, hide_index=True)
+            else:
+                st.info("No schedules tracked yet")
+
+        # Per-tenant load
+        st.markdown("#### Per-Tenant Load (Last 24 Hours)")
+
+        tenant_stats = per_tenant_load(events, window_hours=24)
+
+        if tenant_stats:
+            import pandas as pd
+
+            tenant_data = []
+            for tenant in tenant_stats:
+                tenant_data.append(
+                    {
+                        "Tenant": tenant["tenant"],
+                        "Runs": tenant["runs"],
+                        "Tasks": tenant["tasks"],
+                        "Error Rate": f"{tenant['error_rate'] * 100:.1f}%",
+                        "Avg Latency": f"{tenant['avg_latency']:.2f}s" if tenant["avg_latency"] > 0 else "N/A",
+                    }
+                )
+
+            df = pd.DataFrame(tenant_data)
+            st.dataframe(df, use_container_width=True, hide_index=True)
+        else:
+            st.info("No tenant activity in last 24 hours")
+
+        # Quick links
+        st.markdown("#### Quick Links")
+
+        link_col1, link_col2 = st.columns(2)
+
+        with link_col1:
+            if st.button("📁 Open Logs Folder"):
+                st.info(f"Events: {events_path}\nState: {state_path}")
+
+        with link_col2:
+            if st.button("📖 View Documentation"):
+                st.info("See docs/ORCHESTRATION.md for full guide")
+
+    except Exception as e:
+        st.error(f"Error loading orchestrator data: {e}")
+        st.caption("Make sure orchestrator is initialized and logs are accessible")

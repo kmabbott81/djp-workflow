@@ -206,6 +206,89 @@ tail -f logs/orchestrator_state.jsonl | grep run_finished
 tail -f logs/orchestrator_events.jsonl | grep task_fail
 ```
 
+## Observability (Sprint 27C)
+
+Dashboard panel showing DAG runs, schedules, and per-tenant metrics.
+
+### Data Sources
+
+**Orchestrator Events** (`logs/orchestrator_events.jsonl`)
+- Task-level events from DAG execution
+- Written by runner during execution
+- Events: `dag_start`, `task_start`, `task_ok`, `task_fail`, `task_retry`, `dag_done`
+
+**State Store** (`logs/orchestrator_state.jsonl`)
+- Scheduler-level events
+- Written by scheduler when enqueuing/running schedules
+- Events: `schedule_enqueued`, `run_started`, `run_finished`
+
+### Dashboard Metrics
+
+**Task KPIs (Last 24h):**
+- ✅ Tasks OK - Successful task completions
+- ❌ Tasks Failed - Failed task executions
+- ⏱️ Avg Duration - Average task execution time
+- 📊 Error Rate - Percentage of failed tasks
+
+**Recent DAG Runs:**
+- Table showing last 15 DAG executions
+- Status, start time, duration, tasks OK/failed per run
+
+**Schedules:**
+- Schedule ID, last run time, status (success/failed)
+- Enqueued count, success count, failed count
+
+**Per-Tenant Load (Last 24h):**
+- Tenant ID, run count, task count
+- Error rate and average latency per tenant
+
+### Environment Variables
+
+```bash
+ORCH_EVENTS_PATH=logs/orchestrator_events.jsonl
+STATE_STORE_PATH=logs/orchestrator_state.jsonl
+ORCH_PANEL_WINDOW_H=24  # Time window for recent metrics
+```
+
+### Accessing Dashboard
+
+```bash
+streamlit run main.py
+```
+
+Navigate to "Observability" tab → "🔀 Orchestrator (DAGs & Schedules)" section.
+
+### Analytics API
+
+Pure Python helpers for programmatic access:
+
+```python
+from src.orchestrator.analytics import (
+    load_events,
+    summarize_tasks,
+    summarize_dags,
+    summarize_schedules,
+    per_tenant_load,
+)
+
+# Load events
+events = load_events("logs/orchestrator_events.jsonl", limit=5000)
+
+# Get task stats
+stats = summarize_tasks(events, window_hours=24)
+print(f"Error rate: {stats['last_24h']['error_rate'] * 100:.1f}%")
+
+# Get recent DAG runs
+runs = summarize_dags(events, limit=10)
+for run in runs:
+    print(f"{run['dag_name']}: {run['status']} ({run['duration']:.1f}s)")
+
+# Get per-tenant metrics
+tenants = per_tenant_load(events, window_hours=24)
+for tenant in tenants:
+    print(f"{tenant['tenant']}: {tenant['runs']} runs, {tenant['error_rate']*100:.1f}% errors")
+```
+
 ## Limitations
 
 - ✅ DAG validation and execution
@@ -213,7 +296,7 @@ tail -f logs/orchestrator_events.jsonl | grep task_fail
 - ✅ Payload passing
 - ✅ Scheduler with cron expressions (Sprint 27B)
 - ✅ State persistence (Sprint 27B)
-- ⏸️ Observability dashboard (coming in 27C)
+- ✅ Observability dashboard (Sprint 27C)
 
 ## Troubleshooting
 
