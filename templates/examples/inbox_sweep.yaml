@@ -1,0 +1,65 @@
+# Inbox Drive Sweep Workflow Configuration
+# Personal use case: Prioritize tasks from inbox and files
+
+workflow_name: inbox_sweep
+description: Prioritize tasks from email inbox and cloud drive files
+
+prompt_template: |
+  You are a personal productivity assistant. Analyze these inbox items and drive files, then prioritize them.
+
+  **Inbox Items ({item_count} total):**
+  {inbox_items}
+
+  **Recent Drive Files ({file_count} total):**
+  {drive_files}
+
+  **User Context:**
+  Current priorities: {user_priorities}
+  Deadlines: {upcoming_deadlines}
+
+  **Instructions:**
+  - Categorize each item by type (urgent, important, routine, defer)
+  - Assign priority level (P0-P3)
+  - Suggest specific actions for high-priority items
+  - Group related items together
+  - Flag items that can be delegated or automated
+  - Estimate time required for each task
+  - Format in Markdown with clear sections
+
+  **Priority Levels:**
+  - P0: Critical/Blocking (do today)
+  - P1: High priority (do this week)
+  - P2: Medium priority (do next week)
+  - P3: Low priority (defer or delegate)
+
+  **Required Sections:**
+  1. Quick Summary (top 3 urgent items)
+  2. P0 Tasks (critical items)
+  3. P1 Tasks (high priority)
+  4. P2 Tasks (medium priority)
+  5. P3 Tasks (low priority/deferred)
+  6. Suggested Automations
+  7. Delegation Opportunities
+
+categories:
+  - urgent
+  - important
+  - routine
+  - defer
+  - delegate
+
+priority_levels:
+  p0: critical
+  p1: high
+  p2: medium
+  p3: low
+
+parameters:
+  max_tokens: 2500
+  temperature: 0.4
+  model: gpt-4o
+
+metadata:
+  category: personal
+  output_format: markdown
+  typical_length: 1000-1500 words

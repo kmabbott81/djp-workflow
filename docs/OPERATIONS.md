@@ -445,6 +445,451 @@ Running performance smoke tests...
 [SUCCESS] All CI checks passed!
 ```
 
+## Sample Workflows
+
+The `templates/examples/` directory provides three production-ready workflow templates for common use cases.
+
+### Running Sample Workflows
+
+#### 1. Weekly Report Workflow
+
+Generate professional status reports for team updates:
+
+**Basic usage:**
+```bash
+# Windows
+python -m src.run_workflow ^
+  --template weekly_report ^
+  --inputs "{\"start_date\": \"2025-10-01\", \"end_date\": \"2025-10-07\", \"context\": \"Sprint 25: Completed 15 story points, deployed v1.2.0\"}"
+
+# macOS/Linux
+python -m src.run_workflow \
+  --template weekly_report \
+  --inputs '{"start_date": "2025-10-01", "end_date": "2025-10-07", "context": "Sprint 25: Completed 15 story points, deployed v1.2.0"}'
+```
+
+**Dry-run mode (no API calls):**
+```bash
+python -m src.run_workflow --template weekly_report --dry-run
+```
+
+**With cost budget:**
+```bash
+python -m src.run_workflow ^
+  --template weekly_report ^
+  --inputs "{...}" ^
+  --budget_usd 0.01
+```
+
+**Output:** Structured Markdown report (800-1200 words) with executive summary, accomplishments, metrics, challenges, next week priorities, and action items.
+
+**Use cases:**
+- Project status updates
+- Team stand-ups
+- Executive briefings
+- Client progress reports
+
+#### 2. Meeting Brief Workflow
+
+Summarize meeting transcripts and extract action items:
+
+**Basic usage:**
+```bash
+# Windows
+python -m src.run_workflow ^
+  --template meeting_brief ^
+  --inputs "{\"meeting_title\": \"Sprint Planning\", \"meeting_date\": \"2025-10-02\", \"attendees\": \"Alice, Bob, Charlie\", \"transcript\": \"Alice: Let's review the backlog...\"}"
+
+# macOS/Linux
+python -m src.run_workflow \
+  --template meeting_brief \
+  --inputs '{"meeting_title": "Sprint Planning", "meeting_date": "2025-10-02", "attendees": "Alice, Bob, Charlie", "transcript": "Alice: Let's review the backlog..."}'
+```
+
+**With approval workflow:**
+```bash
+python -m src.run_workflow ^
+  --template meeting_brief ^
+  --inputs "{...}" ^
+  --require_approval
+```
+
+**Output:** Structured brief (500-800 words) with meeting overview, discussion points, decisions, action items table, and follow-up questions.
+
+**Use cases:**
+- Academic meeting notes
+- Faculty meetings
+- Research group syncs
+- Professional team meetings
+
+#### 3. Inbox Sweep Workflow
+
+Prioritize email and document backlogs:
+
+**Basic usage:**
+```bash
+# Windows
+python -m src.run_workflow ^
+  --template inbox_sweep ^
+  --inputs "{\"inbox_items\": \"1. RE: Budget approval\n2. Team sync invite\", \"drive_files\": \"Q4-plan.docx, budget.xlsx\", \"user_priorities\": \"Sprint 25 completion\", \"upcoming_deadlines\": \"Q4 kickoff Oct 15\"}"
+
+# macOS/Linux
+python -m src.run_workflow \
+  --template inbox_sweep \
+  --inputs '{"inbox_items": "1. RE: Budget approval\n2. Team sync invite", "drive_files": "Q4-plan.docx, budget.xlsx", "user_priorities": "Sprint 25 completion", "upcoming_deadlines": "Q4 kickoff Oct 15"}'
+```
+
+**Output:** Prioritized task list (1000-1500 words) with P0-P3 categorization, automation suggestions, and delegation opportunities.
+
+**Use cases:**
+- Email triage
+- Task prioritization
+- Productivity coaching
+- Time management
+
+### Monitoring Workflow Execution
+
+#### Real-Time Monitoring
+
+Track workflow progress in real-time:
+
+```bash
+# Run workflow with verbose output
+python -m src.run_workflow --template weekly_report --inputs "{...}" --verbose
+
+# Monitor logs in separate terminal
+# Windows:
+Get-Content logs\workflow.log -Wait -Tail 50
+
+# macOS/Linux:
+tail -f logs/workflow.log
+```
+
+#### Cost Tracking
+
+Monitor costs for sample workflows:
+
+```bash
+# View cost breakdown
+python -m src.run_workflow --template meeting_brief --inputs "{...}"
+
+# Output includes:
+# Costs: openai/gpt-4o-mini in=350 out=220 $0.0008 | Total $0.0008 (tokens=570)
+```
+
+**Cost expectations by template:**
+- **Weekly Report:** $0.003-0.008 (gpt-4o, ~1500 tokens)
+- **Meeting Brief:** $0.0005-0.002 (gpt-4o-mini, ~800 tokens)
+- **Inbox Sweep:** $0.004-0.010 (gpt-4o, ~2000 tokens)
+
+#### Performance Metrics
+
+Track execution time and success rates:
+
+```bash
+# Run with metrics export
+python -m src.run_workflow ^
+  --template weekly_report ^
+  --inputs "{...}" ^
+  --metrics metrics.csv
+
+# View metrics
+# Windows: type metrics.csv
+# macOS/Linux: cat metrics.csv
+```
+
+**Expected performance:**
+- **Weekly Report:** 8-15 seconds
+- **Meeting Brief:** 5-10 seconds
+- **Inbox Sweep:** 12-20 seconds
+
+### Artifact Management
+
+#### Viewing Generated Artifacts
+
+```bash
+# List recent artifacts
+# Windows:
+dir /O-D runs\*.json | more
+
+# macOS/Linux:
+ls -lt runs/*.json | head -10
+
+# View specific artifact
+# Windows:
+type runs\2025.10.02-1234.json
+
+# macOS/Linux:
+cat runs/2025.10.02-1234.json | jq .
+```
+
+#### Artifact Retention Policy
+
+Configure automatic cleanup:
+
+```bash
+# In .env.local
+ARTIFACT_RETENTION_DAYS=90
+
+# Manual cleanup (delete artifacts older than 30 days)
+# Windows PowerShell:
+Get-ChildItem runs\*.json | Where-Object {$_.LastWriteTime -lt (Get-Date).AddDays(-30)} | Remove-Item
+
+# macOS/Linux:
+find runs/ -name "*.json" -mtime +30 -delete
+```
+
+#### Artifact Export
+
+Export artifacts for analysis:
+
+```bash
+# Export all artifacts to CSV
+python scripts/export_artifacts.py --output artifacts.csv
+
+# Export specific date range
+python scripts/export_artifacts.py --since 2025-10-01 --until 2025-10-07 --output weekly.csv
+```
+
+### Cost Budgeting Per Workflow
+
+Set and enforce cost limits for each workflow:
+
+#### Budget Configuration
+
+```bash
+# Per-workflow budget limits (in .env.local)
+BUDGET_WEEKLY_REPORT_USD=0.01
+BUDGET_MEETING_BRIEF_USD=0.005
+BUDGET_INBOX_SWEEP_USD=0.015
+```
+
+#### Runtime Budget Enforcement
+
+```bash
+# Set budget at runtime
+python -m src.run_workflow ^
+  --template weekly_report ^
+  --inputs "{...}" ^
+  --budget_usd 0.01
+
+# Budget exceeded error:
+# BudgetExceededError: Projected cost $0.015 exceeds budget $0.010
+```
+
+#### Budget Monitoring
+
+```bash
+# View budget utilization in dashboard
+streamlit run dashboards/observability_app.py
+
+# Check budget alerts
+python scripts/check_budgets.py --since 7d
+```
+
+### Performance Tuning
+
+#### Timeout Configuration
+
+Adjust timeouts for complex workflows:
+
+```bash
+# In .env.local
+OPENAI_CONNECT_TIMEOUT_MS=15000  # Connection timeout
+OPENAI_READ_TIMEOUT_MS=120000    # Read timeout (2 minutes)
+```
+
+For specific workflows:
+```bash
+python -m src.run_workflow ^
+  --template inbox_sweep ^
+  --inputs "{...}" ^
+  --timeout 180  # 3 minutes
+```
+
+#### Retry Strategy
+
+Configure retry behavior for transient failures:
+
+```bash
+# In .env.local
+MAX_RETRIES=3
+RETRY_BACKOFF_FACTOR=2  # Exponential backoff: 1s, 2s, 4s
+```
+
+**Retry conditions:**
+- Network timeouts
+- Rate limit errors (429)
+- Temporary API unavailability (503)
+
+**No retry on:**
+- Invalid API key (401)
+- Malformed requests (400)
+- Budget exceeded errors
+
+#### Batch Size Optimization
+
+Process multiple workflows efficiently:
+
+```bash
+# Process batch of reports
+python -m src.batch ^
+  --template weekly_report ^
+  --input batch.csv ^
+  --output results/ ^
+  --max-cost 0.50 ^
+  --concurrency 5
+
+# batch.csv format:
+# start_date,end_date,context
+# 2025-10-01,2025-10-07,"Sprint 25 summary"
+# 2025-10-08,2025-10-14,"Sprint 26 summary"
+```
+
+**Performance tuning:**
+- **Concurrency 1-3:** Low load, sequential processing
+- **Concurrency 4-8:** Medium load, parallel processing
+- **Concurrency 9+:** High load, requires rate limit management
+
+### Scaling with Worker Pool Integration
+
+#### Worker Pool Configuration
+
+Configure autoscaling for production workloads:
+
+```bash
+# In .env.local
+MIN_WORKERS=2
+MAX_WORKERS=12
+TARGET_QUEUE_DEPTH=50
+TARGET_P95_LATENCY_MS=2000
+SCALE_DECISION_INTERVAL_MS=2000
+```
+
+#### Submitting Workflows to Worker Pool
+
+```python
+from src.scale.worker_pool import WorkerPool, Job
+
+pool = WorkerPool.get_instance()
+
+# Submit workflow job
+job = Job(
+    job_id="weekly-report-001",
+    task=lambda: run_workflow(
+        template="weekly_report",
+        inputs={"start_date": "2025-10-01", "end_date": "2025-10-07", "context": "..."}
+    ),
+    tenant_id="team-alpha"
+)
+
+result = pool.submit_job(job)
+```
+
+#### Monitoring Worker Pool Performance
+
+```bash
+# View worker pool stats
+python -c "
+from src.scale.worker_pool import WorkerPool
+pool = WorkerPool.get_instance()
+stats = pool.get_stats()
+print(f'Total workers: {stats.total_workers}')
+print(f'Active workers: {stats.active_workers}')
+print(f'Queue depth: {stats.queue_depth}')
+"
+```
+
+#### Per-Tenant Concurrency Limits
+
+```bash
+# In .env.local
+PER_TENANT_MAX_CONCURRENCY=5  # Max 5 concurrent workflows per tenant
+
+# Enforces fair resource allocation across teams
+```
+
+**Use cases:**
+- Multi-team environments
+- SaaS deployments
+- Shared infrastructure
+- Resource fairness
+
+### Workflow Best Practices
+
+#### 1. Use Dry-Run First
+
+Always test workflows with dry-run before production:
+
+```bash
+# Validate inputs and check projected cost
+python -m src.run_workflow --template weekly_report --dry-run
+
+# Output:
+# Dry run mode - no API calls made
+# Projected cost: $0.005
+# Projected tokens: ~1200
+```
+
+#### 2. Set Appropriate Budgets
+
+Prevent cost overruns with budget limits:
+
+```bash
+# Development: Low budgets
+--budget_usd 0.005
+
+# Staging: Medium budgets
+--budget_usd 0.02
+
+# Production: Higher budgets with monitoring
+--budget_usd 0.05
+```
+
+#### 3. Monitor Execution Logs
+
+Review logs for errors and optimization opportunities:
+
+```bash
+# Check for errors
+# Windows:
+findstr /I "error" logs\workflow.log
+
+# macOS/Linux:
+grep -i error logs/workflow.log
+
+# Check performance
+grep "execution_time" logs/workflow.log
+```
+
+#### 4. Use Appropriate Models
+
+Select models based on task complexity:
+
+```yaml
+# Simple tasks (summaries, briefs)
+parameters:
+  model: gpt-4o-mini  # $0.15 per 1M input tokens
+
+# Complex tasks (analysis, reports)
+parameters:
+  model: gpt-4o  # $2.50 per 1M input tokens
+```
+
+#### 5. Enable Approval Workflows
+
+Require human review for critical outputs:
+
+```bash
+python -m src.run_workflow ^
+  --template weekly_report ^
+  --inputs "{...}" ^
+  --require_approval
+
+# Output status: pending_approval
+# Review in dashboard, then approve or reject
+```
+
 ## Troubleshooting
 
 ### Schema Validation Failures
@@ -478,6 +923,37 @@ If performance tests fail:
 2. Verify all dependencies are installed
 3. Review test thresholds if consistently failing
 4. Check for import issues in the codebase
+
+### Sample Workflow Failures
+
+If sample workflows fail:
+
+**Template not found:**
+```bash
+# Verify template exists
+ls templates/examples/
+
+# Expected: weekly_report.yaml, meeting_brief.yaml, inbox_sweep.yaml
+```
+
+**Input validation errors:**
+```bash
+# Check required inputs for template
+python -c "
+from src.templates import load_template
+template = load_template('weekly_report')
+print('Required inputs:', [i for i in template.inputs if i.required])
+"
+```
+
+**Cost budget exceeded:**
+```bash
+# Check projected cost first
+python -m src.run_workflow --template weekly_report --dry-run
+
+# Increase budget if needed
+python -m src.run_workflow --template weekly_report --budget_usd 0.02
+```
 
 ## Observability & Budgets
 

@@ -815,6 +815,623 @@ def test_global_qps_limit(monkeypatch):
     assert limiter.allow_request() is True
 ```
 
+## Secrets Management
+
+Proper secrets management is critical for security. This section covers best practices for handling API keys, credentials, and sensitive configuration.
+
+### No Secrets in Repository Policy
+
+**NEVER commit secrets to version control.**
+
+Enforce this policy with these measures:
+
+#### 1. Git Ignore Configuration
+
+The `.gitignore` file already includes:
+```gitignore
+# Environment files with secrets
+.env.local
+.env.*.local
+*.env
+
+# Credentials files
+*_credentials
+*_key
+*.pem
+*.key
+
+# Cloud provider credentials
+.aws/
+.gcp/
+.azure/
+```
+
+**Verify:**
+```bash
+# Check if .env.local is ignored
+git check-ignore .env.local
+# Output: .env.local (if properly ignored)
+
+# Ensure no secrets in git history
+git log --all --full-history --source --extra=all -- .env.local
+# Should return nothing
+```
+
+#### 2. Pre-commit Hooks
+
+Install pre-commit hooks to block secret commits:
+
+```bash
+# Install pre-commit
+pip install pre-commit
+
+# Install hooks
+pre-commit install
+
+# Hooks automatically run on git commit
+```
+
+**Pre-commit checks:**
+- Detect hardcoded API keys (patterns: `sk-`, `AKIA`, etc.)
+- Scan for common credential patterns
+- Block commits containing secrets
+- Warn about suspicious file additions
+
+#### 3. Secret Scanning
+
+Use GitHub's secret scanning (automatically enabled for public repos):
+
+- Scans commits for known secret patterns
+- Alerts on exposed credentials
+- Provides remediation guidance
+- Supports custom patterns
+
+**Manual scanning:**
+```bash
+# Install gitleaks
+# Windows: choco install gitleaks
+# macOS: brew install gitleaks
+# Linux: Download from https://github.com/gitleaks/gitleaks
+
+# Scan repository
+gitleaks detect --source . --verbose
+
+# Scan specific files
+gitleaks detect --source .env.local --verbose
+```
+
+### Using .env.local for Secrets
+
+Store secrets in `.env.local` file (git-ignored):
+
+#### Creating .env.local
+
+```bash
+# Windows PowerShell
+Copy-Item .env .env.local
+
+# macOS/Linux
+cp .env .env.local
+
+# Edit with your secrets
+# Windows: notepad .env.local
+# macOS/Linux: nano .env.local
+```
+
+#### .env.local Structure
+
+```bash
+# .env.local - NEVER commit this file!
+
+# OpenAI API Key (required)
+OPENAI_API_KEY=sk-proj-abc123def456...
+
+# Anthropic API Key (optional, for Claude models)
+ANTHROPIC_API_KEY=sk-ant-xyz789...
+
+# Database credentials (if applicable)
+DATABASE_URL=postgresql://user:password@localhost:5432/djp_db
+
+# Cloud storage credentials (if applicable)
+AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+AWS_DEFAULT_REGION=us-west-2
+
+# Webhook secrets (if applicable)
+WEBHOOK_SECRET=your-webhook-secret-here
+
+# Session secrets (if applicable)
+SESSION_SECRET=your-random-session-secret
+```
+
+#### Loading .env.local
+
+Application automatically loads `.env.local` on startup:
+
+```python
+# src/__init__.py or src/config.py
+from dotenv import load_dotenv
+import os
+
+# Load .env.local if exists, otherwise .env
+load_dotenv('.env.local', override=True)
+load_dotenv('.env', override=False)
+
+# Access secrets
+api_key = os.getenv('OPENAI_API_KEY')
+```
+
+**Verify loading:**
+```bash
+python -c "import os; from dotenv import load_dotenv; load_dotenv('.env.local'); print('Key loaded:', bool(os.getenv('OPENAI_API_KEY')))"
+```
+
+### Environment Variable Security
+
+Best practices for handling environment variables:
+
+#### Windows (PowerShell)
+
+```powershell
+# Temporary (current session only) - SAFE
+$env:OPENAI_API_KEY = "sk-proj-..."
+
+# User-level persistent - LESS SAFE (stored in registry)
+[System.Environment]::SetEnvironmentVariable('OPENAI_API_KEY', 'sk-proj-...', 'User')
+
+# System-level persistent - UNSAFE (shared across users)
+# DO NOT USE for secrets
+
+# Best practice: Use .env.local file
+```
+
+#### Windows (Command Prompt)
+
+```cmd
+REM Temporary (current session only) - SAFE
+set OPENAI_API_KEY=sk-proj-...
+
+REM Best practice: Use .env.local file
+```
+
+#### macOS/Linux
+
+```bash
+# Temporary (current session only) - SAFE
+export OPENAI_API_KEY="sk-proj-..."
+
+# User-level persistent - LESS SAFE (stored in shell config)
+echo 'export OPENAI_API_KEY="sk-proj-..."' >> ~/.bashrc
+source ~/.bashrc
+
+# System-level persistent - UNSAFE
+# DO NOT store secrets in /etc/environment
+
+# Best practice: Use .env.local file
+```
+
+#### Cloud Deployment
+
+For production deployments, use secrets management services:
+
+**AWS:**
+```bash
+# Store in AWS Secrets Manager
+aws secretsmanager create-secret \
+  --name djp-workflow/openai-api-key \
+  --secret-string "sk-proj-..."
+
+# Retrieve at runtime
+OPENAI_API_KEY=$(aws secretsmanager get-secret-value \
+  --secret-id djp-workflow/openai-api-key \
+  --query SecretString \
+  --output text)
+```
+
+**GCP:**
+```bash
+# Store in Secret Manager
+echo -n "sk-proj-..." | gcloud secrets create openai-api-key --data-file=-
+
+# Retrieve at runtime
+OPENAI_API_KEY=$(gcloud secrets versions access latest --secret="openai-api-key")
+```
+
+**Azure:**
+```bash
+# Store in Key Vault
+az keyvault secret set \
+  --vault-name djp-workflow-vault \
+  --name openai-api-key \
+  --value "sk-proj-..."
+
+# Retrieve at runtime
+OPENAI_API_KEY=$(az keyvault secret show \
+  --vault-name djp-workflow-vault \
+  --name openai-api-key \
+  --query value \
+  --output tsv)
+```
+
+### API Key Rotation Procedures
+
+Rotate API keys regularly to minimize risk:
+
+#### Rotation Schedule
+
+- **Development keys:** Every 30 days
+- **Staging keys:** Every 60 days
+- **Production keys:** Every 90 days
+- **After breach:** Immediately
+
+#### Rotation Process
+
+**1. Generate new key:**
+```bash
+# Visit https://platform.openai.com/api-keys
+# Click "Create new secret key"
+# Copy new key: sk-proj-new-key-here
+```
+
+**2. Update configuration:**
+```bash
+# Update .env.local
+OLD_KEY=sk-proj-old-key-here
+NEW_KEY=sk-proj-new-key-here
+
+# Windows PowerShell
+(Get-Content .env.local) -replace $OLD_KEY, $NEW_KEY | Set-Content .env.local
+
+# macOS/Linux
+sed -i "s/$OLD_KEY/$NEW_KEY/" .env.local
+```
+
+**3. Test new key:**
+```bash
+# Verify new key works
+python -m src.run_workflow --task "Test" --dry-run
+
+# Expected: No authentication errors
+```
+
+**4. Update production:**
+```bash
+# Update secrets manager
+aws secretsmanager update-secret \
+  --secret-id djp-workflow/openai-api-key \
+  --secret-string "$NEW_KEY"
+
+# Restart services to pick up new key
+kubectl rollout restart deployment/djp-workflow
+```
+
+**5. Revoke old key:**
+```bash
+# Visit https://platform.openai.com/api-keys
+# Click "Revoke" on old key
+# Confirm revocation
+```
+
+**6. Verify no disruption:**
+```bash
+# Check logs for authentication errors
+# Windows: findstr /I "401" logs\*.log
+# macOS/Linux: grep -i "401" logs/*.log
+
+# Check dashboard for failed workflows
+```
+
+#### Automated Rotation
+
+Automate rotation with scripts:
+
+```python
+# scripts/rotate_api_key.py
+import os
+import openai
+from datetime import datetime
+
+def rotate_openai_key():
+    """Rotate OpenAI API key."""
+    old_key = os.getenv('OPENAI_API_KEY')
+
+    # Generate new key (requires API access)
+    # This is a placeholder - OpenAI doesn't support programmatic key generation yet
+    # You must manually create keys in dashboard
+
+    print("Manual steps required:")
+    print("1. Visit https://platform.openai.com/api-keys")
+    print("2. Create new key")
+    print("3. Update .env.local")
+    print("4. Restart services")
+    print("5. Revoke old key")
+
+    # Log rotation event
+    with open('logs/key_rotation.log', 'a') as f:
+        f.write(f"{datetime.now()}: Key rotation required for {old_key[:10]}...\n")
+
+if __name__ == "__main__":
+    rotate_openai_key()
+```
+
+**Schedule rotation reminders:**
+```bash
+# Windows Task Scheduler
+schtasks /create /tn "API Key Rotation Reminder" /tr "python scripts/rotate_api_key.py" /sc monthly
+
+# macOS/Linux cron
+echo "0 0 1 * * python /path/to/scripts/rotate_api_key.py" | crontab -
+```
+
+### Audit Logging for Configuration Access
+
+Track who accesses secrets and configuration:
+
+#### Enable Audit Logging
+
+```bash
+# In .env.local
+AUDIT_LOG_DIR=audit/
+AUDIT_CONFIG_ACCESS=true
+```
+
+#### Configuration Access Events
+
+```python
+# src/security/audit.py
+from src.security.audit import get_audit_logger, AuditAction
+
+logger = get_audit_logger()
+
+# Log configuration access
+logger.log(
+    action=AuditAction.ACCESS_CONFIG,
+    user_id="admin@example.com",
+    tenant_id="default",
+    resource_type="config",
+    resource_id=".env.local",
+    result="success",
+    metadata={"config_keys": ["OPENAI_API_KEY", "DATABASE_URL"]}
+)
+```
+
+#### Querying Configuration Access
+
+```python
+from src.security.audit import get_audit_logger, AuditAction
+
+logger = get_audit_logger()
+
+# Find who accessed configuration
+events = logger.query(
+    action=AuditAction.ACCESS_CONFIG,
+    since=datetime.now() - timedelta(days=7),
+    limit=100
+)
+
+for event in events:
+    print(f"{event.timestamp}: {event.user_id} accessed {event.resource_id}")
+```
+
+#### Alerting on Suspicious Access
+
+```bash
+# Monitor for unauthorized config access
+python -c "
+from src.security.audit import get_audit_logger, AuditResult
+logger = get_audit_logger()
+denied = logger.query(
+    action='ACCESS_CONFIG',
+    result=AuditResult.DENIED,
+    limit=50
+)
+if len(denied) > 10:
+    print(f'ALERT: {len(denied)} unauthorized config access attempts')
+"
+```
+
+### Per-Tenant Isolation for Workflows
+
+Ensure secrets and data are isolated per tenant:
+
+#### Tenant-Scoped Secrets
+
+```bash
+# In .env.local
+# Global default
+OPENAI_API_KEY=sk-proj-default-key
+
+# Per-tenant overrides
+TENANT_acme_OPENAI_API_KEY=sk-proj-acme-key
+TENANT_globex_OPENAI_API_KEY=sk-proj-globex-key
+```
+
+**Loading tenant-specific secrets:**
+```python
+def get_api_key(tenant_id: str) -> str:
+    """Get tenant-specific API key."""
+    # Check for tenant-specific key
+    tenant_key = os.getenv(f'TENANT_{tenant_id}_OPENAI_API_KEY')
+    if tenant_key:
+        return tenant_key
+
+    # Fall back to default
+    return os.getenv('OPENAI_API_KEY')
+```
+
+#### Tenant Data Isolation
+
+```python
+from src.security.authz import Principal, Resource, ResourceType, Action, require_permission
+
+def run_workflow(principal: Principal, template: str, inputs: dict):
+    """Run workflow with tenant isolation."""
+    # Validate tenant access
+    resource = Resource(
+        resource_type=ResourceType.WORKFLOW,
+        resource_id=template,
+        tenant_id=principal.tenant_id
+    )
+
+    require_permission(principal, Action.EXECUTE, resource)
+
+    # Use tenant-specific API key
+    api_key = get_api_key(principal.tenant_id)
+
+    # Execute workflow in tenant context
+    artifact = run_djp_workflow(
+        task=inputs,
+        api_key=api_key,
+        tenant_id=principal.tenant_id
+    )
+
+    # Store artifact with tenant_id
+    artifact['tenant_id'] = principal.tenant_id
+    save_artifact(artifact)
+```
+
+#### Cross-Tenant Access Prevention
+
+```python
+def enforce_tenant_isolation(principal: Principal, resource: Resource):
+    """Prevent cross-tenant access."""
+    if principal.tenant_id != resource.tenant_id:
+        logger.log(
+            action=AuditAction.ACCESS_RESOURCE,
+            user_id=principal.user_id,
+            tenant_id=principal.tenant_id,
+            resource_type=resource.resource_type,
+            resource_id=resource.resource_id,
+            result=AuditResult.DENIED,
+            metadata={"reason": "cross_tenant_access_blocked"}
+        )
+        raise PermissionError(
+            f"User {principal.user_id} (tenant {principal.tenant_id}) "
+            f"cannot access resource in tenant {resource.tenant_id}"
+        )
+```
+
+### Cost Tracking as Security Signal
+
+Monitor costs for anomaly detection:
+
+#### Unusual Cost Patterns
+
+```python
+def detect_cost_anomalies(tenant_id: str, time_window: timedelta):
+    """Detect unusual spending patterns."""
+    from src.observability import get_cost_metrics
+
+    # Get recent costs
+    recent_cost = get_cost_metrics(tenant_id, time_window)
+
+    # Get historical baseline
+    baseline_cost = get_cost_metrics(tenant_id, time_window * 7)  # 7x window for baseline
+
+    # Alert if cost spike
+    if recent_cost > baseline_cost * 3:  # 3x normal
+        send_alert(
+            f"ALERT: Tenant {tenant_id} cost spike detected. "
+            f"Recent: ${recent_cost:.2f}, Baseline: ${baseline_cost:.2f}"
+        )
+```
+
+#### Cost-Based Threat Detection
+
+**Indicators of compromise:**
+- Sudden increase in API calls
+- High-cost model usage spike
+- Unusual time-of-day activity
+- Cross-region API calls (if not expected)
+- High failure rates (brute force attempts)
+
+**Monitoring:**
+```bash
+# Check for cost anomalies
+python -c "
+from src.observability import get_cost_metrics
+from datetime import datetime, timedelta
+
+# Last hour vs last week average
+recent = get_cost_metrics('tenant-abc', timedelta(hours=1))
+baseline = get_cost_metrics('tenant-abc', timedelta(days=7)) / (7 * 24)
+
+if recent > baseline * 5:
+    print(f'ALERT: Cost spike - recent: ${recent:.4f}, baseline: ${baseline:.4f}')
+"
+```
+
+#### Budget Limits as Security Control
+
+```bash
+# In .env.local
+# Prevent runaway costs from compromised credentials
+BUDGET_USD_PER_HOUR=1.00
+BUDGET_USD_PER_DAY=10.00
+BUDGET_USD_PER_MONTH=200.00
+```
+
+**Enforce limits:**
+```python
+def check_budget_limit(tenant_id: str, projected_cost: float):
+    """Enforce tenant budget limits."""
+    daily_limit = float(os.getenv('BUDGET_USD_PER_DAY', '10.00'))
+    daily_spent = get_daily_spending(tenant_id)
+
+    if daily_spent + projected_cost > daily_limit:
+        logger.log(
+            action=AuditAction.RUN_WORKFLOW,
+            user_id="system",
+            tenant_id=tenant_id,
+            result=AuditResult.DENIED,
+            metadata={
+                "reason": "daily_budget_exceeded",
+                "daily_limit": daily_limit,
+                "daily_spent": daily_spent,
+                "projected_cost": projected_cost
+            }
+        )
+        raise BudgetExceededError(
+            f"Tenant {tenant_id} daily budget limit exceeded. "
+            f"Spent: ${daily_spent:.2f}, Limit: ${daily_limit:.2f}"
+        )
+```
+
+### Security Checklist
+
+#### Development
+
+- [ ] Use `.env.local` for secrets
+- [ ] Never commit `.env.local` to git
+- [ ] Use different API keys for dev/staging/prod
+- [ ] Enable pre-commit hooks
+- [ ] Scan for secrets before commits
+
+#### Production
+
+- [ ] Use secrets manager (AWS/GCP/Azure)
+- [ ] Enable RBAC enforcement: `FEATURE_RBAC_ENFORCE=true`
+- [ ] Configure tenant isolation
+- [ ] Set up audit logging
+- [ ] Enable cost tracking and alerts
+- [ ] Rotate API keys every 90 days
+- [ ] Monitor for anomalies
+- [ ] Set budget limits per tenant
+
+#### Incident Response
+
+- [ ] Document key rotation procedures
+- [ ] Create runbook for credential compromise
+- [ ] Set up alerts for suspicious activity
+- [ ] Test incident response procedures quarterly
+- [ ] Maintain audit log retention (90+ days)
+
+### Related Documentation
+
+- [ONBOARDING.md](ONBOARDING.md) - Setting environment variables safely
+- [ERRORS.md](ERRORS.md) - Troubleshooting API key errors
+- [OPERATIONS.md](OPERATIONS.md) - Cost monitoring and budgeting
+
 ## Next Steps
 
 1. Enable RBAC enforcement: `FEATURE_RBAC_ENFORCE=true`
@@ -825,3 +1442,8 @@ def test_global_qps_limit(monkeypatch):
 6. Configure per-tenant concurrency limits based on tier
 7. Enable global rate limiting: `GLOBAL_QPS_LIMIT=100`
 8. Set up monitoring for limit violations
+9. Create `.env.local` with production secrets
+10. Configure secrets manager for cloud deployments
+11. Schedule API key rotation reminders
+12. Test cost anomaly detection
+13. Document incident response procedures

@@ -1,0 +1,47 @@
+# Meeting Transcript Brief Workflow Configuration
+# Academic use case: Summarize meeting transcripts and extract action items
+
+workflow_name: meeting_brief
+description: Summarize meeting transcript and extract actionable items
+
+prompt_template: |
+  You are an academic meeting facilitator. Analyze this meeting transcript and create a concise brief.
+
+  **Meeting Title:** {meeting_title}
+  **Date:** {meeting_date}
+  **Attendees:** {attendees}
+
+  **Transcript:**
+  {transcript}
+
+  **Instructions:**
+  - Summarize key discussion points (5-7 bullets)
+  - Extract all action items with owners and deadlines
+  - Identify decisions made during the meeting
+  - Note any unresolved questions or topics for follow-up
+  - Use academic/professional tone
+  - Format in Markdown
+
+  **Required Sections:**
+  1. Meeting Overview (1-2 sentences)
+  2. Key Discussion Points (bullet points)
+  3. Decisions Made (bullet points)
+  4. Action Items (table format: Item | Owner | Deadline)
+  5. Follow-up Questions (bullet points)
+
+summary_format:
+  overview: single_paragraph
+  discussions: bullet_list
+  decisions: bullet_list
+  action_items: table
+  questions: bullet_list
+
+parameters:
+  max_tokens: 1500
+  temperature: 0.3
+  model: gpt-4o-mini
+
+metadata:
+  category: academic
+  output_format: markdown
+  typical_length: 500-800 words

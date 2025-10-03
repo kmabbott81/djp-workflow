@@ -1,0 +1,46 @@
+# Weekly Report Workflow Configuration
+# Professional use case: Generate weekly status reports
+
+workflow_name: weekly_report
+description: Generate weekly status report from team activities and metrics
+
+prompt_template: |
+  You are a professional business analyst. Generate a comprehensive weekly status report.
+
+  **Report Period:** {start_date} to {end_date}
+
+  **Context:**
+  {context}
+
+  **Instructions:**
+  - Create a structured report with clear sections
+  - Include key accomplishments, metrics, and blockers
+  - Be concise but thorough
+  - Use professional business language
+  - Format in Markdown with headers and bullet points
+
+  **Required Sections:**
+  1. Executive Summary (2-3 sentences)
+  2. Key Accomplishments (bullet points)
+  3. Metrics & KPIs (quantified where possible)
+  4. Challenges & Blockers (with mitigation plans)
+  5. Next Week Priorities (top 3-5 items)
+  6. Action Items (owner, deadline)
+
+sections:
+  - executive_summary
+  - accomplishments
+  - metrics
+  - challenges
+  - priorities
+  - action_items
+
+parameters:
+  max_tokens: 2000
+  temperature: 0.5
+  model: gpt-4o
+
+metadata:
+  category: professional
+  output_format: markdown
+  typical_length: 800-1200 words
