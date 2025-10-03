@@ -120,13 +120,99 @@ Current workflow registry (`src/workflows/adapter.py`):
 - `weekly_report_pack` - Weekly status reports
 - `meeting_transcript_brief` - Meeting summaries
 
-## Limitations (Sprint 27A)
+## Scheduling & State (Sprint 27B)
+
+### State Store
+
+JSONL append-only store tracks all scheduler events and DAG run metadata at `logs/orchestrator_state.jsonl`.
+
+**Functions:**
+```python
+from src.orchestrator.state_store import record_event, last_runs, index_by
+
+# Record event
+record_event({"event": "run_finished", "status": "success"})
+
+# Get last 20 events
+events = last_runs(limit=20)
+
+# Index by schedule_id
+by_schedule = index_by("schedule_id", limit=100)
+```
+
+### Scheduler
+
+Cron-like scheduler for automated DAG execution.
+
+**Define Schedule (YAML):**
+```yaml
+- id: weekly_ops_chain
+  cron: "*/5 * * * *"  # Every 5 minutes
+  dag: configs/dags/weekly_ops_chain.min.yaml
+  tenant: local-dev
+  enabled: true
+```
+
+Place in `configs/schedules/*.yaml`.
+
+**Cron Format:**
+```
+minute hour day month weekday
+*/5    *    *   *     *        # Every 5 minutes
+0      9    *   *     *        # Daily at 9:00 AM
+0      */2  *   *     *        # Every 2 hours
+*      *    *   *     *        # Every minute (not recommended)
+```
+
+**Run Once (CI-safe):**
+```bash
+python -m src.orchestrator.scheduler --dir configs/schedules --once
+```
+
+Runs single tick, enqueues matching schedules, drains queue, exits.
+
+**Serve Continuously:**
+```bash
+python -m src.orchestrator.scheduler --dir configs/schedules --serve
+```
+
+Runs until Ctrl+C. Ticks at `SCHED_TICK_MS` interval (default 1000ms).
+
+**Environment Variables:**
+```bash
+STATE_STORE_PATH=logs/orchestrator_state.jsonl
+ORCH_EVENTS_PATH=logs/orchestrator_events.jsonl
+SCHED_TICK_MS=1000           # Tick interval in milliseconds
+SCHED_MAX_PARALLEL=3         # Max concurrent DAG runs
+```
+
+**State Events:**
+- `schedule_enqueued` - Schedule matched, run queued
+- `run_started` - DAG execution started
+- `run_finished` - DAG execution completed (success/failed)
+
+**De-duplication:**
+Scheduler prevents double-enqueue within same minute using `{schedule_id, minute}` key.
+
+### Reading Logs
+
+**State store (scheduler events):**
+```bash
+tail -f logs/orchestrator_state.jsonl | grep run_finished
+```
+
+**Orchestrator events (task-level):**
+```bash
+tail -f logs/orchestrator_events.jsonl | grep task_fail
+```
+
+## Limitations
 
 - ✅ DAG validation and execution
 - ✅ Retries and event logging
 - ✅ Payload passing
-- ⏸️ Scheduler (coming in 27B)
-- ⏸️ State persistence (coming in 27B)
+- ✅ Scheduler with cron expressions (Sprint 27B)
+- ✅ State persistence (Sprint 27B)
 - ⏸️ Observability dashboard (coming in 27C)
 
 ## Troubleshooting

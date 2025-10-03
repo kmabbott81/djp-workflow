@@ -1,0 +1,5 @@
+- id: weekly_ops_chain
+  cron: "*/5 * * * *"  # Every 5 minutes
+  dag: configs/dags/weekly_ops_chain.min.yaml
+  tenant: local-dev
+  enabled: true
