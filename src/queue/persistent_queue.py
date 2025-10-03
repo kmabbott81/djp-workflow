@@ -23,7 +23,7 @@ class JobStatus(Enum):
 
 @dataclass
 class Job:
-    """Job model for persistent queue."""
+    """Job model for persistent queue (Sprint 28 + Sprint 29)."""
 
     id: str
     dag_path: str
@@ -37,6 +37,10 @@ class Job:
     max_retries: int = 0
     error: str | None = None
     result: dict[str, Any] | None = None
+    # Sprint 29 additions
+    first_seen_at: str | None = None  # First time job was enqueued
+    failure_reason: str | None = None  # Terminal failure reason
+    run_id: str | None = None  # Idempotency key
 
     def to_dict(self) -> dict[str, Any]:
         """Convert job to dictionary."""
