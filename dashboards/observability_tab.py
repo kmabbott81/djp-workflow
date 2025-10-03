@@ -419,8 +419,93 @@ def _render_deployment_log():
         st.error(f"Error loading deployment log: {e}")
 
 
+def _render_queue_stats():
+    """Render queue statistics (Sprint 28)."""
+    try:
+        import os
+        import sys
+
+        sys.path.insert(0, str(Path(__file__).parent.parent))
+
+        # Get queue backend
+        backend_type = os.getenv("QUEUE_BACKEND", "memory")
+
+        if backend_type == "memory":
+            st.info("Using in-memory queue (non-persistent). Set QUEUE_BACKEND=redis for persistence.")
+            return
+
+        # Try to get Redis queue stats
+        try:
+            import redis
+
+            from src.queue.backends.redis import RedisQueue
+            from src.queue.persistent_queue import JobStatus
+
+            redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+            client = redis.from_url(redis_url, decode_responses=False)
+            queue = RedisQueue(client, key_prefix="orch:queue")
+
+            # Get counts
+            pending = queue.count(JobStatus.PENDING)
+            running = queue.count(JobStatus.RUNNING)
+            success = queue.count(JobStatus.SUCCESS)
+            failed = queue.count(JobStatus.FAILED)
+
+            col1, col2, col3, col4 = st.columns(4)
+
+            with col1:
+                st.metric("⏳ Pending", pending)
+
+            with col2:
+                st.metric("🔄 Running", running)
+
+            with col3:
+                st.metric("✅ Success", success)
+
+            with col4:
+                st.metric("❌ Failed", failed)
+
+            # Recent jobs
+            if pending > 0 or running > 0:
+                st.markdown("**Recent Jobs:**")
+                recent_jobs = queue.list_jobs(limit=5)
+
+                if recent_jobs:
+                    import pandas as pd
+
+                    job_data = []
+                    for job in recent_jobs:
+                        status_icon = {
+                            "pending": "⏳",
+                            "running": "🔄",
+                            "success": "✅",
+                            "failed": "❌",
+                            "retry": "⟳",
+                        }.get(job.status.value, "❓")
+
+                        job_data.append(
+                            {
+                                "Status": f"{status_icon} {job.status.value}",
+                                "Job ID": job.id[:16] + "...",
+                                "Schedule": job.schedule_id or "N/A",
+                                "Tenant": job.tenant_id[:20],
+                                "Enqueued": job.enqueued_at[:19] if job.enqueued_at else "N/A",
+                            }
+                        )
+
+                    df = pd.DataFrame(job_data)
+                    st.dataframe(df, use_container_width=True, hide_index=True)
+
+        except Exception as e:
+            st.warning(f"Could not connect to Redis queue: {e}")
+            st.caption("Set REDIS_URL environment variable to connect to Redis")
+
+    except Exception as e:
+        st.error(f"Error loading queue stats: {e}")
+
+
 def _render_orchestrator():
-    """Render orchestrator observability section (Sprint 27C)."""
+    """Render orchestrator observability section (Sprint 27C + Sprint 28 update)."""
     try:
         import sys
 
@@ -448,6 +533,10 @@ def _render_orchestrator():
                 "or start scheduler with `python -m src.orchestrator.scheduler --serve`"
             )
             return
+
+        # Queue stats (Sprint 28)
+        st.markdown("#### Queue Status")
+        _render_queue_stats()
 
         # Task KPIs (last 24h)
         st.markdown("#### Task Metrics (Last 24 Hours)")

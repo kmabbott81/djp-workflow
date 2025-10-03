@@ -289,7 +289,99 @@ for tenant in tenants:
     print(f"{tenant['tenant']}: {tenant['runs']} runs, {tenant['error_rate']*100:.1f}% errors")
 ```
 
-## Limitations
+## Persistent Queue (Sprint 28)
+
+Durable job queue with pluggable backends for cross-region distribution and at-least-once delivery.
+
+### Queue Backends
+
+**Memory Backend (Default):**
+- In-memory queue for development/testing
+- Non-persistent (lost on restart)
+- Thread-safe for single-process use
+
+**Redis Backend (Production):**
+- Persistent storage in Redis
+- Supports multiple workers
+- Cross-region job distribution
+- At-least-once delivery guarantee
+
+### Configuration
+
+```bash
+# Queue backend selection
+QUEUE_BACKEND=memory  # or "redis"
+
+# Redis connection (if QUEUE_BACKEND=redis)
+REDIS_URL=redis://localhost:6379/0
+
+# Worker settings
+SCHED_MAX_JOBS_PER_DRAIN=100  # Max jobs to process per drain
+```
+
+### Running Scheduler with Persistent Queue
+
+The scheduler automatically uses the configured queue backend:
+
+```bash
+# With memory backend (default)
+python -m src.orchestrator.scheduler --serve
+
+# With Redis backend
+QUEUE_BACKEND=redis REDIS_URL=redis://localhost:6379/0 python -m src.orchestrator.scheduler --serve
+```
+
+### Running Workers
+
+Launch standalone workers to consume jobs:
+
+```bash
+# Single worker
+python -m src.queue.worker --worker-id worker-1
+
+# Multiple workers (horizontal scaling)
+python -m src.queue.worker --worker-id worker-1 &
+python -m src.queue.worker --worker-id worker-2 &
+python -m src.queue.worker --worker-id worker-3 &
+```
+
+Workers poll the queue and execute jobs independently. With Redis backend, multiple workers can run on different machines.
+
+### Job Model
+
+Jobs represent scheduled DAG executions:
+
+```python
+from src.queue.persistent_queue import Job, JobStatus
+
+job = Job(
+    id="unique-job-id",
+    dag_path="configs/dags/my_dag.yaml",
+    tenant_id="tenant-123",
+    schedule_id="daily-report",
+    status=JobStatus.PENDING,
+    enqueued_at="2025-10-03T10:00:00Z",
+    max_retries=2,
+)
+```
+
+**Job Lifecycle:**
+1. `PENDING` - Enqueued, waiting for worker
+2. `RUNNING` - Being executed by worker
+3. `SUCCESS` - Completed successfully
+4. `FAILED` - Failed after all retries
+5. `RETRY` - Failed, will retry (if attempts < max_retries)
+
+### Queue Dashboard
+
+View queue status in Observability tab:
+- Pending/Running/Success/Failed counts
+- Recent jobs with status
+- Job IDs, schedules, tenants
+
+**Note:** Queue stats only available when `QUEUE_BACKEND=redis`
+
+## Features
 
 - ✅ DAG validation and execution
 - ✅ Retries and event logging
@@ -297,6 +389,7 @@ for tenant in tenants:
 - ✅ Scheduler with cron expressions (Sprint 27B)
 - ✅ State persistence (Sprint 27B)
 - ✅ Observability dashboard (Sprint 27C)
+- ✅ Persistent queue with Redis backend (Sprint 28)
 
 ## Troubleshooting
 
