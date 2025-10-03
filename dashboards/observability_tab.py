@@ -19,6 +19,11 @@ def render_observability_tab():
     st.markdown("### 💰 API Cost Tracking")
     _render_cost_tracking()
 
+    # Storage lifecycle section
+    st.markdown("---")
+    st.markdown("### 💾 Storage Lifecycle")
+    _render_storage_lifecycle()
+
     # Multi-region observability
     st.markdown("---")
     st.markdown("### 🌍 Multi-Region Status")
@@ -64,6 +69,133 @@ def render_observability_tab():
         st.markdown("#### Recent Deployments")
 
         _render_deployment_log()
+
+
+def _render_storage_lifecycle():
+    """Render storage lifecycle section with tier stats and recent events."""
+    try:
+        import sys
+
+        sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+        from storage.lifecycle import get_last_lifecycle_job, get_recent_lifecycle_events
+        from storage.tiered_store import get_all_tier_stats
+
+        # Tier statistics
+        st.markdown("#### Artifact Distribution by Tier")
+
+        stats = get_all_tier_stats()
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            hot_stats = stats["hot"]
+            st.metric("🔥 Hot Tier", hot_stats["artifact_count"], f"{hot_stats['total_bytes'] / (1024 * 1024):.1f} MB")
+            st.caption(f"{hot_stats['tenant_count']} tenants")
+
+        with col2:
+            warm_stats = stats["warm"]
+            st.metric(
+                "🌡️ Warm Tier", warm_stats["artifact_count"], f"{warm_stats['total_bytes'] / (1024 * 1024):.1f} MB"
+            )
+            st.caption(f"{warm_stats['tenant_count']} tenants")
+
+        with col3:
+            cold_stats = stats["cold"]
+            st.metric(
+                "❄️ Cold Tier", cold_stats["artifact_count"], f"{cold_stats['total_bytes'] / (1024 * 1024):.1f} MB"
+            )
+            st.caption(f"{cold_stats['tenant_count']} tenants")
+
+        # Last lifecycle job
+        st.markdown("#### Last Lifecycle Job")
+
+        last_job = get_last_lifecycle_job()
+
+        if last_job:
+            job_col1, job_col2, job_col3, job_col4 = st.columns(4)
+
+            with job_col1:
+                timestamp = last_job.get("timestamp", "N/A")[:19]
+                st.caption("**Timestamp**")
+                st.text(timestamp)
+
+            with job_col2:
+                mode = "🧪 DRY RUN" if last_job.get("dry_run") else "✅ LIVE"
+                st.caption("**Mode**")
+                st.text(mode)
+
+            with job_col3:
+                promoted = last_job.get("promoted_to_warm", 0) + last_job.get("promoted_to_cold", 0)
+                st.caption("**Promoted**")
+                st.text(f"{promoted}")
+
+            with job_col4:
+                purged = last_job.get("purged", 0)
+                st.caption("**Purged**")
+                st.text(f"{purged}")
+
+            if last_job.get("total_errors", 0) > 0:
+                st.warning(f"⚠️ Last job had {last_job['total_errors']} errors")
+        else:
+            st.info("No lifecycle jobs have been run yet")
+
+        # Recent lifecycle events
+        st.markdown("#### Recent Lifecycle Events (Last 20)")
+
+        events = get_recent_lifecycle_events(limit=20)
+
+        if events:
+            import pandas as pd
+
+            table_data = []
+            for event in reversed(events):  # Most recent first
+                event_type = event.get("event_type", "unknown")
+                timestamp = event.get("timestamp", "")[:19]
+
+                # Format event details
+                details = []
+                if "artifact_id" in event:
+                    details.append(f"artifact={event['artifact_id'][:20]}")
+                if "tenant_id" in event:
+                    details.append(f"tenant={event['tenant_id'][:15]}")
+                if "promoted_to_warm" in event:
+                    details.append(f"warm={event['promoted_to_warm']}")
+                if "promoted_to_cold" in event:
+                    details.append(f"cold={event['promoted_to_cold']}")
+                if "purged" in event:
+                    details.append(f"purged={event['purged']}")
+                if "from_tier" in event and "to_tier" in event:
+                    details.append(f"{event['from_tier']}→{event['to_tier']}")
+
+                table_data.append(
+                    {
+                        "Timestamp": timestamp,
+                        "Event Type": event_type[:30],
+                        "Details": ", ".join(details)[:50],
+                    }
+                )
+
+            df = pd.DataFrame(table_data)
+            st.dataframe(df, use_container_width=True, hide_index=True)
+        else:
+            st.info("No lifecycle events recorded yet")
+
+        # Quick actions
+        st.markdown("#### Quick Actions")
+
+        action_col1, action_col2 = st.columns(2)
+
+        with action_col1:
+            if st.button("🔄 Run Lifecycle Job (Dry Run)"):
+                st.info("To run lifecycle job, use: `python scripts/lifecycle_run.py --dry-run`")
+
+        with action_col2:
+            if st.button("📊 View Full Statistics"):
+                st.info("To view full statistics, use: `python scripts/lifecycle_run.py --summary`")
+
+    except Exception as e:
+        st.error(f"Error loading storage lifecycle data: {e}")
+        st.caption("Make sure storage system is initialized and accessible")
 
 
 def _render_cost_tracking():
@@ -142,7 +274,10 @@ def _render_cost_tracking():
             workflow_costs[workflow] = workflow_costs.get(workflow, 0.0) + cost
 
         workflow_df = pd.DataFrame(
-            [{"Workflow": k, "Total Cost": f"${v:.6f}", "Requests": sum(1 for e in events if e.get("workflow") == k)} for k, v in sorted(workflow_costs.items(), key=lambda x: x[1], reverse=True)]
+            [
+                {"Workflow": k, "Total Cost": f"${v:.6f}", "Requests": sum(1 for e in events if e.get("workflow") == k)}
+                for k, v in sorted(workflow_costs.items(), key=lambda x: x[1], reverse=True)
+            ]
         )
 
         st.dataframe(workflow_df, use_container_width=True, hide_index=True)

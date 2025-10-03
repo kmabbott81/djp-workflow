@@ -223,3 +223,106 @@ def mock_project_root(tmp_path):
         yaml.dump(inbox_config, f)
 
     return tmp_path
+
+
+# Sprint 26 fixtures for storage lifecycle testing
+
+
+@pytest.fixture
+def fake_clock():
+    """
+    Fixture for controllable time in lifecycle tests.
+
+    Provides a mock clock that can be used to simulate artifact aging
+    without actually waiting. Returns a mutable dict with 'time' key
+    that can be advanced during tests.
+
+    Returns:
+        dict: Dictionary with 'time' key containing current Unix timestamp
+
+    Example:
+        def test_example(fake_clock):
+            fake_clock['time'] = time.time() - 10 * 86400  # 10 days ago
+            # Artifacts will appear 10 days old
+    """
+    import time
+
+    return {"time": time.time()}
+
+
+@pytest.fixture
+def temp_tier_paths(tmp_path, monkeypatch):
+    """
+    Fixture for temporary storage tier directories.
+
+    Creates isolated hot/warm/cold storage directories for testing
+    without interfering with actual storage. Automatically sets
+    STORAGE_BASE_PATH environment variable.
+
+    Args:
+        tmp_path: pytest's built-in tmp_path fixture
+        monkeypatch: pytest's monkeypatch fixture
+
+    Returns:
+        dict: Dictionary with tier names as keys, Path objects as values
+
+    Example:
+        def test_example(temp_tier_paths):
+            hot_path = temp_tier_paths['hot']
+            # Write test artifacts to hot_path
+    """
+    base_path = tmp_path / "artifacts"
+    base_path.mkdir(parents=True, exist_ok=True)
+
+    # Create tier directories
+    tiers = {}
+    for tier in ["hot", "warm", "cold"]:
+        tier_path = base_path / tier
+        tier_path.mkdir(parents=True, exist_ok=True)
+        tiers[tier] = tier_path
+
+    # Set environment variable
+    monkeypatch.setenv("STORAGE_BASE_PATH", str(base_path))
+
+    return tiers
+
+
+@pytest.fixture
+def lifecycle_env(tmp_path, monkeypatch, temp_tier_paths):
+    """
+    Fixture for lifecycle environment with configurable retention policies.
+
+    Sets up complete lifecycle testing environment with temporary
+    storage paths, log directory, and retention policy overrides.
+
+    Args:
+        tmp_path: pytest's built-in tmp_path fixture
+        monkeypatch: pytest's monkeypatch fixture
+        temp_tier_paths: temp_tier_paths fixture
+
+    Returns:
+        dict: Configuration dictionary with paths and retention days
+
+    Example:
+        def test_example(lifecycle_env):
+            # Storage paths and retention policies configured
+            assert lifecycle_env['hot_retention_days'] == 7
+    """
+    # Create log directory
+    log_dir = tmp_path / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("LOG_DIR", str(log_dir))
+
+    # Set retention policies (shorter for testing)
+    monkeypatch.setenv("HOT_RETENTION_DAYS", "7")
+    monkeypatch.setenv("WARM_RETENTION_DAYS", "30")
+    monkeypatch.setenv("COLD_RETENTION_DAYS", "90")
+
+    return {
+        "storage_base": tmp_path / "artifacts",
+        "log_dir": log_dir,
+        "tier_paths": temp_tier_paths,
+        "hot_retention_days": 7,
+        "warm_retention_days": 30,
+        "cold_retention_days": 90,
+    }

@@ -11,6 +11,7 @@ This guide covers operational aspects of the Debate-Judge-Publish (DJP) workflow
 - [Redaction Layer](#redaction-layer)
 - [Replay Functionality](#replay-functionality)
 - [CI/CD Integration](#cicd-integration)
+- [Storage Lifecycle Management](#storage-lifecycle-management)
 
 ## Schema Validation
 
@@ -1971,3 +1972,424 @@ pytest -q tests/test_templates_render_safety.py
 # Widget validation tests
 pytest -q tests/test_templates_widgets.py
 ```
+
+## Storage Lifecycle Management
+
+### Overview
+
+The storage lifecycle system manages artifacts across three tiers (hot/warm/cold) with automated promotion and retention policies. This section covers operational procedures for managing the storage lifecycle.
+
+### Nightly Lifecycle Job Setup
+
+#### Setting Up Cron Job
+
+For automated nightly lifecycle management:
+
+```bash
+# Edit crontab
+crontab -e
+
+# Add lifecycle job to run daily at 2 AM
+0 2 * * * cd /path/to/openai-agents-workflows-2025.09.28-v1 && /path/to/python scripts/lifecycle_run.py --live >> logs/lifecycle_cron.log 2>&1
+```
+
+#### Alternative: systemd Timer (Linux)
+
+Create `/etc/systemd/system/lifecycle.service`:
+
+```ini
+[Unit]
+Description=Storage Lifecycle Job
+After=network.target
+
+[Service]
+Type=oneshot
+User=app_user
+WorkingDirectory=/path/to/openai-agents-workflows-2025.09.28-v1
+ExecStart=/path/to/python scripts/lifecycle_run.py --live
+StandardOutput=append:/var/log/lifecycle.log
+StandardError=append:/var/log/lifecycle.log
+```
+
+Create `/etc/systemd/system/lifecycle.timer`:
+
+```ini
+[Unit]
+Description=Run Storage Lifecycle Job Daily
+Requires=lifecycle.service
+
+[Timer]
+OnCalendar=daily
+OnCalendar=02:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+Enable and start:
+
+```bash
+sudo systemctl enable lifecycle.timer
+sudo systemctl start lifecycle.timer
+sudo systemctl status lifecycle.timer
+```
+
+### Manual Lifecycle Drills
+
+#### Pre-Deployment Testing
+
+Before deploying to production, test lifecycle operations:
+
+```bash
+# 1. Generate test artifacts
+python src/workflows/stress/archive_rotation_demo.py --tenant test_drill --count 100
+
+# 2. Force aging to simulate time passing
+python -c "
+import sys; sys.path.insert(0, 'src')
+from workflows.stress.archive_rotation_demo import ArchiveRotationDemo
+demo = ArchiveRotationDemo('test_drill', 'drill')
+demo.force_artifact_age('hot', days_old=10)
+"
+
+# 3. Dry run lifecycle job
+python scripts/lifecycle_run.py --dry-run --verbose
+
+# 4. Review output and execute if satisfactory
+python scripts/lifecycle_run.py --live --verbose
+
+# 5. Verify promotions
+python scripts/lifecycle_run.py --summary
+```
+
+#### Monthly Restoration Drill
+
+Practice artifact restoration procedures monthly:
+
+```bash
+# 1. List artifacts in warm tier
+python scripts/restore_artifact.py --tenant production_tenant --from-tier warm --list
+
+# 2. Select artifact for drill
+# 3. Restore artifact
+python scripts/restore_artifact.py \
+  --tenant production_tenant \
+  --workflow critical_workflow \
+  --artifact sample_document.pdf \
+  --from-tier warm \
+  --to-tier hot
+
+# 4. Verify restoration
+python -c "
+import sys; sys.path.insert(0, 'src')
+from storage.tiered_store import artifact_exists
+assert artifact_exists('hot', 'production_tenant', 'critical_workflow', 'sample_document.pdf')
+print('✓ Restoration drill successful')
+"
+```
+
+### Accidental Purge Recovery
+
+#### Prevention
+
+**CRITICAL**: Purged artifacts cannot be recovered. Implement these safeguards:
+
+1. **Always dry-run first**:
+   ```bash
+   python scripts/lifecycle_run.py --dry-run
+   ```
+
+2. **Review before executing**:
+   ```bash
+   # Check what will be purged
+   python -c "
+   import sys, time; sys.path.insert(0, 'src')
+   from storage.lifecycle import scan_tier_for_expired
+   expired = scan_tier_for_expired('cold', max_age_days=90)
+   print(f'Will purge {len(expired)} artifacts:')
+   for a in expired[:10]:
+       print(f'  - {a[\"tenant_id\"]}/{a[\"workflow_id\"]}/{a[\"artifact_id\"]}')
+   "
+   ```
+
+3. **Backup before purge**:
+   ```bash
+   # Backup cold tier before purging
+   tar -czf backups/cold_tier_$(date +%Y%m%d).tar.gz artifacts/cold/
+   ```
+
+#### If Purge Occurred
+
+If artifacts were accidentally purged:
+
+1. **Check audit log immediately**:
+   ```bash
+   # Find purge events
+   grep "purged_from_cold" logs/lifecycle_events.jsonl | tail -20
+   ```
+
+2. **Restore from backup** (if available):
+   ```bash
+   # Extract backup
+   tar -xzf backups/cold_tier_YYYYMMDD.tar.gz -C /tmp/
+
+   # Copy specific artifacts back
+   cp -r /tmp/artifacts/cold/tenant_id artifacts/cold/
+   ```
+
+3. **Re-generate artifacts** (if source data available):
+   ```bash
+   # Re-run workflow that generated the artifacts
+   python src/workflows/weekly_report.py --tenant tenant_id --workflow workflow_id
+   ```
+
+4. **Document incident**:
+   ```bash
+   # Log to incident file
+   echo "$(date): Accidental purge of tenant_id/workflow_id - restored from backup" >> logs/incidents.log
+   ```
+
+### Monitoring Storage Usage
+
+#### Disk Space Monitoring
+
+Set up alerts for storage thresholds:
+
+```bash
+#!/bin/bash
+# monitor_storage.sh
+
+# Get storage statistics
+STORAGE_STATS=$(python -c "
+import sys, json; sys.path.insert(0, 'src')
+from storage.tiered_store import get_all_tier_stats
+print(json.dumps(get_all_tier_stats()))
+")
+
+# Check hot tier size
+HOT_SIZE_GB=$(echo "$STORAGE_STATS" | jq -r '.hot.total_bytes / 1073741824')
+
+if (( $(echo "$HOT_SIZE_GB > 100" | bc -l) )); then
+    echo "ALERT: Hot tier storage is ${HOT_SIZE_GB}GB (threshold: 100GB)"
+    # Send alert via email/Slack/PagerDuty
+fi
+```
+
+Run hourly via cron:
+
+```bash
+0 * * * * /path/to/monitor_storage.sh >> logs/storage_monitor.log 2>&1
+```
+
+#### Lifecycle Job Health Check
+
+Monitor lifecycle job completion:
+
+```bash
+#!/bin/bash
+# check_lifecycle_health.sh
+
+LAST_JOB=$(python -c "
+import sys, json; sys.path.insert(0, 'src')
+from storage.lifecycle import get_last_lifecycle_job
+job = get_last_lifecycle_job()
+if job:
+    print(json.dumps(job))
+else:
+    print('{\"error\": \"no_job_found\"}')
+")
+
+# Check if job ran recently (within 26 hours)
+TIMESTAMP=$(echo "$LAST_JOB" | jq -r '.timestamp // empty')
+
+if [ -z "$TIMESTAMP" ]; then
+    echo "ALERT: No lifecycle job found in audit log"
+    exit 1
+fi
+
+# Check for errors
+ERRORS=$(echo "$LAST_JOB" | jq -r '.total_errors // 0')
+
+if [ "$ERRORS" -gt 0 ]; then
+    echo "ALERT: Last lifecycle job had $ERRORS errors"
+    exit 1
+fi
+
+echo "✓ Lifecycle job health check passed"
+```
+
+### Adjusting Retention Policies
+
+#### Per-Environment Configuration
+
+Different environments may require different retention:
+
+**Development**:
+```bash
+export HOT_RETENTION_DAYS=1
+export WARM_RETENTION_DAYS=7
+export COLD_RETENTION_DAYS=14
+```
+
+**Staging**:
+```bash
+export HOT_RETENTION_DAYS=3
+export WARM_RETENTION_DAYS=14
+export COLD_RETENTION_DAYS=30
+```
+
+**Production**:
+```bash
+export HOT_RETENTION_DAYS=7
+export WARM_RETENTION_DAYS=30
+export COLD_RETENTION_DAYS=90
+```
+
+#### Emergency Retention Extension
+
+If you need to temporarily prevent purges:
+
+```bash
+# Extend cold retention to 365 days
+export COLD_RETENTION_DAYS=365
+
+# Run lifecycle job
+python scripts/lifecycle_run.py --live
+
+# Revert after emergency
+unset COLD_RETENTION_DAYS
+```
+
+### Troubleshooting Common Issues
+
+#### Issue: Lifecycle Job Hanging
+
+**Symptoms**: Job runs for hours without completing
+
+**Solutions**:
+1. Check for filesystem issues:
+   ```bash
+   df -h artifacts/
+   ls -la artifacts/hot/ artifacts/warm/ artifacts/cold/
+   ```
+
+2. Look for permission errors in logs:
+   ```bash
+   tail -100 logs/lifecycle_events.jsonl | grep error
+   ```
+
+3. Kill and restart with smaller batch:
+   ```bash
+   pkill -f lifecycle_run.py
+   # Process one tier at a time
+   python -c "from src.storage.lifecycle import promote_expired_to_warm; promote_expired_to_warm()"
+   ```
+
+#### Issue: Excessive Storage Growth
+
+**Symptoms**: Hot tier consuming too much space
+
+**Solutions**:
+1. Check largest tenants:
+   ```bash
+   du -sh artifacts/hot/*/ | sort -h | tail -10
+   ```
+
+2. Reduce retention temporarily:
+   ```bash
+   export HOT_RETENTION_DAYS=3
+   python scripts/lifecycle_run.py --live
+   ```
+
+3. Manually promote large artifacts:
+   ```python
+   from src.storage.tiered_store import list_artifacts, promote_artifact
+
+   artifacts = list_artifacts('hot', tenant_id='large_tenant')
+   for a in sorted(artifacts, key=lambda x: x['size_bytes'], reverse=True)[:100]:
+       promote_artifact(
+           tenant_id=a['tenant_id'],
+           workflow_id=a['workflow_id'],
+           artifact_id=a['artifact_id'],
+           from_tier='hot',
+           to_tier='warm'
+       )
+   ```
+
+### Best Practices
+
+#### Pre-Flight Checklist
+
+Before running lifecycle job in production:
+
+- [ ] Dry-run completed successfully
+- [ ] Reviewed list of artifacts to be purged
+- [ ] Verified recent backups exist
+- [ ] Checked disk space availability
+- [ ] Reviewed retention policies
+- [ ] Scheduled during low-traffic period
+- [ ] Team notified of maintenance window
+
+#### Post-Execution Validation
+
+After lifecycle job completes:
+
+- [ ] Check exit code: `echo $?` (should be 0)
+- [ ] Review summary: `python scripts/lifecycle_run.py --summary`
+- [ ] Verify no errors: `grep error logs/lifecycle_events.jsonl | tail -20`
+- [ ] Confirm expected promotions occurred
+- [ ] Check storage usage decreased as expected
+
+#### Audit Trail
+
+Maintain comprehensive audit trail:
+
+```bash
+# Archive lifecycle logs monthly
+tar -czf archives/lifecycle_logs_$(date +%Y%m).tar.gz logs/lifecycle_events.jsonl
+gzip logs/lifecycle_events.jsonl
+mv logs/lifecycle_events.jsonl.gz archives/
+
+# Start new log
+touch logs/lifecycle_events.jsonl
+```
+
+### Emergency Procedures
+
+#### Halting Lifecycle Job
+
+If lifecycle job is causing issues:
+
+```bash
+# Find process
+ps aux | grep lifecycle_run.py
+
+# Kill gracefully (allows cleanup)
+kill <pid>
+
+# Force kill if necessary
+kill -9 <pid>
+```
+
+#### Rolling Back Promotions
+
+To recover from incorrect promotions:
+
+```bash
+# 1. Identify incorrectly promoted artifacts from audit log
+grep "promoted_to_warm" logs/lifecycle_events.jsonl | tail -50
+
+# 2. Restore artifacts back to hot tier
+python scripts/restore_artifact.py \
+  --tenant tenant_id \
+  --workflow workflow_id \
+  --artifact artifact_id \
+  --from-tier warm \
+  --to-tier hot
+```
+
+### See Also
+
+- [STORAGE.md](./STORAGE.md) - Comprehensive storage documentation
+- [SECURITY.md](./SECURITY.md) - Storage security considerations

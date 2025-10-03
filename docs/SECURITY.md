@@ -1431,6 +1431,364 @@ def check_budget_limit(tenant_id: str, projected_cost: float):
 - [ONBOARDING.md](ONBOARDING.md) - Setting environment variables safely
 - [ERRORS.md](ERRORS.md) - Troubleshooting API key errors
 - [OPERATIONS.md](OPERATIONS.md) - Cost monitoring and budgeting
+- [STORAGE.md](STORAGE.md) - Storage system architecture and usage
+
+## Storage Security
+
+### Tenant-Scoped Storage Paths
+
+The storage system enforces strict tenant isolation through directory-based separation:
+
+```
+artifacts/
+├── hot/
+│   ├── tenant_a/     ← Tenant A's artifacts
+│   ├── tenant_b/     ← Tenant B's artifacts
+│   └── tenant_c/     ← Tenant C's artifacts
+├── warm/
+│   └── tenant_a/
+└── cold/
+    └── tenant_a/
+```
+
+### Path Traversal Prevention
+
+All storage operations validate identifiers to prevent path traversal attacks:
+
+```python
+# BLOCKED: Path traversal attempts
+tenant_id = "../../../etc"        # ✗ Raises InvalidTenantPathError
+workflow_id = "/tmp/exploit"      # ✗ Raises InvalidTenantPathError
+artifact_id = "../../passwd"      # ✗ Raises InvalidTenantPathError
+
+# BLOCKED: Invalid characters
+tenant_id = "acme:corp"           # ✗ Characters :*?"<>| are blocked
+workflow_id = "workflow*"         # ✗ Wildcards are blocked
+
+# ALLOWED: Valid identifiers
+tenant_id = "acme_corp"           # ✓ Alphanumeric with underscores
+workflow_id = "weekly_report"     # ✓ Valid identifier
+artifact_id = "report_2024.pdf"   # ✓ Valid with extension
+```
+
+### Validation Rules
+
+The storage system implements these validation checks:
+
+1. **No parent directory references**: `..` is blocked
+2. **No absolute paths**: Paths starting with `/` or `\` are rejected
+3. **No path separators**: Forward and backslashes are blocked in identifiers
+4. **No wildcard characters**: `*`, `?` are forbidden
+5. **No special characters**: `:`, `"`, `<`, `>`, `|` are blocked
+6. **Non-empty identifiers**: Empty strings are rejected
+
+### Cross-Tenant Prevention
+
+Tenants cannot access each other's artifacts:
+
+```python
+# Tenant A writes artifact
+write_artifact(
+    tier="hot",
+    tenant_id="tenant_a",
+    workflow_id="secrets",
+    artifact_id="api_key.txt",
+    content=b"secret_key_123"
+)
+
+# Tenant B CANNOT read Tenant A's artifact
+try:
+    read_artifact(
+        tier="hot",
+        tenant_id="tenant_b",
+        workflow_id="secrets",
+        artifact_id="api_key.txt"  # Different tenant path
+    )
+except ArtifactNotFoundError:
+    print("Cross-tenant access blocked")
+```
+
+### Audit Events for All Operations
+
+All storage operations emit audit events to `logs/lifecycle_events.jsonl`:
+
+**Write Operation:**
+```json
+{
+  "timestamp": "2024-01-15T10:30:00Z",
+  "event_type": "artifact_written",
+  "tenant_id": "acme_corp",
+  "workflow_id": "weekly_report",
+  "artifact_id": "report.pdf",
+  "tier": "hot",
+  "size_bytes": 51200,
+  "user_id": "alice@acme.com"
+}
+```
+
+**Promotion:**
+```json
+{
+  "timestamp": "2024-01-22T02:00:00Z",
+  "event_type": "promoted_to_warm",
+  "tenant_id": "acme_corp",
+  "workflow_id": "weekly_report",
+  "artifact_id": "report.pdf",
+  "age_days": 8.2,
+  "from_tier": "hot",
+  "to_tier": "warm",
+  "dry_run": false
+}
+```
+
+**Purge:**
+```json
+{
+  "timestamp": "2024-04-15T02:00:00Z",
+  "event_type": "purged_from_cold",
+  "tenant_id": "acme_corp",
+  "workflow_id": "weekly_report",
+  "artifact_id": "report.pdf",
+  "age_days": 95.3,
+  "size_bytes": 51200,
+  "dry_run": false
+}
+```
+
+**Restoration:**
+```json
+{
+  "timestamp": "2024-01-25T14:30:00Z",
+  "event_type": "artifact_restored",
+  "tenant_id": "acme_corp",
+  "workflow_id": "weekly_report",
+  "artifact_id": "report.pdf",
+  "from_tier": "warm",
+  "to_tier": "hot",
+  "user_id": "bob@acme.com",
+  "reason": "customer_request"
+}
+```
+
+### Audit Log Access Control
+
+Audit logs contain sensitive information and should be access-controlled:
+
+```bash
+# Restrict audit log permissions (Unix/Linux)
+chmod 640 logs/lifecycle_events.jsonl
+chown app_user:app_group logs/lifecycle_events.jsonl
+
+# Or use ACLs for fine-grained control
+setfacl -m u:audit_viewer:r logs/lifecycle_events.jsonl
+```
+
+### Monitoring Suspicious Activity
+
+Set up alerts for suspicious storage operations:
+
+```python
+# Example: Monitor for excessive purge operations
+import json
+from datetime import datetime, timedelta
+
+def check_purge_anomalies():
+    """Alert if purge rate exceeds threshold."""
+    recent_purges = []
+
+    with open("logs/lifecycle_events.jsonl") as f:
+        for line in f:
+            event = json.loads(line)
+            if event.get("event_type") == "purged_from_cold":
+                recent_purges.append(event)
+
+    # Check last hour
+    one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+    recent = [
+        e for e in recent_purges
+        if datetime.fromisoformat(e["timestamp"]) > one_hour_ago
+    ]
+
+    if len(recent) > 100:  # Alert if >100 purges/hour
+        send_alert(f"Anomalous purge rate: {len(recent)} purges in last hour")
+```
+
+### Data Retention Compliance
+
+Configure retention policies to meet compliance requirements:
+
+```bash
+# GDPR/CCPA: 90 days for user data
+export HOT_RETENTION_DAYS=7
+export WARM_RETENTION_DAYS=30
+export COLD_RETENTION_DAYS=90
+
+# Healthcare: 7 years for medical records
+export HOT_RETENTION_DAYS=30
+export WARM_RETENTION_DAYS=365
+export COLD_RETENTION_DAYS=2555  # ~7 years
+
+# Financial: 10 years for transaction records
+export COLD_RETENTION_DAYS=3650  # 10 years
+```
+
+### Encryption at Rest
+
+For production deployments, enable filesystem encryption:
+
+**Linux (LUKS):**
+```bash
+# Encrypt storage partition
+cryptsetup luksFormat /dev/sdb1
+cryptsetup open /dev/sdb1 artifacts_encrypted
+mkfs.ext4 /dev/mapper/artifacts_encrypted
+mount /dev/mapper/artifacts_encrypted /mnt/artifacts
+```
+
+**AWS (S3 with KMS):**
+```python
+import boto3
+
+s3 = boto3.client('s3')
+
+# Enable default encryption for bucket
+s3.put_bucket_encryption(
+    Bucket='artifacts-bucket',
+    ServerSideEncryptionConfiguration={
+        'Rules': [{
+            'ApplyServerSideEncryptionByDefault': {
+                'SSEAlgorithm': 'aws:kms',
+                'KMSMasterKeyID': 'arn:aws:kms:region:account:key/id'
+            }
+        }]
+    }
+)
+```
+
+### Secure Deletion
+
+For sensitive artifacts, use secure deletion:
+
+```python
+import os
+import secrets
+
+def secure_delete(file_path):
+    """
+    Securely delete file by overwriting with random data.
+
+    WARNING: This is only effective on traditional filesystems,
+    not SSD, cloud storage, or copy-on-write filesystems.
+    """
+    if not os.path.exists(file_path):
+        return
+
+    file_size = os.path.getsize(file_path)
+
+    # Overwrite with random data 3 times
+    for _ in range(3):
+        with open(file_path, 'wb') as f:
+            f.write(secrets.token_bytes(file_size))
+        os.fsync(f.fileno())
+
+    # Finally delete
+    os.unlink(file_path)
+```
+
+### Backup Security
+
+Protect backups with encryption:
+
+```bash
+# Encrypted backup with GPG
+tar -czf - artifacts/ | \
+  gpg --encrypt --recipient backup@company.com \
+  > backups/artifacts_$(date +%Y%m%d).tar.gz.gpg
+
+# Restore encrypted backup
+gpg --decrypt backups/artifacts_20240115.tar.gz.gpg | \
+  tar -xzf - -C /restore/location/
+```
+
+### Access Logging
+
+Log all artifact access for audit trail:
+
+```python
+from src.storage.lifecycle import log_lifecycle_event
+
+def log_artifact_access(tenant_id, workflow_id, artifact_id, user_id):
+    """Log artifact access event."""
+    log_lifecycle_event({
+        "event_type": "artifact_accessed",
+        "tenant_id": tenant_id,
+        "workflow_id": workflow_id,
+        "artifact_id": artifact_id,
+        "user_id": user_id,
+        "ip_address": request.remote_addr,
+        "user_agent": request.headers.get("User-Agent")
+    })
+```
+
+### Security Best Practices
+
+1. **Principle of Least Privilege**: Grant minimum necessary permissions
+2. **Defense in Depth**: Layer multiple security controls (path validation + ACLs + audit)
+3. **Regular Audits**: Review audit logs for suspicious patterns
+4. **Secure Defaults**: Restrictive permissions by default
+5. **Fail Securely**: Deny access on errors rather than allowing
+6. **Validate Input**: Never trust tenant/workflow/artifact IDs from external sources
+7. **Monitor Anomalies**: Alert on unusual access patterns or purge rates
+8. **Encrypt Sensitive Data**: Use encryption at rest for compliance
+9. **Rotate Keys**: Regularly rotate encryption keys
+10. **Test Security**: Include security tests in CI/CD pipeline
+
+### Security Testing
+
+Test path traversal prevention:
+
+```python
+# tests/test_storage_security.py
+import pytest
+from src.storage.tiered_store import write_artifact, InvalidTenantPathError
+
+def test_path_traversal_blocked():
+    """Test that path traversal attempts are blocked."""
+    with pytest.raises(InvalidTenantPathError):
+        write_artifact(
+            tier="hot",
+            tenant_id="../../../etc",
+            workflow_id="passwd",
+            artifact_id="shadow",
+            content=b"hacker"
+        )
+
+def test_cross_tenant_access_blocked():
+    """Test that tenants cannot access each other's artifacts."""
+    # Tenant A writes artifact
+    write_artifact("hot", "tenant_a", "wf", "secret.txt", b"secret")
+
+    # Tenant B cannot read it (different path)
+    with pytest.raises(ArtifactNotFoundError):
+        read_artifact("hot", "tenant_b", "wf", "secret.txt")
+```
+
+### Incident Response
+
+If security breach detected:
+
+1. **Isolate**: Immediately revoke access credentials
+2. **Investigate**: Review audit logs for scope of breach
+3. **Contain**: Block affected tenant/user accounts
+4. **Remediate**: Patch vulnerabilities, rotate keys
+5. **Notify**: Inform affected parties per compliance requirements
+6. **Document**: Record incident details and response actions
+7. **Review**: Update security procedures to prevent recurrence
+
+### See Also
+
+- [STORAGE.md](./STORAGE.md) - Complete storage documentation
+- [OPERATIONS.md](./OPERATIONS.md) - Operational procedures including lifecycle management
 
 ## Next Steps
 
@@ -1447,3 +1805,7 @@ def check_budget_limit(tenant_id: str, projected_cost: float):
 11. Schedule API key rotation reminders
 12. Test cost anomaly detection
 13. Document incident response procedures
+14. Configure storage encryption at rest
+15. Set up lifecycle audit log monitoring
+16. Test path traversal prevention in CI/CD
+17. Configure retention policies for compliance

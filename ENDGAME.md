@@ -1,5 +1,5 @@
 # Endgame — Multi-Agent Platform (Living Document)
-_Last updated: 2025-10-02 21:00 PT_
+_Last updated: 2025-10-02 23:00 PT_
 
 ## Purpose
 This document defines the evolving "end game" for the djp-workflow multi-agent system. It keeps two horizons in view:
@@ -11,10 +11,11 @@ It is revised at the **end of every sprint** (Sprints 23–40) to reflect what w
 ---
 
 ## Current Position
-- Sprints completed: 1–25
-- Next sprint: 26 (persistent queue with Redis/SQS)
+- Sprints completed: 1–26
+- Next sprint: 27 (advanced workflow chaining)
 - Guardrails: RBAC, tenant isolation, audit, budgets, env-only config, tests must pass (`pytest -q`)
 - **Milestone achieved:** Near-term endgame (Sprints 24-25) ✅ - End-to-end workflows now functional with real APIs
+- **Milestone achieved:** Data lifecycle & tiered storage (Sprint 26) ✅ - Automated artifact retention with hot/warm/cold tiers
 
 ---
 
@@ -104,7 +105,7 @@ It is revised at the **end of every sprint** (Sprints 23–40) to reflect what w
 
 ---
 
-## What We Learned (Sprints 23-25)
+## What We Learned (Sprints 23-26)
 
 1. **Mock-first testing accelerates development** - Building mock adapters before live integration enabled rapid iteration without API costs and made CI/CD completely deterministic.
 
@@ -112,10 +113,16 @@ It is revised at the **end of every sprint** (Sprints 23–40) to reflect what w
 
 3. **Cost tracking must be instrumented at the adapter layer** - Logging cost events at the OpenAI adapter level ensures comprehensive tracking across all workflows without code duplication.
 
+4. **Fake clock fixture enables deterministic testing** - Injecting time via fake_clock parameter allows testing retention policies without waiting days, making lifecycle tests run in milliseconds instead of weeks.
+
+5. **Atomic operations require temp file pattern** - Write to .tmp, then rename ensures no partial artifacts visible during writes; crash-safe on both Windows and POSIX systems.
+
+6. **Tenant isolation must be validated at every API boundary** - Path traversal checks prevent ../ attacks across tenant boundaries; security cannot rely on caller validation alone.
+
 ---
 
 ## Next Two Sprints—Commitments
 
-- Sprint 26: Persistent Queue (Redis/SQS) - Replace in-memory queue with durable backend; add job state persistence; enable cross-region job distribution; implement at-least-once delivery guarantees
+- Sprint 27: Advanced Workflow Chaining - DAG-based workflows with dependencies; conditional branching; parallel execution with fan-out/fan-in; error propagation and retry strategies; visualization dashboard
 
-- Sprint 27: Advanced Workflow Chaining - Output of one workflow → input of another; conditional branching based on results; parallel execution with fan-out/fan-in; workflow DAGs with dependencies; error propagation and retry strategies
+- Sprint 28: Persistent Queue (Redis/SQS) - Replace in-memory queue with durable backend; job state persistence; cross-region distribution; at-least-once delivery guarantees; dead letter queue
