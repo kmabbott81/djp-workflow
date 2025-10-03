@@ -410,3 +410,205 @@ Fix: Use workflow_ref from WORKFLOW_MAP in `src/workflows/adapter.py`.
 RunnerError: Task 'task1' failed after 3 attempts
 ```
 Check `logs/orchestrator_events.jsonl` for error details.
+
+## Checkpoint Tasks (Sprint 31)
+
+### Overview
+
+**Checkpoint tasks** pause DAG execution for human approval. Unlike workflow tasks that execute code, checkpoints wait for explicit approval/rejection before allowing downstream tasks to proceed.
+
+### Use Cases
+
+- **Approval gates**: Require manager sign-off before proceeding
+- **Quality review**: Human review of generated content
+- **Budget approval**: Confirm resource allocation
+- **Compliance**: Regulatory review checkpoints
+
+### YAML Syntax
+
+```yaml
+tasks:
+  - id: generate_report
+    type: workflow
+    workflow_ref: weekly_report
+    params:
+      start_date: "2025-10-01"
+
+  - id: manager_approval
+    type: checkpoint
+    prompt: "Approve weekly report for distribution?"
+    required_role: Operator
+    inputs:
+      signoff_text:
+        type: string
+        description: "Manager signoff text"
+        required: true
+    depends_on:
+      - generate_report
+
+  - id: distribute_report
+    type: workflow
+    workflow_ref: email_distribution
+    depends_on:
+      - manager_approval
+```
+
+### Checkpoint Fields
+
+- **type**: Must be `"checkpoint"` (not `"workflow"`)
+- **prompt**: Human-readable approval question (required)
+- **required_role**: RBAC role required to approve (default: `Operator`)
+- **inputs**: Optional schema for approval data (key-value pairs)
+- **depends_on**: Upstream tasks (same as workflow tasks)
+
+### Execution Flow
+
+1. **DAG starts**: Executes `generate_report`
+2. **Checkpoint encountered**: DAG pauses with `status: "paused"`
+3. **Approval pending**: Checkpoint record created in `logs/checkpoints.jsonl`
+4. **Human reviews**: Via CLI (`python scripts/approvals.py list`)
+5. **Human approves**: With optional data (`python scripts/approvals.py approve <id> --kv signoff_text="Approved"`)
+6. **DAG resumes**: Via `python scripts/run_dag_min.py --resume <dag_run_id>`
+7. **Downstream tasks**: Receive approval data as inputs
+
+### Approval Data Passing
+
+Approval data is namespaced and passed to downstream tasks:
+
+```python
+# Approval:
+python scripts/approvals.py approve abc123_manager_approval --kv signoff_text="Approved by John" priority=high
+
+# Downstream task receives:
+{
+    "manager_approval__signoff_text": "Approved by John",
+    "manager_approval__priority": "high"
+}
+```
+
+### Example: Full Approval Workflow
+
+See `configs/dags/weekly_ops_chain.approval.yaml`:
+
+```yaml
+name: weekly_ops_chain_with_approval
+tenant_id: local-dev
+
+tasks:
+  - id: inbox_drive_sweep
+    type: workflow
+    workflow_ref: inbox_drive_sweep
+    params:
+      inbox_items: "1. RE: Q4 planning"
+      drive_files: "Q4-plan.docx"
+    depends_on: []
+
+  - id: approval_checkpoint
+    type: checkpoint
+    prompt: "Approve weekly report draft?"
+    required_role: Operator
+    inputs:
+      signoff_text:
+        type: string
+        description: "Manager signoff"
+        required: true
+    depends_on:
+      - inbox_drive_sweep
+
+  - id: weekly_report_pack
+    type: workflow
+    workflow_ref: weekly_report
+    params:
+      user_priorities: "Sprint 31 completion"
+    depends_on:
+      - approval_checkpoint
+```
+
+**Run:**
+```bash
+# 1. Start DAG
+python scripts/run_dag_min.py --dag configs/dags/weekly_ops_chain.approval.yaml
+
+# Output: DAG PAUSED AT CHECKPOINT
+# Checkpoint ID: abc123_approval_checkpoint
+# DAG Run ID: abc123
+
+# 2. Review checkpoint
+python scripts/approvals.py list
+
+# 3. Approve with data
+python scripts/approvals.py approve abc123_approval_checkpoint --kv signoff_text="Approved by manager"
+
+# 4. Resume DAG
+python scripts/run_dag_min.py --dag configs/dags/weekly_ops_chain.approval.yaml --resume abc123
+
+# Output: DAG RESUMED & COMPLETED
+```
+
+### RBAC Roles
+
+Checkpoints enforce role-based access control:
+
+- **Viewer** (level 0): Cannot approve
+- **Operator** (level 1): Can approve Operator checkpoints
+- **Admin** (level 2): Can approve any checkpoint
+
+Set user role via environment:
+```bash
+export USER_RBAC_ROLE=Operator
+python scripts/approvals.py approve <checkpoint_id>
+```
+
+### Expiration
+
+Checkpoints expire after `APPROVAL_EXPIRES_H` hours (default: 72). The scheduler automatically marks expired checkpoints as `status: "expired"`.
+
+**Configuration:**
+```bash
+export APPROVAL_EXPIRES_H=48  # 2 days
+```
+
+Expired checkpoints cannot be approved and prevent DAG resumption.
+
+### Dashboard
+
+View pending checkpoints in the Streamlit dashboard:
+
+```bash
+streamlit run dashboards/app.py
+```
+
+Navigate to **Observability** → **✅ Checkpoint Approvals**
+
+### Troubleshooting
+
+**Checkpoint stuck in pending:**
+```bash
+# List pending checkpoints
+python scripts/approvals.py list
+
+# Check if expired (expires_at < now)
+# Approve explicitly
+python scripts/approvals.py approve <checkpoint_id>
+```
+
+**Permission denied:**
+```bash
+# Check current role
+echo $USER_RBAC_ROLE
+
+# Set appropriate role
+export USER_RBAC_ROLE=Admin
+python scripts/approvals.py approve <checkpoint_id>
+```
+
+**Resume fails:**
+```bash
+# Verify checkpoint is approved
+python scripts/approvals.py list
+
+# Check correct dag_run_id
+python scripts/run_dag_min.py --dag <path> --resume <correct_id>
+```
+
+For complete checkpoint documentation, see [APPROVALS.md](APPROVALS.md).

@@ -1,0 +1,47 @@
+# Example DAG with Human-in-the-Loop Checkpoint (Sprint 31)
+#
+# This DAG demonstrates checkpoint approval workflow:
+# 1. inbox_drive_sweep: Collects inbox & drive items
+# 2. checkpoint: Pauses for human approval with custom input
+# 3. weekly_report_pack: Generates final report with approval data
+#
+# Usage:
+#   python scripts/run_dag_min.py --dag configs/dags/weekly_ops_chain.approval.yaml
+#
+# After checkpoint pause:
+#   python scripts/approvals.py list
+#   python scripts/approvals.py approve <checkpoint_id> --kv signoff_text="Approved by manager"
+#   python scripts/run_dag_min.py --dag configs/dags/weekly_ops_chain.approval.yaml --resume <dag_run_id>
+
+name: weekly_ops_chain_with_approval
+tenant_id: local-dev
+
+tasks:
+  - id: inbox_drive_sweep
+    type: workflow
+    workflow_ref: inbox_drive_sweep
+    params:
+      inbox_items: "1. RE: Q4 planning\n2. Team sync invite"
+      drive_files: "Q4-plan.docx, budget.xlsx"
+    depends_on: []
+
+  - id: approval_checkpoint
+    type: checkpoint
+    prompt: "Approve weekly report draft? Review outputs from inbox_drive_sweep before proceeding."
+    required_role: Operator
+    inputs:
+      signoff_text:
+        type: string
+        description: "Manager signoff text for report"
+        required: true
+    depends_on:
+      - inbox_drive_sweep
+
+  - id: weekly_report_pack
+    type: workflow
+    workflow_ref: weekly_report
+    params:
+      user_priorities: "Sprint 31 completion"
+      upcoming_deadlines: "Q4 kickoff Oct 15"
+    depends_on:
+      - approval_checkpoint

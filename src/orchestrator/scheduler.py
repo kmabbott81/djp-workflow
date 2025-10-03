@@ -407,6 +407,26 @@ def main():
                 if enqueued > 0:
                     print(f"[{now.strftime('%H:%M:%S')}] Enqueued {enqueued} job(s)")
 
+                # Expire pending checkpoints (Sprint 31)
+                try:
+                    from .checkpoints import expire_pending
+
+                    expired = expire_pending(now)
+                    if expired:
+                        print(f"[{now.strftime('%H:%M:%S')}] Expired {len(expired)} checkpoint(s)")
+                        # Emit checkpoint_expired events
+                        for cp in expired:
+                            record_event(
+                                {
+                                    "event": "checkpoint_expired",
+                                    "checkpoint_id": cp["checkpoint_id"],
+                                    "dag_run_id": cp["dag_run_id"],
+                                    "task_id": cp["task_id"],
+                                }
+                            )
+                except ImportError:
+                    pass  # Checkpoints module not available
+
                 # Always try to drain (may have pending jobs from previous ticks)
                 pending = queue.count(JobStatus.PENDING)
                 if pending > 0:

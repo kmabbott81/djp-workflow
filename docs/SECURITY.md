@@ -1879,6 +1879,430 @@ If security breach detected:
 - [STORAGE.md](./STORAGE.md) - Complete storage documentation
 - [OPERATIONS.md](./OPERATIONS.md) - Operational procedures including lifecycle management
 
+## Checkpoint Approvals & RBAC (Sprint 31)
+
+Sprint 31 introduces human-in-the-loop approvals with role-based access control for checkpoint tasks in DAG workflows.
+
+### RBAC Role Hierarchy
+
+Checkpoint approvals use a hierarchical role system:
+
+| Role | Level | Permissions | Can Approve |
+|------|-------|-------------|-------------|
+| **Viewer** | 0 | Read-only access | None |
+| **Operator** | 1 | Can approve Operator checkpoints | Operator, Viewer |
+| **Admin** | 2 | Can approve any checkpoint | All roles |
+
+**Permission model:**
+- A role can approve checkpoints at its own level or below
+- Higher-level roles inherit lower-level permissions
+- Checkpoints specify `required_role` (minimum role needed to approve)
+
+**Example scenarios:**
+
+```python
+# Operator checkpoint
+checkpoint = {
+    "required_role": "Operator",
+    "prompt": "Approve weekly report?"
+}
+
+# Viewer CANNOT approve (level 0 < 1)
+can_approve("Viewer", "Operator")  # → False
+
+# Operator CAN approve (level 1 >= 1)
+can_approve("Operator", "Operator")  # → True
+
+# Admin CAN approve (level 2 >= 1)
+can_approve("Admin", "Operator")  # → True
+
+# Admin checkpoint
+checkpoint = {
+    "required_role": "Admin",
+    "prompt": "Approve production deployment?"
+}
+
+# Operator CANNOT approve (level 1 < 2)
+can_approve("Operator", "Admin")  # → False
+
+# Admin CAN approve (level 2 >= 2)
+can_approve("Admin", "Admin")  # → True
+```
+
+### Environment Variables
+
+Configure checkpoint RBAC via environment variables:
+
+```bash
+# User's role for approvals (default: Viewer)
+export USER_RBAC_ROLE=Operator
+
+# Approver role for automated systems (optional)
+export APPROVER_RBAC_ROLE=Admin
+
+# Checkpoint expiration (default: 72 hours)
+export APPROVAL_EXPIRES_H=72
+```
+
+**Role assignment:**
+- Set `USER_RBAC_ROLE` before running approval commands
+- Role persists for the session/process lifetime
+- Different users can have different roles
+- No role = defaults to Viewer (cannot approve anything)
+
+**Usage:**
+
+```bash
+# Set role
+export USER_RBAC_ROLE=Operator
+
+# Approve checkpoint
+python scripts/approvals.py approve abc123_checkpoint
+
+# Verify role
+echo $USER_RBAC_ROLE
+```
+
+### Audit Surfaces
+
+Checkpoint approval decisions are logged to multiple audit surfaces:
+
+#### 1. Checkpoints Log (`logs/checkpoints.jsonl`)
+
+All checkpoint lifecycle events:
+
+```json
+{
+  "timestamp": "2025-10-03T14:30:00Z",
+  "event": "checkpoint_created",
+  "checkpoint_id": "abc123_approval",
+  "dag_run_id": "abc123",
+  "task_id": "approval",
+  "tenant": "tenant-a",
+  "prompt": "Approve weekly report?",
+  "required_role": "Operator"
+}
+
+{
+  "timestamp": "2025-10-03T14:35:00Z",
+  "event": "checkpoint_approved",
+  "checkpoint_id": "abc123_approval",
+  "approved_by": "Admin",
+  "approval_data": {"signoff": "Approved by manager"},
+  "approved_at": "2025-10-03T14:35:00Z"
+}
+
+{
+  "timestamp": "2025-10-03T14:36:00Z",
+  "event": "checkpoint_rejected",
+  "checkpoint_id": "def456_approval",
+  "rejected_by": "Operator",
+  "reject_reason": "Budget concerns",
+  "rejected_at": "2025-10-03T14:36:00Z"
+}
+
+{
+  "timestamp": "2025-10-06T14:30:00Z",
+  "event": "checkpoint_expired",
+  "checkpoint_id": "ghi789_approval",
+  "expired_at": "2025-10-06T14:30:00Z",
+  "age_hours": 72
+}
+```
+
+**Event types:**
+- `checkpoint_created` - Checkpoint created and awaiting approval
+- `checkpoint_approved` - Approved by user with role
+- `checkpoint_rejected` - Rejected with reason
+- `checkpoint_expired` - Automatically expired after timeout
+
+#### 2. State Store (`logs/orchestrator_state.jsonl`)
+
+DAG resumption and scheduler events:
+
+```json
+{
+  "timestamp": "2025-10-03T14:30:00Z",
+  "event": "resume_token",
+  "dag_run_id": "abc123",
+  "next_task_id": "weekly_report",
+  "tenant": "tenant-a"
+}
+
+{
+  "timestamp": "2025-10-06T02:00:00Z",
+  "event": "checkpoint_expired",
+  "checkpoint_id": "abc123_approval",
+  "dag_run_id": "abc123",
+  "task_id": "approval"
+}
+```
+
+**Event types:**
+- `resume_token` - Token written when DAG pauses at checkpoint
+- `checkpoint_expired` - Scheduler-emitted expiration event
+
+#### 3. Orchestrator Events (`logs/orchestrator_events.jsonl`)
+
+Task-level DAG execution events:
+
+```json
+{
+  "timestamp": "2025-10-03T14:30:00Z",
+  "event": "checkpoint_pending",
+  "dag_run_id": "abc123",
+  "task_id": "approval",
+  "checkpoint_id": "abc123_approval"
+}
+
+{
+  "timestamp": "2025-10-03T14:35:00Z",
+  "event": "checkpoint_approved",
+  "dag_run_id": "abc123",
+  "task_id": "approval",
+  "checkpoint_id": "abc123_approval"
+}
+
+{
+  "timestamp": "2025-10-03T14:36:00Z",
+  "event": "dag_done",
+  "dag_run_id": "abc123",
+  "status": "success"
+}
+```
+
+### Querying Audit Logs
+
+**All approvals by role:**
+
+```bash
+grep "checkpoint_approved" logs/checkpoints.jsonl | jq -r '.approved_by' | sort | uniq -c
+```
+
+**Rejections with reasons:**
+
+```bash
+grep "checkpoint_rejected" logs/checkpoints.jsonl | jq -r '[.checkpoint_id, .rejected_by, .reject_reason] | @tsv'
+```
+
+**Expired checkpoints:**
+
+```bash
+grep "checkpoint_expired" logs/checkpoints.jsonl | tail -20
+```
+
+**RBAC violations (insufficient role):**
+
+```bash
+# Check for approval attempts that failed due to role
+# (These would appear in application logs, not checkpoint logs)
+grep "cannot approve" logs/approvals.log
+```
+
+**Approvals for specific tenant:**
+
+```bash
+grep "checkpoint_approved" logs/checkpoints.jsonl | jq -r 'select(.tenant == "tenant-a")'
+```
+
+**Approval timeline for compliance:**
+
+```bash
+CHECKPOINT_ID="abc123_approval"
+grep "$CHECKPOINT_ID" logs/checkpoints.jsonl | jq -r '[.timestamp, .event, .approved_by // .rejected_by // "system"] | @tsv'
+```
+
+### Retention Policy
+
+**Recommended retention for checkpoint audit logs:**
+
+- **Hot logs (current)**: 90 days minimum
+- **Archived logs**: 2 years for compliance
+- **Critical checkpoints**: 7 years (e.g., financial approvals, production deployments)
+
+**Archive old logs:**
+
+```bash
+# Archive logs older than 90 days
+python -c "
+import json, gzip
+from datetime import datetime, timedelta
+
+cutoff = (datetime.now() - timedelta(days=90)).isoformat()
+
+# Read all events
+with open('logs/checkpoints.jsonl', 'r') as f:
+    events = [json.loads(line) for line in f]
+
+# Separate old and recent
+old = [e for e in events if e['timestamp'] < cutoff]
+recent = [e for e in events if e['timestamp'] >= cutoff]
+
+# Archive old events
+with gzip.open(f'logs/archives/checkpoints_{datetime.now().strftime(\"%Y%m%d\")}.jsonl.gz', 'wt') as f:
+    for event in old:
+        f.write(json.dumps(event) + '\n')
+
+# Keep only recent in active log
+with open('logs/checkpoints.jsonl', 'w') as f:
+    for event in recent:
+        f.write(json.dumps(event) + '\n')
+
+print(f'Archived {len(old)} events, retained {len(recent)}')
+"
+```
+
+### Security Best Practices
+
+#### 1. Principle of Least Privilege
+
+Assign minimum necessary role:
+
+```bash
+# Default: Viewer (read-only, no approvals)
+export USER_RBAC_ROLE=Viewer
+
+# Grant Operator only when needed
+export USER_RBAC_ROLE=Operator
+
+# Restrict Admin to ops team
+export USER_RBAC_ROLE=Admin
+```
+
+#### 2. Audit All Approval Actions
+
+Monitor for suspicious approval patterns:
+
+```bash
+# Alert on excessive rejections
+REJECT_COUNT=$(grep "checkpoint_rejected" logs/checkpoints.jsonl | wc -l)
+if [ "$REJECT_COUNT" -gt 50 ]; then
+    echo "ALERT: High rejection rate - possible workflow issues"
+fi
+
+# Alert on Admin overrides for Operator checkpoints
+grep "checkpoint_approved" logs/checkpoints.jsonl | \
+  jq -r 'select(.required_role == "Operator" and .approved_by == "Admin")' | \
+  wc -l
+```
+
+#### 3. Expiration as Security Control
+
+Expired checkpoints cannot be approved:
+
+```bash
+# Set stricter expiration for sensitive checkpoints
+export APPROVAL_EXPIRES_H=24  # 1 day for critical approvals
+
+# Monitor for expired checkpoints
+grep "checkpoint_expired" logs/checkpoints.jsonl | tail -10
+```
+
+#### 4. Role Segregation
+
+Separate approval roles by environment:
+
+```bash
+# Development: Relaxed
+export USER_RBAC_ROLE=Admin
+
+# Staging: Moderate
+export USER_RBAC_ROLE=Operator
+
+# Production: Strict
+export USER_RBAC_ROLE=Operator  # Only Admins can override
+```
+
+#### 5. Dashboard Monitoring
+
+Use observability dashboard to monitor checkpoint health:
+
+```bash
+streamlit run dashboards/app.py
+```
+
+Navigate to **Observability** → **✅ Checkpoint Approvals** to view:
+- Pending checkpoints (alert if > 5)
+- Recent approvals/rejections
+- Expired checkpoints
+- Approval rate by role
+
+### Compliance Considerations
+
+#### SOC 2 / ISO 27001
+
+- **Access Control**: Role-based approval hierarchy enforces separation of duties
+- **Audit Logging**: All approval decisions logged with timestamp, user, and role
+- **Non-repudiation**: Approval events include approved_by field (immutable)
+- **Traceability**: Complete audit trail from checkpoint creation to approval/rejection
+
+#### GDPR
+
+- **Right to Access**: Users can query their approval history
+- **Data Minimization**: Audit logs contain only necessary fields
+- **Retention**: Configurable retention policies (default 90 days)
+
+#### HIPAA (Healthcare)
+
+- **Access Controls**: Role hierarchy prevents unauthorized access
+- **Audit Trails**: Complete audit of all approval decisions
+- **Integrity**: Append-only JSONL prevents log tampering
+- **Retention**: 7-year retention for compliance
+
+### Testing RBAC
+
+Test role hierarchy enforcement:
+
+```python
+import pytest
+from src.security.rbac_check import can_approve
+
+def test_viewer_cannot_approve_operator():
+    """Test that Viewer role cannot approve Operator checkpoints."""
+    assert not can_approve("Viewer", "Operator")
+
+def test_operator_can_approve_operator():
+    """Test that Operator can approve Operator checkpoints."""
+    assert can_approve("Operator", "Operator")
+
+def test_admin_can_approve_any():
+    """Test that Admin can approve any checkpoint."""
+    assert can_approve("Admin", "Operator")
+    assert can_approve("Admin", "Admin")
+
+def test_operator_cannot_approve_admin():
+    """Test that Operator cannot approve Admin checkpoints."""
+    assert not can_approve("Operator", "Admin")
+```
+
+### Incident Response
+
+If unauthorized approval detected:
+
+1. **Immediate**: Review audit logs to identify user and checkpoint
+2. **Investigate**: Check if role was escalated or credentials compromised
+3. **Contain**: Revoke user's role or rotate credentials
+4. **Remediate**: Reject unauthorized approvals, re-run DAG if needed
+5. **Document**: Record incident in security log
+6. **Review**: Update RBAC policies to prevent recurrence
+
+**Query unauthorized approvals:**
+
+```bash
+# Find approvals by Viewer (should be none)
+grep "checkpoint_approved" logs/checkpoints.jsonl | jq -r 'select(.approved_by == "Viewer")'
+
+# Find approvals where approved_by < required_role (should be none)
+# (Requires manual inspection of role levels)
+grep "checkpoint_approved" logs/checkpoints.jsonl | \
+  jq -r 'select(.required_role == "Admin" and .approved_by != "Admin")'
+```
+
+### Related Documentation
+
+- [ORCHESTRATION.md](./ORCHESTRATION.md) - Complete checkpoint documentation
+- [OPERATIONS.md](./OPERATIONS.md) - Operational runbooks for checkpoint management
+
 ## Next Steps
 
 1. Enable RBAC enforcement: `FEATURE_RBAC_ENFORCE=true`
@@ -1898,3 +2322,7 @@ If security breach detected:
 15. Set up lifecycle audit log monitoring
 16. Test path traversal prevention in CI/CD
 17. Configure retention policies for compliance
+18. Set up checkpoint approval role hierarchy (Sprint 31)
+19. Configure checkpoint expiration policies (default: 72h)
+20. Monitor checkpoint audit logs for suspicious patterns
+21. Test RBAC enforcement for checkpoint approvals
