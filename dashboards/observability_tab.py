@@ -24,6 +24,11 @@ def render_observability_tab():
     st.markdown("### 💰 API Cost Tracking")
     _render_cost_tracking()
 
+    # Cost governance section (Sprint 30)
+    st.markdown("---")
+    st.markdown("### 🎯 Cost Governance & Budgets")
+    _render_cost_governance()
+
     # Storage lifecycle section
     st.markdown("---")
     st.markdown("### 💾 Storage Lifecycle")
@@ -74,6 +79,147 @@ def render_observability_tab():
         st.markdown("#### Recent Deployments")
 
         _render_deployment_log()
+
+
+def _render_cost_governance():
+    """Render cost governance section with budget status and anomalies (Sprint 30)."""
+    try:
+        import sys
+
+        sys.path.insert(0, str(Path(__file__).parent.parent))
+        from src.cost.anomaly import detect_anomalies
+        from src.cost.budgets import get_global_budget
+        from src.cost.ledger import load_cost_events, rollup, window_sum
+
+        # Load cost events
+        events = load_cost_events(window_days=31)
+
+        if not events:
+            st.info("No cost data available. Run workflows to see budget status here.")
+            return
+
+        # Global budget status
+        st.markdown("#### Global Budget Status")
+
+        global_budget = get_global_budget()
+        global_daily = window_sum(events, tenant=None, days=1)
+        global_monthly = window_sum(events, tenant=None, days=30)
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            daily_pct = (global_daily / global_budget["daily"] * 100) if global_budget["daily"] > 0 else 0
+            st.metric("Daily Spend", f"${global_daily:.2f}", f"{daily_pct:.1f}% of budget")
+
+        with col2:
+            st.metric("Daily Budget", f"${global_budget['daily']:.2f}")
+
+        with col3:
+            monthly_pct = (global_monthly / global_budget["monthly"] * 100) if global_budget["monthly"] > 0 else 0
+            st.metric("Monthly Spend", f"${global_monthly:.2f}", f"{monthly_pct:.1f}% of budget")
+
+        with col4:
+            st.metric("Monthly Budget", f"${global_budget['monthly']:.2f}")
+
+        # Top tenants by spend
+        st.markdown("#### Top Tenants by Spend (Last 30 Days)")
+
+        tenant_rollup = rollup(events, by=("tenant",))[:10]  # Top 10
+
+        if tenant_rollup:
+            import pandas as pd
+
+            from src.cost.budgets import get_tenant_budget, is_over_budget
+
+            table_data = []
+            for record in tenant_rollup:
+                tenant = record["tenant"]
+                daily_spend = window_sum(events, tenant=tenant, days=1)
+                monthly_spend = window_sum(events, tenant=tenant, days=30)
+
+                budget = get_tenant_budget(tenant)
+                status = is_over_budget(tenant, daily_spend, monthly_spend)
+
+                status_icon = "✅" if not (status["daily"] or status["monthly"]) else "🚨"
+
+                table_data.append(
+                    {
+                        "Tenant": tenant,
+                        "Daily": f"${daily_spend:.2f}",
+                        "Monthly": f"${monthly_spend:.2f}",
+                        "Budget (D/M)": f"${budget['daily']:.0f} / ${budget['monthly']:.0f}",
+                        "Status": status_icon,
+                    }
+                )
+
+            df = pd.DataFrame(table_data)
+            st.dataframe(df, use_container_width=True, hide_index=True)
+
+        # Cost anomalies
+        st.markdown("#### Cost Anomalies")
+
+        anomalies = detect_anomalies()
+
+        if anomalies:
+            st.warning(f"⚠️ {len(anomalies)} cost anomalies detected today")
+
+            import pandas as pd
+
+            anomaly_data = []
+            for anom in anomalies[:10]:  # Top 10
+                anomaly_data.append(
+                    {
+                        "Tenant": anom["tenant"],
+                        "Today": f"${anom['today_spend']:.2f}",
+                        "Baseline": f"${anom['baseline_mean']:.2f}",
+                        "Threshold": f"${anom['threshold']:.2f}",
+                        "Sigma": f"{anom['sigma']}σ",
+                    }
+                )
+
+            df = pd.DataFrame(anomaly_data)
+            st.dataframe(df, use_container_width=True, hide_index=True)
+        else:
+            st.success("✅ No cost anomalies detected")
+
+        # Governance events
+        st.markdown("#### Recent Governance Events")
+
+        governance_log_path = Path("logs/governance_events.jsonl")
+
+        if governance_log_path.exists():
+            gov_events = []
+            with open(governance_log_path) as f:
+                for line in f:
+                    if line.strip():
+                        gov_events.append(json.loads(line))
+
+            if gov_events:
+                recent_gov = gov_events[-10:]  # Last 10
+
+                import pandas as pd
+
+                gov_data = []
+                for event in reversed(recent_gov):
+                    gov_data.append(
+                        {
+                            "Timestamp": event.get("timestamp", "")[:19],
+                            "Event": event.get("event", ""),
+                            "Tenant": event.get("tenant", ""),
+                            "Reason": event.get("reason", ""),
+                        }
+                    )
+
+                df = pd.DataFrame(gov_data)
+                st.dataframe(df, use_container_width=True, hide_index=True)
+            else:
+                st.info("No governance events recorded yet")
+        else:
+            st.info("No governance events recorded yet")
+
+    except Exception as e:
+        st.error(f"Error loading cost governance data: {e}")
+        st.caption("Make sure cost governance system is initialized and accessible")
 
 
 def _render_storage_lifecycle():

@@ -991,6 +991,119 @@ Budget behavior:
 - **90% threshold**: Shows warning but continues
 - **100% threshold**: Blocks execution and exits with error code
 
+### Cost Governance & Budget Guardrails (Sprint 30)
+
+Sprint 30 introduces production-grade budget enforcement with per-tenant and global limits:
+
+#### Budget Configuration
+
+```bash
+# Global budgets
+GLOBAL_BUDGET_DAILY=25.0
+GLOBAL_BUDGET_MONTHLY=500.0
+
+# Per-tenant defaults
+TENANT_BUDGET_DAILY_DEFAULT=5.0
+TENANT_BUDGET_MONTHLY_DEFAULT=100.0
+
+# Enforcement thresholds
+BUDGET_SOFT_THRESHOLD=0.8  # Throttle at 80%
+BUDGET_HARD_THRESHOLD=1.0  # Deny at 100%
+```
+
+For per-tenant customization, create `config/budgets.yaml`:
+
+```yaml
+global:
+  daily: 100.0
+  monthly: 2000.0
+
+tenants:
+  premium-tenant:
+    daily: 20.0
+    monthly: 400.0
+
+  trial-tenant:
+    daily: 1.0
+    monthly: 10.0
+```
+
+#### Cost Reports
+
+View budget status and spend breakdown:
+
+```bash
+# Global report (last 30 days)
+python scripts/cost_report.py
+
+# Tenant-specific report
+python scripts/cost_report.py --tenant tenant-1
+
+# Custom time window
+python scripts/cost_report.py --days 7
+
+# JSON output
+python scripts/cost_report.py --json > report.json
+```
+
+#### Dashboard Monitoring
+
+The observability dashboard includes a **Cost Governance** panel showing:
+
+- Global and per-tenant budget status
+- Daily/monthly spend vs budgets
+- Cost anomalies (statistical baseline detection)
+- Recent governance events (throttles, denials, anomalies)
+
+Access via: `streamlit run dashboards/app.py` → Observability tab
+
+#### Budget Breach Runbook
+
+When a tenant exceeds their budget:
+
+1. **Immediate**: Jobs are denied and sent to DLQ (if worker integration enabled)
+2. **Alert**: Check dashboard or governance events log
+3. **Investigate**: Run cost report for the tenant
+   ```bash
+   python scripts/cost_report.py --tenant tenant-1 --days 7
+   ```
+4. **Resolution**:
+   - Increase budget in `config/budgets.yaml` if legitimate usage
+   - Review workflow efficiency if costs are unexpected
+   - Contact tenant about usage patterns
+5. **Recovery**: Replay DLQ jobs after budget reset
+   ```bash
+   # Replay budget-denied jobs
+   python scripts/dlq_replay.py --reason budget_exceeded --tenant tenant-1
+   ```
+
+#### Anomaly Detection
+
+Sprint 30 automatically detects unusual spending patterns using statistical baselines:
+
+```bash
+# View anomalies
+python scripts/cost_report.py | grep "Cost Anomalies"
+
+# Configure detection sensitivity
+ANOMALY_SIGMA=3.0           # Standard deviations threshold
+ANOMALY_MIN_DOLLARS=3.0     # Minimum spend to flag
+ANOMALY_MIN_EVENTS=10       # Minimum baseline events
+```
+
+Anomalies are logged to `logs/governance_events.jsonl` for auditing.
+
+#### Monthly Budget Reset
+
+At the start of each month:
+
+1. Review previous month's governance events
+2. Adjust budgets based on usage trends
+3. Replay any budget-denied DLQ jobs if appropriate
+4. Update tenant quotas in `config/budgets.yaml`
+
+See [COSTS.md](COSTS.md) for complete budget governance documentation.
+
 ### Cost Projection
 
 All workflows show projected costs before execution:

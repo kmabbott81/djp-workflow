@@ -180,6 +180,95 @@ events = logger.query(
 - Recommended retention: 90 days minimum (compliance)
 - Archive to S3/GCS for long-term storage
 
+## Cost Governance Security (Sprint 30)
+
+Sprint 30 introduces budget enforcement with governance event logging and RBAC controls.
+
+### Governance Event Auditing
+
+All budget enforcement decisions are logged to `logs/governance_events.jsonl`:
+
+```json
+{
+  "event": "budget_deny",
+  "tenant": "tenant-1",
+  "reason": "daily_budget_exceeded",
+  "daily_spend": 15.0,
+  "daily_budget": 10.0,
+  "timestamp": "2025-10-03T12:00:00Z"
+}
+```
+
+**Event Types:**
+- `budget_throttle`: Approaching budget threshold (soft limit)
+- `budget_deny`: Budget exceeded (hard limit)
+- `cost_anomaly`: Unusual spending detected
+- `alert`: Budget-related alerts
+
+### RBAC for Budget Configuration
+
+Budget configuration follows strict RBAC controls:
+
+| Resource | Viewer | Editor | Admin | Deployer |
+|----------|--------|--------|-------|----------|
+| View budgets | ✅ | ✅ | ✅ | ✅ |
+| View governance events | ✅ | ✅ | ✅ | ✅ |
+| Modify budgets (YAML) | ❌ | ❌ | ✅ | ✅ |
+| Set env budgets | ❌ | ❌ | ✅ | ✅ |
+| Replay DLQ jobs | ❌ | ❌ | ✅ | ✅ |
+
+### Budget File Permissions
+
+Secure budget configuration files:
+
+```bash
+# config/budgets.yaml - read-only for workers
+chmod 644 config/budgets.yaml
+chown admin:workers config/budgets.yaml
+
+# logs/governance_events.jsonl - append-only for workers
+chmod 644 logs/governance_events.jsonl
+chown admin:workers logs/governance_events.jsonl
+```
+
+### Monitoring Governance Events
+
+Watch for suspicious budget activity:
+
+```bash
+# Monitor budget denials
+tail -f logs/governance_events.jsonl | grep '"event":"budget_deny"'
+
+# Count denials per tenant
+cat logs/governance_events.jsonl | jq -r 'select(.event=="budget_deny") | .tenant' | sort | uniq -c
+
+# Detect anomalies
+cat logs/governance_events.jsonl | jq -r 'select(.event=="cost_anomaly")'
+
+# Alert on repeated denials (potential abuse)
+cat logs/governance_events.jsonl | jq -r 'select(.event=="budget_deny") | .tenant' | sort | uniq -c | awk '$1 > 10 {print $2}'
+```
+
+### Budget Audit Trail
+
+Governance events provide a complete audit trail:
+
+1. **Who**: Tenant ID in every event
+2. **What**: Event type (throttle, deny, anomaly)
+3. **When**: ISO 8601 timestamp
+4. **Why**: Reason (daily_budget_exceeded, anomaly_detected, etc.)
+5. **Context**: Spend amounts, budget limits, thresholds
+
+### Compliance Considerations
+
+- **Retention**: Keep governance events for 90+ days for auditing
+- **Access Control**: Restrict budget modification to admins only
+- **Change Tracking**: Log all budget configuration changes
+- **Alerting**: Configure alerts for repeated budget denials
+- **Review**: Monthly review of governance events and budget trends
+
+See [COSTS.md](COSTS.md) for complete budget governance documentation.
+
 ## Security Best Practices
 
 ### 1. Enable RBAC in Production
