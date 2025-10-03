@@ -1,0 +1,36 @@
+# Weekly Operations Chain - Minimal 3-task DAG
+# Demonstrates: sweep -> weekly_report -> meeting_brief with payload passing
+
+name: weekly_ops_chain
+tenant_id: local-dev
+
+tasks:
+  - id: sweep
+    workflow_ref: inbox_drive_sweep
+    params:
+      inbox_items: "Email: Budget approval\nEmail: Team sync\nFile: Q4-plan.docx"
+      drive_files: "budget.xlsx, roadmap.pptx"
+      user_priorities: "Sprint 25 completion"
+    retries: 1
+    depends_on: []
+
+  - id: weekly_report
+    workflow_ref: weekly_report_pack
+    params:
+      start_date: "2025-10-01"
+      end_date: "2025-10-07"
+      context: "Sprint 25: Completed autoscaling and onboarding"
+    retries: 1
+    depends_on:
+      - sweep
+
+  - id: meeting_brief
+    workflow_ref: meeting_transcript_brief
+    params:
+      meeting_title: "Sprint Review"
+      meeting_date: "2025-10-07"
+      attendees: "Alice, Bob, Charlie"
+      transcript: "Alice: Great sprint! Bob: Agreed. Charlie: Next steps?"
+    retries: 1
+    depends_on:
+      - weekly_report
