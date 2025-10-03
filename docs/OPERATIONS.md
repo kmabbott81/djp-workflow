@@ -2502,7 +2502,509 @@ python scripts/restore_artifact.py \
   --to-tier hot
 ```
 
+## Checkpoint Approvals & DAG Resumption (Sprint 31)
+
+### Overview
+
+Sprint 31 introduces human-in-the-loop approvals via checkpoint tasks that pause DAG execution. This section covers operational procedures for managing pending checkpoints, resuming paused DAGs, and handling stuck or expired checkpoints.
+
+For comprehensive checkpoint documentation, see [ORCHESTRATION.md](./ORCHESTRATION.md).
+
+### Runbook: Resume a Paused DAG
+
+When a DAG pauses at a checkpoint task, follow these steps to review, approve, and resume execution:
+
+#### 1. Identify Paused DAG
+
+When a DAG pauses, the run output shows:
+
+```
+DAG PAUSED AT CHECKPOINT
+DAG Run ID: abc123_def456
+Checkpoint ID: abc123_def456_approval_checkpoint
+Message: Awaiting approval: Approve weekly report draft?
+```
+
+**Important**: Save the `dag_run_id` for resumption.
+
+#### 2. List Pending Checkpoints
+
+View all pending checkpoints:
+
+```bash
+python scripts/approvals.py list
+```
+
+**Output:**
+```
+Pending Checkpoints
+===================
+abc123_def456_approval_checkpoint
+  Prompt: Approve weekly report draft?
+  Required Role: Operator
+  Created: 2025-10-03 14:30:00 UTC
+  Expires: 2025-10-06 14:30:00 UTC
+  DAG Run: abc123_def456
+```
+
+Filter by tenant:
+```bash
+python scripts/approvals.py list --tenant tenant-a
+```
+
+#### 3. Review Checkpoint Details
+
+Check the checkpoint's required role and inputs:
+
+```bash
+python scripts/approvals.py show abc123_def456_approval_checkpoint
+```
+
+Verify your user role allows approval:
+```bash
+echo $USER_RBAC_ROLE
+# Should be Operator or Admin for Operator checkpoints
+```
+
+#### 4. Approve or Reject
+
+**To approve:**
+
+```bash
+# Set role if not already set
+export USER_RBAC_ROLE=Operator
+
+# Approve with optional data
+python scripts/approvals.py approve abc123_def456_approval_checkpoint \
+  --kv signoff_text="Approved by manager" priority=high
+```
+
+**To reject:**
+
+```bash
+python scripts/approvals.py reject abc123_def456_approval_checkpoint \
+  --reason "Budget concerns - needs revision"
+```
+
+#### 5. Resume DAG Execution
+
+After approval, resume the DAG using the saved `dag_run_id`:
+
+```bash
+python scripts/run_dag_min.py \
+  --dag configs/dags/weekly_ops_chain.approval.yaml \
+  --resume abc123_def456
+```
+
+**Output:**
+```
+Resuming DAG run abc123_def456...
+DAG RESUMED & COMPLETED
+DAG Run ID: abc123_def456
+Status: success
+Tasks Succeeded: 3
+Duration: 2.34s
+```
+
+#### 6. Verify Completion
+
+Check orchestrator events log:
+
+```bash
+# View events for this DAG run
+grep "abc123_def456" logs/orchestrator_events.jsonl | tail -10
+```
+
+Expected events:
+- `checkpoint_pending` - Checkpoint created
+- `checkpoint_approved` - Checkpoint approved
+- `dag_done` - DAG completed successfully
+
+#### Troubleshooting
+
+**Resume fails with "Checkpoint not approved":**
+- Verify checkpoint status: `python scripts/approvals.py list`
+- Ensure checkpoint is in `approved` status
+- Check if checkpoint expired
+
+**Permission denied on approval:**
+- Check current role: `echo $USER_RBAC_ROLE`
+- Set appropriate role: `export USER_RBAC_ROLE=Admin`
+- Verify role hierarchy: Viewer < Operator < Admin
+
+**DAG run ID not found:**
+- Verify exact spelling of run ID
+- Check state store: `grep "resume_token" logs/orchestrator_state.jsonl`
+
+### Runbook: Handle Stuck or Expired Checkpoints
+
+Checkpoints may become stuck due to expiration or other issues. This runbook covers recovery procedures.
+
+#### Automatic Expiration
+
+Checkpoints automatically expire after `APPROVAL_EXPIRES_H` hours (default: 72).
+
+**Check expiration setting:**
+```bash
+echo $APPROVAL_EXPIRES_H
+# Default: 72 hours
+```
+
+**View recently expired checkpoints:**
+```bash
+python scripts/approvals.py list --status expired
+```
+
+#### Detecting Stuck Checkpoints
+
+**List long-pending checkpoints:**
+
+```bash
+# Checkpoints pending for more than 48 hours
+python -c "
+import sys; sys.path.insert(0, 'src')
+from datetime import datetime, timedelta, UTC
+from src.orchestrator.checkpoints import list_checkpoints
+
+pending = list_checkpoints(status='pending')
+threshold = datetime.now(UTC) - timedelta(hours=48)
+
+for cp in pending:
+    created = datetime.fromisoformat(cp['created_at'])
+    if created < threshold:
+        age_hours = (datetime.now(UTC) - created).total_seconds() / 3600
+        print(f'{cp[\"checkpoint_id\"]}: pending for {age_hours:.1f} hours')
+"
+```
+
+#### Manual Expiration
+
+Force expiration of specific checkpoints:
+
+```bash
+python -c "
+import sys; sys.path.insert(0, 'src')
+from datetime import datetime, UTC
+from src.orchestrator.checkpoints import expire_pending
+
+# Expire all checkpoints older than expiration threshold
+now = datetime.now(UTC)
+expired = expire_pending(now)
+
+print(f'Expired {len(expired)} checkpoints:')
+for cp in expired:
+    print(f'  - {cp[\"checkpoint_id\"]}')
+"
+```
+
+#### Recovering from Expired Checkpoints
+
+When a checkpoint expires, the DAG cannot be resumed. Options:
+
+**Option 1: Re-run DAG from start**
+
+```bash
+python scripts/run_dag_min.py \
+  --dag configs/dags/weekly_ops_chain.approval.yaml
+```
+
+**Option 2: Override expiration (emergency only)**
+
+```bash
+# Temporarily disable expiration
+export APPROVAL_EXPIRES_H=99999
+
+# Approve checkpoint
+python scripts/approvals.py approve <checkpoint_id>
+
+# Resume DAG
+python scripts/run_dag_min.py --dag <path> --resume <dag_run_id>
+
+# Restore normal expiration
+unset APPROVAL_EXPIRES_H
+```
+
+**Option 3: Manual checkpoint manipulation (last resort)**
+
+```bash
+# Edit checkpoints.jsonl to change status
+# WARNING: Only use if other options fail
+
+# 1. Backup checkpoint file
+cp logs/checkpoints.jsonl logs/checkpoints.jsonl.backup
+
+# 2. Find checkpoint event
+grep "checkpoint_id_here" logs/checkpoints.jsonl
+
+# 3. Manually append approval event
+# (Requires understanding of JSONL format and event structure)
+```
+
+#### Monitoring Checkpoint Health
+
+**Dashboard view:**
+
+```bash
+streamlit run dashboards/app.py
+```
+
+Navigate to **Observability** → **✅ Checkpoint Approvals** to view:
+- Pending checkpoints count
+- Expiring soon warnings (within 6 hours)
+- Recent approvals/rejections/expirations
+
+**CLI monitoring:**
+
+```bash
+# Count pending by status
+python -c "
+import sys; sys.path.insert(0, 'src')
+from src.orchestrator.checkpoints import list_checkpoints
+
+pending = list_checkpoints(status='pending')
+approved = list_checkpoints(status='approved')
+rejected = list_checkpoints(status='rejected')
+expired = list_checkpoints(status='expired')
+
+print(f'Pending: {len(pending)}')
+print(f'Approved: {len(approved)}')
+print(f'Rejected: {len(rejected)}')
+print(f'Expired: {len(expired)}')
+"
+```
+
+#### Preventing Stuck Checkpoints
+
+**Best practices:**
+
+1. **Set appropriate expiration**: Adjust `APPROVAL_EXPIRES_H` based on approval SLA
+   ```bash
+   export APPROVAL_EXPIRES_H=48  # 2 days for critical workflows
+   ```
+
+2. **Monitor pending checkpoints daily**: Add to daily ops checks
+   ```bash
+   python scripts/approvals.py list | grep "Pending Checkpoints"
+   ```
+
+3. **Set up alerts**: Alert if pending count exceeds threshold
+   ```bash
+   # Alert if more than 5 pending checkpoints
+   PENDING_COUNT=$(python -c "
+   import sys; sys.path.insert(0, 'src')
+   from src.orchestrator.checkpoints import list_checkpoints
+   print(len(list_checkpoints(status='pending')))
+   ")
+
+   if [ "$PENDING_COUNT" -gt 5 ]; then
+       echo "ALERT: $PENDING_COUNT pending checkpoints"
+       # Send notification
+   fi
+   ```
+
+4. **Enable scheduler auto-expiration**: Ensure scheduler is running to auto-expire old checkpoints
+   ```bash
+   python -m src.orchestrator.scheduler --serve
+   ```
+
+### Runbook: Approvals Audit Trail
+
+Maintain comprehensive audit of all checkpoint approval decisions for compliance and debugging.
+
+#### Audit Log Location
+
+All checkpoint events are logged to:
+- **Checkpoints**: `logs/checkpoints.jsonl`
+- **State store events**: `logs/orchestrator_state.jsonl`
+
+#### Query Recent Approvals
+
+**Last 20 approvals:**
+
+```bash
+grep "checkpoint_approved" logs/checkpoints.jsonl | tail -20
+```
+
+**Approvals by specific user/role:**
+
+```bash
+grep "checkpoint_approved" logs/checkpoints.jsonl | grep "Admin" | tail -10
+```
+
+**Approvals for specific tenant:**
+
+```bash
+grep "checkpoint_approved" logs/checkpoints.jsonl | grep "tenant-a" | tail -10
+```
+
+#### Query Rejections
+
+**All rejections with reasons:**
+
+```bash
+grep "checkpoint_rejected" logs/checkpoints.jsonl | \
+  jq -r '[.checkpoint_id, .rejected_by, .reject_reason] | @tsv'
+```
+
+**Recent rejections:**
+
+```bash
+grep "checkpoint_rejected" logs/checkpoints.jsonl | tail -10
+```
+
+#### Query Expirations
+
+**Expired checkpoints:**
+
+```bash
+grep "checkpoint_expired" logs/checkpoints.jsonl | tail -20
+```
+
+**Expiration events from scheduler:**
+
+```bash
+grep "checkpoint_expired" logs/orchestrator_state.jsonl | tail -20
+```
+
+#### Generate Audit Report
+
+Create summary report for specific date range:
+
+```bash
+python -c "
+import sys, json
+from datetime import datetime, timedelta
+
+sys.path.insert(0, 'src')
+
+# Load events
+with open('logs/checkpoints.jsonl', 'r') as f:
+    events = [json.loads(line) for line in f]
+
+# Filter last 7 days
+cutoff = datetime.now().timestamp() - (7 * 86400)
+recent = [e for e in events if datetime.fromisoformat(e['timestamp']).timestamp() > cutoff]
+
+# Count by event type
+approved = [e for e in recent if e.get('event') == 'checkpoint_approved']
+rejected = [e for e in recent if e.get('event') == 'checkpoint_rejected']
+expired = [e for e in recent if e.get('event') == 'checkpoint_expired']
+
+print(f'Checkpoint Audit Report (Last 7 Days)')
+print(f'=====================================')
+print(f'Approved: {len(approved)}')
+print(f'Rejected: {len(rejected)}')
+print(f'Expired: {len(expired)}')
+print(f'Total: {len(recent)}')
+print()
+print(f'Approvals by Role:')
+for role in set(e.get('approved_by') for e in approved if e.get('approved_by')):
+    count = sum(1 for e in approved if e.get('approved_by') == role)
+    print(f'  {role}: {count}')
+"
+```
+
+#### Export Audit Log
+
+Export to CSV for analysis:
+
+```bash
+python -c "
+import sys, json, csv
+sys.path.insert(0, 'src')
+
+# Load checkpoint events
+with open('logs/checkpoints.jsonl', 'r') as f:
+    events = [json.loads(line) for line in f]
+
+# Write to CSV
+with open('audit_checkpoints.csv', 'w', newline='') as csvfile:
+    fieldnames = ['timestamp', 'event', 'checkpoint_id', 'dag_run_id', 'tenant', 'approved_by', 'rejected_by', 'reject_reason']
+    writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction='ignore')
+
+    writer.writeheader()
+    for event in events:
+        writer.writerow(event)
+
+print('Exported to audit_checkpoints.csv')
+"
+```
+
+#### Retention Policy
+
+**Recommended retention:**
+- **Hot logs** (current): 90 days
+- **Archived logs**: 2 years
+- **Compliance logs**: Per regulatory requirements (e.g., 7 years)
+
+**Archive old logs:**
+
+```bash
+# Archive logs older than 90 days
+python -c "
+import json, gzip
+from datetime import datetime, timedelta
+
+cutoff = (datetime.now() - timedelta(days=90)).isoformat()
+
+# Read all events
+with open('logs/checkpoints.jsonl', 'r') as f:
+    events = [json.loads(line) for line in f]
+
+# Separate old and recent
+old = [e for e in events if e['timestamp'] < cutoff]
+recent = [e for e in events if e['timestamp'] >= cutoff]
+
+# Archive old events
+with gzip.open(f'logs/archives/checkpoints_{datetime.now().strftime(\"%Y%m%d\")}.jsonl.gz', 'wt') as f:
+    for event in old:
+        f.write(json.dumps(event) + '\n')
+
+# Keep only recent in active log
+with open('logs/checkpoints.jsonl', 'w') as f:
+    for event in recent:
+        f.write(json.dumps(event) + '\n')
+
+print(f'Archived {len(old)} events, retained {len(recent)}')
+"
+```
+
+#### Compliance Queries
+
+**All approvals for specific DAG run:**
+
+```bash
+DAG_RUN_ID="abc123"
+grep "$DAG_RUN_ID" logs/checkpoints.jsonl | \
+  jq -r 'select(.event == "checkpoint_approved" or .event == "checkpoint_rejected")'
+```
+
+**Approval timeline for audit:**
+
+```bash
+CHECKPOINT_ID="abc123_approval"
+grep "$CHECKPOINT_ID" logs/checkpoints.jsonl | \
+  jq -r '[.timestamp, .event, .approved_by // .rejected_by // "system"] | @tsv'
+```
+
+**Approvers list (RBAC audit):**
+
+```bash
+grep "checkpoint_approved" logs/checkpoints.jsonl | \
+  jq -r '.approved_by' | sort | uniq -c | sort -rn
+```
+
+### Emergency Contacts
+
+For checkpoint approval issues requiring escalation:
+
+- **Operator role**: Team lead or shift manager
+- **Admin role**: Platform admin or on-call engineer
+- **Expired checkpoints**: Re-run DAG or contact workflow owner
+- **System issues**: Check scheduler health and logs
+
 ### See Also
 
+- [ORCHESTRATION.md](./ORCHESTRATION.md) - Complete checkpoint documentation
+- [SECURITY.md](./SECURITY.md) - RBAC role hierarchy and permissions
 - [STORAGE.md](./STORAGE.md) - Comprehensive storage documentation
-- [SECURITY.md](./SECURITY.md) - Storage security considerations

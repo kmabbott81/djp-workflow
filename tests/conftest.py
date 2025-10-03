@@ -326,3 +326,37 @@ def lifecycle_env(tmp_path, monkeypatch, temp_tier_paths):
         "warm_retention_days": 30,
         "cold_retention_days": 90,
     }
+
+
+# Sprint 31B fixtures for checkpoint approvals
+
+
+@pytest.fixture(autouse=True)
+def mock_workflow_map(monkeypatch):
+    """
+    Auto-mock workflow map for tests.
+
+    Provides mock implementations of workflows to avoid requiring
+    actual OpenAI API calls or real workflow implementations.
+    """
+
+    # Mock workflow functions (accept params dict as single positional arg)
+    def mock_inbox_drive_sweep(params):
+        return {"summary": f"Processed {params.get('inbox_items', 'items')}", "status": "completed"}
+
+    def mock_weekly_report(params):
+        return {"report": "Weekly status report", "priorities": params.get("user_priorities", "N/A")}
+
+    def mock_meeting_transcript_brief(params):
+        return {"brief": f"Meeting: {params.get('meeting_title', 'Untitled')}", "action_items": []}
+
+    mock_map = {
+        "inbox_drive_sweep": mock_inbox_drive_sweep,
+        "weekly_report": mock_weekly_report,
+        "meeting_transcript_brief": mock_meeting_transcript_brief,
+    }
+
+    # Patch WORKFLOW_MAP
+    import src.workflows.adapter
+
+    monkeypatch.setattr(src.workflows.adapter, "WORKFLOW_MAP", mock_map)

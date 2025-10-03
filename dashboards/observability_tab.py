@@ -29,6 +29,11 @@ def render_observability_tab():
     st.markdown("### 🎯 Cost Governance & Budgets")
     _render_cost_governance()
 
+    # Approvals section (Sprint 31)
+    st.markdown("---")
+    st.markdown("### ✅ Checkpoint Approvals")
+    _render_approvals()
+
     # Storage lifecycle section
     st.markdown("---")
     st.markdown("### 💾 Storage Lifecycle")
@@ -220,6 +225,102 @@ def _render_cost_governance():
     except Exception as e:
         st.error(f"Error loading cost governance data: {e}")
         st.caption("Make sure cost governance system is initialized and accessible")
+
+
+def _render_approvals():
+    """Render approvals section with pending checkpoints and recent actions (Sprint 31)."""
+    try:
+        import sys
+
+        sys.path.insert(0, str(Path(__file__).parent.parent))
+        from src.orchestrator.checkpoints import list_checkpoints
+
+        # Pending checkpoints
+        st.markdown("#### Pending Checkpoints")
+
+        pending = list_checkpoints(status="pending")
+
+        if pending:
+            import pandas as pd
+
+            table_data = []
+            for cp in pending[:20]:  # Top 20
+                table_data.append(
+                    {
+                        "Checkpoint ID": cp["checkpoint_id"][:20] + "...",
+                        "DAG Run": cp["dag_run_id"][:20] + "...",
+                        "Task": cp["task_id"],
+                        "Prompt": cp["prompt"][:50],
+                        "Role": cp["required_role"],
+                        "Created": cp["created_at"][:19],
+                        "Expires": cp["expires_at"][:19],
+                    }
+                )
+
+            df = pd.DataFrame(table_data)
+            st.dataframe(df, use_container_width=True, hide_index=True)
+
+            # CLI command hints
+            st.markdown("**CLI Commands:**")
+            st.code(
+                """# List pending checkpoints
+python scripts/approvals.py list
+
+# Approve a checkpoint
+python scripts/approvals.py approve <checkpoint_id> --kv key=value
+
+# Reject a checkpoint
+python scripts/approvals.py reject <checkpoint_id> --reason "Not ready"
+
+# Resume DAG after approval
+python scripts/run_dag_min.py --dag <path> --resume <dag_run_id>""",
+                language="bash",
+            )
+        else:
+            st.info("✅ No pending checkpoints")
+
+        # Recent approvals/rejections
+        st.markdown("#### Recent Approvals & Rejections")
+
+        approved = list_checkpoints(status="approved")
+        rejected = list_checkpoints(status="rejected")
+        expired = list_checkpoints(status="expired")
+
+        recent = (approved + rejected + expired)[:20]  # Last 20
+
+        if recent:
+            import pandas as pd
+
+            table_data = []
+            for cp in recent:
+                status_icon = {
+                    "approved": "✅",
+                    "rejected": "🚫",
+                    "expired": "⏰",
+                }.get(cp["status"], "•")
+
+                action_by = cp.get("approved_by") or cp.get("rejected_by") or "-"
+                action_at = cp.get("approved_at") or cp.get("rejected_at") or cp["created_at"]
+
+                table_data.append(
+                    {
+                        "Status": status_icon,
+                        "Task": cp["task_id"],
+                        "DAG Run": cp["dag_run_id"][:20] + "...",
+                        "Prompt": cp["prompt"][:40],
+                        "Action By": action_by,
+                        "Action At": action_at[:19],
+                    }
+                )
+
+            df = pd.DataFrame(table_data)
+            st.dataframe(df, use_container_width=True, hide_index=True)
+        else:
+            st.info("No approval/rejection history")
+
+    except Exception as e:
+        st.error(f"Error loading approvals data: {e}")
+        st.caption("Make sure checkpoints system is initialized and accessible")
 
 
 def _render_storage_lifecycle():

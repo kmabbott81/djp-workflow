@@ -10,10 +10,16 @@ class Task:
     """Represents a single task in a DAG."""
 
     id: str
-    workflow_ref: str  # Reference to workflow in WORKFLOW_MAP
+    workflow_ref: str  # Reference to workflow in WORKFLOW_MAP (or empty for checkpoints)
     params: dict = field(default_factory=dict)
     retries: int = 0
     depends_on: list[str] = field(default_factory=list)
+    type: str = "workflow"  # "workflow" or "checkpoint"
+
+    # Checkpoint-specific fields
+    prompt: str | None = None  # Human-readable approval prompt
+    required_role: str | None = None  # RBAC role required to approve
+    inputs: dict | None = None  # Expected input schema for approval
 
 
 @dataclass
