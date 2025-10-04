@@ -451,6 +451,192 @@ export LIVE="false"
 export DRY_RUN="true"
 ```
 
+## Mock HTTP Transport for Testing
+
+Sprint 36B introduced deterministic mock HTTP transport for comprehensive resilience testing.
+
+### MockHTTPTransport
+
+The `MockHTTPTransport` class enables scripted HTTP responses without real API calls:
+
+```python
+from src.connectors.http_mock import get_mock_transport, reset_mock_transport
+
+# Enable mock transport
+os.environ["SLACK_USE_HTTP_MOCK"] = "true"
+
+# Get mock instance
+mock = get_mock_transport()
+
+# Script responses for (method, endpoint)
+mock.script("GET", "conversations.list", [
+    {"status_code": 429, "body": {"ok": False, "error": "rate_limited"}},
+    {"status_code": 200, "body": {"ok": True, "channels": [{"id": "C123", "name": "test"}]}}
+])
+
+# Make API call (uses mock)
+connector = SlackConnector("test", "tenant-1", "user-1")
+result = connector.list_resources("channels")
+
+# Verify call count
+assert mock.get_call_count("GET", "conversations.list") == 2
+```
+
+### Environment Variables
+
+- **SLACK_USE_HTTP_MOCK**: Enable mock transport (`true`/`false`, default: `false`)
+- **SLACK_RETRY_STATUS**: HTTP status codes that trigger retry (default: `429,500,502,503,504`)
+- **DRY_RUN**: Legacy JSONL-based mocks (`true`/`false`, default: `true`)
+
+**Note:** `SLACK_USE_HTTP_MOCK=true` takes precedence over legacy `DRY_RUN` mode for deterministic testing.
+
+### Mock Features
+
+1. **Scripted Responses**: Define exact sequence of responses per endpoint
+2. **Call Tracking**: Track all HTTP calls made during test
+3. **Latency Recording**: Optional `latency_ms` field (recorded but not slept)
+4. **Deterministic**: No random behavior, fully reproducible tests
+5. **CI-Safe**: No real API calls, no secrets required
+
+### Usage in Tests
+
+```python
+import pytest
+from src.connectors.http_mock import get_mock_transport, reset_mock_transport
+
+@pytest.fixture
+def slack_connector():
+    os.environ["SLACK_USE_HTTP_MOCK"] = "true"
+    reset_mock_transport()
+
+    connector = SlackConnector("test", "tenant-1", "user-1")
+    yield connector
+
+    reset_mock_transport()
+
+def test_rate_limit_retry(slack_connector):
+    mock = get_mock_transport()
+
+    # Script 429 then success
+    mock.script("GET", "conversations.list", [
+        {"status_code": 429, "body": {"ok": False, "error": "rate_limited"}},
+        {"status_code": 200, "body": {"ok": True, "channels": []}}
+    ])
+
+    result = slack_connector.list_resources("channels")
+
+    # Verify retry happened
+    assert mock.get_call_count("GET", "conversations.list") == 2
+```
+
+## Resilience Patterns
+
+### Retry Configuration
+
+The connector supports configurable retry behavior:
+
+```bash
+# Retry settings
+export RETRY_MAX_ATTEMPTS="3"           # Max retry attempts (default: 3)
+export RETRY_BASE_MS="400"              # Base backoff delay (default: 400ms)
+export RETRY_CAP_MS="60000"             # Max backoff cap (default: 60s)
+export RETRY_JITTER_PCT="0.2"           # Jitter percentage (default: 0.2)
+
+# Slack-specific retry codes
+export SLACK_RETRY_STATUS="429,500,502,503,504"  # HTTP codes to retry
+```
+
+### Retryable vs Non-Retryable Errors
+
+**Retryable (automatic retry with backoff):**
+- HTTP 429 (rate limited) - uses `Retry-After` header if present
+- HTTP 500, 502, 503, 504 (server errors)
+- Network timeouts and connection errors
+- Slack API `rate_limited` error
+
+**Non-Retryable (fail immediately):**
+- HTTP 4xx (except 429) - client errors
+- Slack API errors: `channel_not_found`, `not_authed`, `invalid_auth`, etc.
+- Circuit breaker open state
+
+### Circuit Breaker States
+
+The circuit breaker protects against cascading failures:
+
+```bash
+# Circuit breaker configuration
+export CB_FAILURES_TO_OPEN="5"     # Failures before opening (default: 5)
+export CB_COOLDOWN_S="60"           # Cooldown before half-open (default: 60s)
+export CB_HALF_OPEN_PROB="0.2"     # Probability of allowing in half-open (default: 0.2)
+```
+
+**State Transitions:**
+
+1. **Closed (normal)**:
+   - All requests allowed
+   - Failures increment counter
+   - After N failures → Open
+
+2. **Open (failing)**:
+   - All requests blocked immediately
+   - "Circuit breaker open" exception
+   - After cooldown → Half-Open
+
+3. **Half-Open (testing)**:
+   - Probabilistic request gating
+   - Success → Closed (recovery)
+   - Failure → Open (still broken)
+
+**Monitoring Circuit State:**
+
+```python
+from src.connectors.circuit import get_circuit_state
+
+state = get_circuit_state("slack-connector-1")
+print(f"Circuit state: {state}")  # "closed", "open", or "half_open"
+```
+
+### Webhook Signature Verification
+
+Slack webhooks support HMAC SHA256 signature verification per [Slack docs](https://api.slack.com/authentication/verifying-requests-from-slack):
+
+```bash
+# Enable signature verification (production)
+export SLACK_SIGNING_SECRET="your_slack_signing_secret"
+```
+
+**Verification Process:**
+
+1. Extract `X-Slack-Request-Timestamp` and `X-Slack-Signature` headers
+2. Verify timestamp is within 5 minutes (replay attack prevention)
+3. Compute HMAC SHA256: `v0={timestamp}:{body}`
+4. Constant-time comparison of signatures
+
+**Behavior:**
+
+- **Secret present**: Full verification required
+- **Secret missing/empty**: Verification disabled (dev mode, logs warning)
+- **Invalid signature**: Request rejected (401)
+- **Stale timestamp**: Request rejected (401)
+
+**Usage in Code:**
+
+```python
+from src.webhooks import verify_slack_signature_headers
+
+headers = {
+    "X-Slack-Request-Timestamp": "1609459200",
+    "X-Slack-Signature": "v0=a2114d57b48eac39b9ad189dd8316235a7b4a8d21a10bd27519666489c69b503"
+}
+body = b'{"type":"url_verification","challenge":"3eZbrw1aBm2rZgRNFdxV2595E9CY3gmdALWMmHkvFXO7tYXAYM8P"}'
+secret = os.getenv("SLACK_SIGNING_SECRET")
+
+if verify_slack_signature_headers(headers, body, secret):
+    print("Valid Slack request")
+else:
+    print("Invalid signature")
+```
+
 ## Testing
 
 ### Run DRY_RUN Tests
@@ -466,8 +652,18 @@ pytest tests/test_slack_connector_dryrun.py::test_list_channels -v
 ### Run Resilience Tests
 
 ```bash
-# Test retry/circuit breaker logic (mocked)
+# Test retry/circuit breaker logic (uses MockHTTPTransport)
 pytest tests/test_slack_connector_resilience.py -v
+
+# Specific resilience test
+pytest tests/test_slack_connector_resilience.py::test_rate_limit_429_retry -v
+```
+
+### Run Webhook Signature Tests
+
+```bash
+# Test HMAC SHA256 signature verification
+pytest tests/test_slack_webhook_signature.py -v
 ```
 
 ### Run Webhook Tests

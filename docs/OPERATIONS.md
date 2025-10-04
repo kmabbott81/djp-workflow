@@ -3844,6 +3844,315 @@ python scripts/connectors_health.py drill <connector_id>
 
 **Escalation:** If unresolved after 30 minutes, open incident and notify platform team.
 
+### Runbook: Slack 429 Rate Limit Spike
+
+**Symptoms:**
+- Multiple 429 errors in logs/connectors/metrics.jsonl
+- Slack connector error rate spike
+- Circuit breaker transitions to open state
+- "rate_limited" Slack API errors
+
+**Diagnosis:**
+
+1. **Check Recent Call Volume**
+   ```bash
+   # Count Slack API calls in last 5 minutes
+   tail -n 1000 logs/connectors/metrics.jsonl | \
+     grep "slack" | \
+     grep $(date -u +"%Y-%m-%dT%H:%M" | cut -c1-15) | \
+     wc -l
+   ```
+
+2. **Identify High-Volume Endpoints**
+   ```bash
+   # Top endpoints by call count
+   tail -n 1000 logs/connectors/metrics.jsonl | \
+     grep "slack" | \
+     jq -r '.endpoint' | \
+     sort | uniq -c | sort -rn | head -10
+   ```
+
+3. **Check Retry-After Headers**
+   ```bash
+   # Look for rate limit metadata
+   tail -n 100 logs/connectors/metrics.jsonl | \
+     grep "rate_limited" | \
+     jq '.error'
+   ```
+
+**Resolution:**
+
+1. **Immediate: Reduce Call Rate**
+   - Stop non-critical batch jobs
+   - Pause background sync operations
+   - Review recent deployments that increased API usage
+
+2. **Wait for Circuit Breaker Recovery**
+   ```bash
+   # Monitor circuit state
+   watch -n 5 'cat logs/connectors/circuit_state.jsonl | \
+     grep slack | tail -1 | jq ".state"'
+   ```
+   - Circuit opens after 5 failures (default)
+   - Waits 60 seconds (cooldown)
+   - Transitions to half-open
+   - One success → closed (recovered)
+
+3. **Tune Retry Configuration**
+   ```bash
+   # Increase backoff to reduce retry pressure
+   export RETRY_BASE_MS=1000      # Increase from 400ms
+   export RETRY_CAP_MS=120000     # Increase from 60s
+   export RETRY_MAX_ATTEMPTS=2    # Reduce from 3
+
+   # Restart affected services
+   systemctl restart djp-worker
+   ```
+
+4. **Adjust Slack Retry Codes** (if needed)
+   ```bash
+   # Only retry on 429 and 503 (skip 500, 502, 504)
+   export SLACK_RETRY_STATUS="429,503"
+   ```
+
+5. **Monitor Recovery**
+   ```bash
+   # Watch error rate normalize
+   python scripts/connectors_health.py drill slack-connector-1
+
+   # Verify circuit closed
+   python -c "from src.connectors.circuit import get_circuit_state; \
+     print(get_circuit_state('slack-connector-1'))"
+   ```
+
+**Prevention:**
+
+1. **Implement Rate Limiting**
+   - Add client-side rate limiter (e.g., token bucket)
+   - Batch operations (e.g., bulk user lookups)
+   - Cache frequently-accessed data (channels, users)
+
+2. **Configure Alerting**
+   ```bash
+   # Set up alert for sustained rate limits
+   # Trigger: >10 rate_limited errors in 5 minutes
+   tail -f logs/connectors/metrics.jsonl | \
+     grep "rate_limited" | \
+     python scripts/alerts.py --threshold 10 --window 300
+   ```
+
+3. **Review Slack Tier Limits**
+   - Tier 2 (reads): ~20 req/min per workspace
+   - Tier 3 (writes): ~50 req/min per workspace
+   - See: https://api.slack.com/docs/rate-limits
+
+4. **Optimize API Usage**
+   - Use cursor-based pagination (not offset)
+   - Request only needed fields
+   - Combine related calls where possible
+
+**Escalation:** If rate limits persist >15 minutes, escalate to Slack support or review enterprise tier options.
+
+### Runbook: Slack Circuit Breaker Cooldown
+
+**When to Use:** Circuit breaker stuck in open state, preventing all Slack API calls.
+
+**Symptoms:**
+- "Circuit breaker open" errors in application logs
+- Circuit state shows "open" for extended period
+- No Slack API calls succeeding
+- Health check shows connector down
+
+**Procedure:**
+
+1. **Verify Circuit State**
+   ```bash
+   # Check current state and opened_at timestamp
+   cat logs/connectors/circuit_state.jsonl | \
+     grep "slack" | \
+     tail -1 | \
+     jq '{state: .state, opened_at: .opened_at, failure_count: .failure_count}'
+   ```
+
+2. **Check Root Cause**
+   - If opened recently: Wait for natural cooldown (60s default)
+   - If root cause resolved: Consider manual intervention
+   - If still failing: Don't reset (will reopen immediately)
+
+3. **Wait for Half-Open Transition**
+   ```bash
+   # Monitor state transitions
+   tail -f logs/connectors/circuit_state.jsonl | grep "slack"
+   ```
+   - After 60s: open → half_open
+   - Half-open allows probabilistic traffic (20% default)
+   - First success: half_open → closed
+   - First failure: half_open → open (restart cooldown)
+
+4. **Accelerate Recovery** (if root cause confirmed resolved)
+   ```bash
+   # Manual circuit state transition (CAUTION)
+   python -c "
+   from src.connectors.slack import SlackConnector
+   connector = SlackConnector('slack-1', 'tenant-1', 'user-1')
+   connector.circuit.state = 'closed'
+   connector.circuit.failure_count = 0
+   connector.circuit._save_state()
+   print('Circuit manually closed')
+   "
+   ```
+
+5. **Test Recovery**
+   ```bash
+   # Make test API call
+   python -c "
+   from src.connectors.slack import SlackConnector
+   import os
+   os.environ['LIVE'] = 'true'
+   connector = SlackConnector('slack-1', 'tenant-1', 'user-1')
+   try:
+       channels = connector.list_resources('channels')
+       print(f'✓ Recovery confirmed: {len(channels)} channels')
+   except Exception as e:
+       print(f'✗ Still failing: {e}')
+   "
+   ```
+
+6. **Verify Stability**
+   ```bash
+   # Monitor for 5 minutes
+   watch -n 30 'python scripts/connectors_health.py drill slack-connector-1'
+   ```
+
+**Tuning Circuit Breaker:**
+
+```bash
+# Adjust thresholds if too sensitive
+export CB_FAILURES_TO_OPEN=10  # Increase from 5 (less sensitive)
+export CB_COOLDOWN_S=120       # Increase from 60s (longer cooldown)
+export CB_HALF_OPEN_PROB=0.5   # Increase from 0.2 (more test traffic)
+```
+
+**DO NOT:**
+- Manually reset circuit during active failures (will reopen immediately)
+- Delete circuit state file (loses failure history)
+- Disable circuit breaker (removes protection)
+
+**DO:**
+- Fix root cause before resetting
+- Monitor logs during recovery
+- Document incident timeline
+
+**Escalation:** If circuit repeatedly opens after manual reset, investigate underlying service health.
+
+### Runbook: Enable Slack Webhook Signature Verification
+
+**When to Use:** Setting up production Slack webhook endpoint with security enabled.
+
+**Prerequisites:**
+- Slack app created and installed
+- Webhook endpoint deployed and accessible
+- HTTPS endpoint (required by Slack)
+
+**Procedure:**
+
+1. **Obtain Signing Secret**
+   - Go to https://api.slack.com/apps
+   - Select your app
+   - Navigate to "Basic Information"
+   - Copy "Signing Secret" from "App Credentials"
+
+2. **Configure Environment**
+   ```bash
+   # Set signing secret (production)
+   export SLACK_SIGNING_SECRET="your_slack_signing_secret_here"
+
+   # Restart webhook service
+   systemctl restart djp-webhooks
+   ```
+
+3. **Verify Verification Enabled**
+   ```bash
+   # Check logs for verification status
+   tail -f logs/webhooks.log | grep "SLACK_SIGNING_SECRET"
+   ```
+   - Should NOT see: "SLACK_SIGNING_SECRET not set"
+   - Requests with invalid signatures will be rejected (401)
+
+4. **Test with Valid Request**
+   ```bash
+   # Use Slack's "Request URL" test in app settings
+   # Should receive 200 OK response
+   ```
+
+5. **Test with Invalid Signature** (optional)
+   ```bash
+   # Send request with wrong signature
+   curl -X POST https://your-domain.com/webhooks/slack \
+     -H "Content-Type: application/json" \
+     -H "X-Slack-Request-Timestamp: $(date +%s)" \
+     -H "X-Slack-Signature: v0=invalid_signature" \
+     -d '{"type":"url_verification","challenge":"test"}'
+
+   # Should receive 401 Unauthorized
+   ```
+
+6. **Monitor Signature Failures**
+   ```bash
+   # Track rejected requests
+   tail -f logs/webhooks.log | grep "Invalid Slack signature"
+   ```
+
+**Verification Behavior:**
+
+| Scenario | Secret Set? | Result |
+|----------|-------------|--------|
+| Valid signature | Yes | ✓ Accepted (200) |
+| Invalid signature | Yes | ✗ Rejected (401) |
+| Missing signature | Yes | ✗ Rejected (401) |
+| Stale timestamp (>5min) | Yes | ✗ Rejected (401) |
+| Any signature | No | ✓ Accepted (dev mode) |
+
+**Troubleshooting:**
+
+- **All requests rejected (401)**
+  - Check signing secret matches Slack app settings
+  - Verify timestamp in headers is current
+  - Ensure body is not modified (must match exactly)
+
+- **Still seeing "dev mode" warning**
+  - Check `SLACK_SIGNING_SECRET` is exported in environment
+  - Restart webhook service to pick up environment changes
+  - Verify no typos in environment variable name
+
+- **Intermittent failures**
+  - Check server time sync (NTP)
+  - Timestamp skew can cause stale timestamp errors
+  - Ensure timezone is UTC
+
+**Security Notes:**
+
+- Signing secret is sensitive (treat like password)
+- Rotate signing secret quarterly
+- Never commit signing secret to version control
+- Use secrets management (e.g., AWS Secrets Manager, Vault)
+
+**Disabling Verification (dev/staging only):**
+
+```bash
+# Unset or empty signing secret
+unset SLACK_SIGNING_SECRET
+
+# Restart service
+systemctl restart djp-webhooks
+
+# Logs should show: "SLACK_SIGNING_SECRET not set. Running in dev mode"
+```
+
+**DO NOT disable verification in production.**
+
+**Escalation:** For security incidents (suspected signature bypass), immediately rotate signing secret and audit webhook logs.
+
 ### Alerting Thresholds
 
 | Metric | Warning | Critical |

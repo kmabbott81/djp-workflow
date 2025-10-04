@@ -33,9 +33,53 @@ class ApprovalResponse(BaseModel):
     error: Optional[str] = None
 
 
+def verify_slack_signature_headers(headers: dict, body: bytes, secret: str) -> bool:
+    """
+    Verify Slack request signature using HMAC SHA256.
+
+    Per Slack docs: https://api.slack.com/authentication/verifying-requests-from-slack
+
+    Args:
+        headers: Request headers dict
+        body: Raw request body bytes
+        secret: Slack signing secret
+
+    Returns:
+        True if signature is valid, False otherwise
+    """
+    if not secret:
+        print("Warning: SLACK_SIGNING_SECRET not provided. Verification disabled.")
+        return True  # Verification disabled
+
+    timestamp = headers.get("X-Slack-Request-Timestamp", "")
+    signature = headers.get("X-Slack-Signature", "")
+
+    if not timestamp or not signature:
+        print("Warning: Missing timestamp or signature headers")
+        return False
+
+    # Prevent replay attacks (5 minute window)
+    try:
+        timestamp_int = int(timestamp)
+    except ValueError:
+        print("Warning: Invalid timestamp format")
+        return False
+
+    if abs(time.time() - timestamp_int) > 60 * 5:
+        print("Warning: Request timestamp too old (replay attack prevention)")
+        return False
+
+    # Compute expected signature: HMAC-SHA256 of "v0:timestamp:body"
+    sig_basestring = f"v0:{timestamp}:{body.decode('utf-8')}"
+    expected_signature = "v0=" + hmac.new(secret.encode(), sig_basestring.encode(), hashlib.sha256).hexdigest()
+
+    # Constant-time comparison
+    return hmac.compare_digest(expected_signature, signature)
+
+
 def verify_slack_signature(request: Request, body: bytes) -> bool:
     """
-    Verify Slack request signature.
+    Verify Slack request signature (FastAPI wrapper).
 
     Args:
         request: FastAPI request object
@@ -44,29 +88,16 @@ def verify_slack_signature(request: Request, body: bytes) -> bool:
     Returns:
         True if signature is valid, False otherwise
     """
-    slack_signing_secret = os.getenv("SLACK_SIGNING_SECRET")
+    slack_signing_secret = os.getenv("SLACK_SIGNING_SECRET", "")
 
     if not slack_signing_secret:
         print("Warning: SLACK_SIGNING_SECRET not set. Running in dev mode (signature verification disabled).")
         return True  # Dev mode
 
-    timestamp = request.headers.get("X-Slack-Request-Timestamp", "")
-    signature = request.headers.get("X-Slack-Signature", "")
+    # Convert request headers to dict
+    headers_dict = dict(request.headers)
 
-    if not timestamp or not signature:
-        return False
-
-    # Prevent replay attacks (5 minute window)
-    if abs(time.time() - int(timestamp)) > 60 * 5:
-        return False
-
-    # Compute expected signature
-    sig_basestring = f"v0:{timestamp}:{body.decode('utf-8')}"
-    expected_signature = (
-        "v0=" + hmac.new(slack_signing_secret.encode(), sig_basestring.encode(), hashlib.sha256).hexdigest()
-    )
-
-    return hmac.compare_digest(expected_signature, signature)
+    return verify_slack_signature_headers(headers_dict, body, slack_signing_secret)
 
 
 def verify_teams_token(request: Request) -> bool:

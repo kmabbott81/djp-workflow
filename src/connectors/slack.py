@@ -13,9 +13,16 @@ from typing import Optional
 from .base import Connector
 from .circuit import CircuitBreaker
 from .http_client import request
+from .http_mock import get_mock_transport, is_mock_enabled
 from .metrics import record_call
 from .oauth2 import load_token, needs_refresh
 from .retry import compute_backoff_ms
+
+
+class SlackAPIError(Exception):
+    """Non-retryable Slack API error."""
+
+    pass
 
 
 class SlackConnector(Connector):
@@ -50,11 +57,27 @@ class SlackConnector(Connector):
         self.circuit = CircuitBreaker(connector_id)
         self.max_retries = int(os.getenv("RETRY_MAX_ATTEMPTS", "3"))
 
+        # Retry configuration
+        self.retry_status_codes = self._parse_retry_statuses()
+
         # Mock data path
         self.mock_path = Path("logs/connectors/slack_mock.jsonl")
 
         # Token service ID (supports multi-tenant)
         self.token_service_id = f"slack:{self.tenant_id}"
+
+    def _parse_retry_statuses(self) -> set[int]:
+        """Parse SLACK_RETRY_STATUS env var into set of status codes.
+
+        Returns:
+            Set of HTTP status codes that should trigger retry
+        """
+        retry_str = os.getenv("SLACK_RETRY_STATUS", "429,500,502,503,504")
+        try:
+            return {int(code.strip()) for code in retry_str.split(",")}
+        except ValueError:
+            # Default retry codes
+            return {429, 500, 502, 503, 504}
 
     def _get_token(self) -> str:
         """Get OAuth2 access token.
@@ -101,7 +124,11 @@ class SlackConnector(Connector):
         Raises:
             Exception on failure after retries
         """
-        if self.dry_run:
+        # Check if using mock transport
+        use_mock = is_mock_enabled() or self.dry_run
+
+        if use_mock and not is_mock_enabled():
+            # Legacy dry_run behavior (JSONL-based mocks)
             return self._mock_response(method, endpoint, json_data)
 
         # Check circuit breaker
@@ -125,7 +152,13 @@ class SlackConnector(Connector):
             start_time = time.time()
 
             try:
-                response = request(method, url, headers=headers, json_data=json_data)
+                # Use mock transport if enabled
+                if use_mock:
+                    mock = get_mock_transport()
+                    response = mock.request(method, url, headers=headers, json_data=json_data)
+                else:
+                    response = request(method, url, headers=headers, json_data=json_data)
+
                 duration_ms = (time.time() - start_time) * 1000
 
                 # Check status
@@ -155,7 +188,7 @@ class SlackConnector(Connector):
                                 time.sleep(backoff_ms / 1000.0)
                                 continue
 
-                        # Other Slack API errors
+                        # Other Slack API errors (non-retryable)
                         self.circuit.record_failure()
                         record_call(
                             self.connector_id,
@@ -164,7 +197,7 @@ class SlackConnector(Connector):
                             duration_ms,
                             error=f"Slack API error: {error_msg}",
                         )
-                        raise Exception(f"Slack API error: {error_msg}")
+                        raise SlackAPIError(f"Slack API error: {error_msg}")
 
                     # Success
                     self.circuit.record_success()
@@ -176,40 +209,35 @@ class SlackConnector(Connector):
                     )
                     return body
 
-                elif response["status_code"] == 429:
-                    # HTTP rate limit - retry with backoff
+                elif response["status_code"] in self.retry_status_codes:
+                    # Retryable HTTP error (429, 5xx, etc.)
                     self.circuit.record_failure()
+                    error_type = "rate_limited" if response["status_code"] == 429 else "server_error"
                     record_call(
                         self.connector_id,
                         endpoint,
                         "error",
                         duration_ms,
-                        error=f"HTTP rate limited: {response['status_code']}",
+                        error=f"{error_type}: {response['status_code']}",
                     )
 
                     if attempt < self.max_retries - 1:
-                        backoff_ms = compute_backoff_ms(attempt)
-                        time.sleep(backoff_ms / 1000.0)
-                        continue
+                        # Use Retry-After header if present for 429
+                        if response["status_code"] == 429:
+                            retry_after = response.get("headers", {}).get("Retry-After", "1")
+                            try:
+                                retry_after_ms = int(retry_after) * 1000
+                            except (ValueError, TypeError):
+                                retry_after_ms = compute_backoff_ms(attempt)
+                            backoff_ms = max(compute_backoff_ms(attempt), retry_after_ms)
+                        else:
+                            backoff_ms = compute_backoff_ms(attempt)
 
-                elif response["status_code"] >= 500:
-                    # Server error - retry
-                    self.circuit.record_failure()
-                    record_call(
-                        self.connector_id,
-                        endpoint,
-                        "error",
-                        duration_ms,
-                        error=f"Server error: {response['status_code']}",
-                    )
-
-                    if attempt < self.max_retries - 1:
-                        backoff_ms = compute_backoff_ms(attempt)
                         time.sleep(backoff_ms / 1000.0)
                         continue
 
                 else:
-                    # Client error - don't retry
+                    # Client error - don't retry (non-retryable)
                     self.circuit.record_failure()
                     record_call(
                         self.connector_id,
@@ -218,7 +246,11 @@ class SlackConnector(Connector):
                         duration_ms,
                         error=f"Client error: {response['status_code']}",
                     )
-                    raise Exception(f"API error {response['status_code']}: {response.get('body')}")
+                    raise SlackAPIError(f"API error {response['status_code']}: {response.get('body')}")
+
+            except SlackAPIError:
+                # Non-retryable error - re-raise immediately
+                raise
 
             except Exception as e:
                 duration_ms = (time.time() - start_time) * 1000
