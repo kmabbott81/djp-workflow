@@ -137,6 +137,39 @@ def cmd_test(args):
         print(f"❌ RBAC denied: {args.user} lacks Operator role", file=sys.stderr)
         return 2
 
+    # If --ingest flag is set, ingest snapshot into URG
+    if hasattr(args, "ingest") and args.ingest:
+        from src.connectors.ingest import ingest_connector_snapshot
+
+        resource_type = args.resource_type or "messages"
+        limit = 100  # Default ingest limit
+
+        print(f"Ingesting {resource_type} from {args.id} into URG...")
+
+        try:
+            result = ingest_connector_snapshot(
+                args.id,
+                resource_type,
+                tenant=args.tenant,
+                user_id=args.user,
+                limit=limit,
+            )
+
+            print("✅ Ingestion complete:")
+            print(f"   Resources ingested: {result['count']}")
+            print(f"   Errors: {result['errors']}")
+            print(f"   Source: {result['source']}")
+            print(f"   Resource type: {result['resource_type']}")
+
+            if args.json:
+                print(json.dumps(result, indent=2))
+
+            return 0
+
+        except Exception as e:
+            print(f"❌ Ingestion failed: {e}", file=sys.stderr)
+            return 1
+
     # Load connector
     connector = load_connector(args.id, args.tenant, args.user)
     if not connector:
@@ -245,6 +278,7 @@ def main():
     test_parser.add_argument("--resource-id", help="Resource ID (for get/delete)")
     test_parser.add_argument("--payload", help="JSON payload (for create)")
     test_parser.add_argument("--dry-run", action="store_true", help="Dry-run mode")
+    test_parser.add_argument("--ingest", action="store_true", help="Ingest snapshot into URG index")
 
     args = parser.parse_args()
 

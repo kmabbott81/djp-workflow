@@ -54,6 +54,11 @@ def render_observability_tab():
     st.markdown("### 🔌 Connectors")
     _render_connectors()
 
+    # Unified Graph panel (Sprint 38)
+    st.markdown("---")
+    st.markdown("### 🔗 Unified Resource Graph (URG)")
+    _render_unified_graph()
+
     # Multi-region observability
     st.markdown("---")
     st.markdown("### 🌍 Multi-Region Status")
@@ -1300,3 +1305,97 @@ def _render_connectors():
     except Exception as e:
         st.error(f"Error loading connectors panel: {e}")
         st.caption("Make sure connector framework is initialized and accessible")
+
+
+def _render_unified_graph():
+    """Render Unified Resource Graph (URG) stats panel (Sprint 38)."""
+    try:
+        import sys
+
+        sys.path.insert(0, str(Path(__file__).parent.parent))
+        from src.graph.index import get_index
+        from src.graph.search import search
+
+        # Get index stats
+        index = get_index()
+
+        # Get default tenant from env
+        default_tenant = os.getenv("GRAPH_DEFAULT_TENANT", "local-dev")
+
+        # Tenant selector
+        tenant = st.text_input("Tenant ID", value=default_tenant, key="urg_tenant")
+
+        stats = index.get_stats(tenant=tenant)
+
+        # Display summary stats
+        st.markdown("#### Index Statistics")
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            st.metric("Total Resources", stats["total"])
+
+        with col2:
+            st.metric("Resource Types", len(stats["by_type"]))
+
+        with col3:
+            st.metric("Sources", len(stats["by_source"]))
+
+        # Breakdown by type
+        if stats["by_type"]:
+            st.markdown("#### By Type")
+            import pandas as pd
+
+            type_data = [{"Type": k, "Count": v} for k, v in stats["by_type"].items()]
+            type_df = pd.DataFrame(type_data)
+            st.dataframe(type_df, use_container_width=True, hide_index=True)
+
+        # Breakdown by source
+        if stats["by_source"]:
+            st.markdown("#### By Source")
+
+            source_data = [{"Source": k, "Count": v} for k, v in stats["by_source"].items()]
+            source_df = pd.DataFrame(source_data)
+            st.dataframe(source_df, use_container_width=True, hide_index=True)
+
+        # Quick search
+        st.markdown("#### Quick Search")
+
+        query = st.text_input("Search query", key="urg_search_query", placeholder="Enter search terms...")
+
+        if query:
+            try:
+                results = search(query, tenant=tenant, limit=10)
+
+                if results:
+                    st.success(f"Found {len(results)} results")
+
+                    # Display results
+                    for i, resource in enumerate(results, 1):
+                        with st.expander(f"{i}. [{resource.get('type')}] {resource.get('title')}"):
+                            st.caption(f"**ID:** {resource.get('id')}")
+                            st.caption(f"**Source:** {resource.get('source')}")
+                            st.caption(f"**Timestamp:** {resource.get('timestamp')}")
+                            st.text(f"Snippet: {resource.get('snippet')[:150]}...")
+                else:
+                    st.info("No results found")
+
+            except Exception as e:
+                st.error(f"Search error: {e}")
+
+        # Quick links
+        st.markdown("#### Quick Links")
+
+        link_col1, link_col2 = st.columns(2)
+
+        with link_col1:
+            if st.button("🔍 Search CLI"):
+                st.info("Use: `python scripts/graph.py search --q 'query' --tenant <tenant>`")
+
+        with link_col2:
+            if st.button("📖 URG Documentation"):
+                st.info("See docs/UNIFIED_GRAPH.md for architecture and usage")
+
+    except Exception as e:
+        st.error(f"Error loading URG panel: {e}")
+        st.caption("Make sure URG module is initialized and accessible")
