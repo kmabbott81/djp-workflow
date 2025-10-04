@@ -31,6 +31,7 @@ from src.ops.health_server import start_health_server  # noqa: E402
 from src.publish import select_publish_text  # noqa: E402
 from src.schemas import Draft, Judgment  # noqa: E402
 from src.secrets import detect_providers, load_dotenv_if_present, pricing_for  # noqa: E402
+from src.telemetry.noop import init_noop_if_enabled  # noqa: E402
 
 # Load .env secrets early
 load_dotenv_if_present()
@@ -302,6 +303,9 @@ async def run_djp_workflow_real(
 def main():
     """Streamlit app main entry point."""
     st.set_page_config(page_title=APP_TITLE, layout="wide")
+
+    # Initialize telemetry noop (if enabled)
+    init_noop_if_enabled()
 
     # Start health server in background (only once per session)
     if "health_server_started" not in st.session_state:
