@@ -1,0 +1,329 @@
+{"connector_id": "test-slack", "operation": "conversations.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:46:24.582477"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:46:24.633360"}
+{"connector_id": "test-slack", "operation": "users.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:46:24.723552"}
+{"connector_id": "test-slack", "operation": "conversations.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:46:24.770667"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:46:24.824033"}
+{"connector_id": "test-slack", "operation": "users.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:46:24.881871"}
+{"connector_id": "test-slack", "operation": "chat.postMessage", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:46:24.936822"}
+{"connector_id": "test-slack", "operation": "chat.update", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:46:25.058626"}
+{"connector_id": "test-slack", "operation": "chat.delete", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:46:25.121520"}
+{"connector_id": "test-slack", "operation": "conversations.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:46:48.564262"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:46:48.624996"}
+{"connector_id": "test-slack", "operation": "users.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:46:48.724047"}
+{"connector_id": "test-slack", "operation": "conversations.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:46:48.778512"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:46:48.833414"}
+{"connector_id": "test-slack", "operation": "users.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:46:48.891092"}
+{"connector_id": "test-slack", "operation": "chat.postMessage", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:46:48.943292"}
+{"connector_id": "test-slack", "operation": "chat.update", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:46:49.035324"}
+{"connector_id": "test-slack", "operation": "chat.delete", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:46:49.081590"}
+{"connector_id": "test-slack-resilience", "operation": "conversations.list", "status": "error", "duration_ms": 0.04601478576660156, "error": "HTTP rate limited: 429", "timestamp": "2025-10-04T07:46:57.411621"}
+{"connector_id": "test-slack-resilience", "operation": "conversations.list", "status": "success", "duration_ms": 0.09441375732421875, "error": null, "timestamp": "2025-10-04T07:46:57.846621"}
+{"connector_id": "test-slack-resilience", "operation": "conversations.list", "status": "error", "duration_ms": 0.029802322387695312, "error": "Server error: 503", "timestamp": "2025-10-04T07:46:58.046345"}
+{"connector_id": "test-slack-resilience", "operation": "conversations.list", "status": "error", "duration_ms": 0.08559226989746094, "error": "Server error: 503", "timestamp": "2025-10-04T07:46:58.518386"}
+{"connector_id": "test-slack-resilience", "operation": "conversations.list", "status": "success", "duration_ms": 0.08368492126464844, "error": null, "timestamp": "2025-10-04T07:46:59.434723"}
+{"connector_id": "test-slack-resilience", "operation": "conversations.list", "status": "error", "duration_ms": 0.034809112548828125, "error": "Server error: 503", "timestamp": "2025-10-04T07:46:59.490290"}
+{"connector_id": "test-slack-resilience", "operation": "conversations.list", "status": "error", "duration_ms": 0.07534027099609375, "error": "Server error: 503", "timestamp": "2025-10-04T07:46:59.971258"}
+{"connector_id": "test-slack-resilience", "operation": "conversations.list", "status": "error", "duration_ms": 0.07510185241699219, "error": "Server error: 503", "timestamp": "2025-10-04T07:47:00.662208"}
+{"connector_id": "test-slack-resilience", "operation": "conversations.info", "status": "error", "duration_ms": 0.062465667724609375, "error": "Slack API error: channel_not_found", "timestamp": "2025-10-04T07:47:00.724400"}
+{"connector_id": "test-slack-resilience", "operation": "conversations.info", "status": "error", "duration_ms": 1.6360282897949219, "error": "Slack API error: channel_not_found", "timestamp": "2025-10-04T07:47:00.725586"}
+{"connector_id": "test-slack-resilience", "operation": "conversations.info", "status": "error", "duration_ms": 0.07176399230957031, "error": "Slack API error: channel_not_found", "timestamp": "2025-10-04T07:47:01.098605"}
+{"connector_id": "test-slack-resilience", "operation": "conversations.info", "status": "error", "duration_ms": 1.0406970977783203, "error": "Slack API error: channel_not_found", "timestamp": "2025-10-04T07:47:01.099341"}
+{"connector_id": "test-slack-resilience", "operation": "conversations.info", "status": "error", "duration_ms": 0.07605552673339844, "error": "Slack API error: channel_not_found", "timestamp": "2025-10-04T07:47:02.002581"}
+{"connector_id": "test-slack-resilience", "operation": "conversations.info", "status": "error", "duration_ms": 1.094818115234375, "error": "Slack API error: channel_not_found", "timestamp": "2025-10-04T07:47:02.003347"}
+{"connector_id": "test-slack-resilience", "operation": "conversations.list", "status": "success", "duration_ms": 0.04124641418457031, "error": null, "timestamp": "2025-10-04T07:47:02.121400"}
+{"connector_id": "test-slack-resilience", "operation": "conversations.list", "status": "error", "duration_ms": 0.005245208740234375, "error": "request() got an unexpected keyword argument 'params'", "timestamp": "2025-10-04T07:48:20.566421"}
+{"connector_id": "test-slack-resilience", "operation": "conversations.list", "status": "error", "duration_ms": 0.03552436828613281, "error": "request() got an unexpected keyword argument 'params'", "timestamp": "2025-10-04T07:48:20.895526"}
+{"connector_id": "test-slack-resilience", "operation": "conversations.list", "status": "error", "duration_ms": 0.021219253540039062, "error": "request() got an unexpected keyword argument 'params'", "timestamp": "2025-10-04T07:48:21.587660"}
+{"connector_id": "test-slack-resilience", "operation": "conversations.list", "status": "error", "duration_ms": 0.00667572021484375, "error": "request() got an unexpected keyword argument 'params'", "timestamp": "2025-10-04T07:48:21.985514"}
+{"connector_id": "test-slack-resilience", "operation": "conversations.list", "status": "error", "duration_ms": 0.020265579223632812, "error": "request() got an unexpected keyword argument 'params'", "timestamp": "2025-10-04T07:48:22.442382"}
+{"connector_id": "test-slack-resilience", "operation": "conversations.list", "status": "error", "duration_ms": 0.020265579223632812, "error": "request() got an unexpected keyword argument 'params'", "timestamp": "2025-10-04T07:48:23.237578"}
+{"connector_id": "test-slack-resilience", "operation": "conversations.list", "status": "error", "duration_ms": 0.00476837158203125, "error": "request() got an unexpected keyword argument 'params'", "timestamp": "2025-10-04T07:48:23.312106"}
+{"connector_id": "test-slack-resilience", "operation": "conversations.list", "status": "error", "duration_ms": 0.05698204040527344, "error": "request() got an unexpected keyword argument 'params'", "timestamp": "2025-10-04T07:48:23.674200"}
+{"connector_id": "test-slack-resilience", "operation": "conversations.list", "status": "error", "duration_ms": 0.021219253540039062, "error": "request() got an unexpected keyword argument 'params'", "timestamp": "2025-10-04T07:48:24.546449"}
+{"connector_id": "test-slack-resilience-2575804736400", "operation": "conversations.list", "status": "error", "duration_ms": 604.22682762146, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:09.353649"}
+{"connector_id": "test-slack-resilience-2575804736400", "operation": "conversations.list", "status": "error", "duration_ms": 606.1887741088867, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:09.354976"}
+{"connector_id": "test-slack-resilience-2575804736400", "operation": "conversations.list", "status": "error", "duration_ms": 472.231388092041, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:10.283049"}
+{"connector_id": "test-slack-resilience-2575804736400", "operation": "conversations.list", "status": "error", "duration_ms": 474.49398040771484, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:10.284629"}
+{"connector_id": "test-slack-resilience-2575804736400", "operation": "conversations.list", "status": "error", "duration_ms": 511.0969543457031, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:11.651689"}
+{"connector_id": "test-slack-resilience-2575804736400", "operation": "conversations.list", "status": "error", "duration_ms": 512.4726295471191, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:11.652091"}
+{"connector_id": "test-slack-resilience-2575804737888", "operation": "conversations.list", "status": "error", "duration_ms": 331.44640922546387, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:12.156625"}
+{"connector_id": "test-slack-resilience-2575804737888", "operation": "conversations.list", "status": "error", "duration_ms": 332.85999298095703, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:12.157628"}
+{"connector_id": "test-slack-resilience-2575804737888", "operation": "conversations.list", "status": "error", "duration_ms": 479.5646667480469, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:13.037902"}
+{"connector_id": "test-slack-resilience-2575804737888", "operation": "conversations.list", "status": "error", "duration_ms": 481.1816215515137, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:13.039124"}
+{"connector_id": "test-slack-resilience-2575804737888", "operation": "conversations.list", "status": "error", "duration_ms": 441.2045478820801, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:14.406980"}
+{"connector_id": "test-slack-resilience-2575804737888", "operation": "conversations.list", "status": "error", "duration_ms": 442.81721115112305, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:14.407599"}
+{"connector_id": "test-slack-resilience-2575804740800", "operation": "conversations.list", "status": "error", "duration_ms": 436.67006492614746, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:14.914520"}
+{"connector_id": "test-slack-resilience-2575804740800", "operation": "conversations.list", "status": "error", "duration_ms": 438.27009201049805, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:14.915933"}
+{"connector_id": "test-slack-resilience-2575804740800", "operation": "conversations.list", "status": "error", "duration_ms": 450.4680633544922, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:15.827548"}
+{"connector_id": "test-slack-resilience-2575804740800", "operation": "conversations.list", "status": "error", "duration_ms": 452.0695209503174, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:15.828677"}
+{"connector_id": "test-slack-resilience-2575804740800", "operation": "conversations.list", "status": "error", "duration_ms": 441.14136695861816, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:17.109149"}
+{"connector_id": "test-slack-resilience-2575804740800", "operation": "conversations.list", "status": "error", "duration_ms": 442.2616958618164, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:17.109598"}
+{"connector_id": "test-slack-resilience-2575804741312", "operation": "conversations.info", "status": "error", "duration_ms": 471.71902656555176, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:17.635134"}
+{"connector_id": "test-slack-resilience-2575804741312", "operation": "conversations.info", "status": "error", "duration_ms": 473.7868309020996, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:17.636233"}
+{"connector_id": "test-slack-resilience-2575804741312", "operation": "conversations.info", "status": "error", "duration_ms": 489.3798828125, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:18.501156"}
+{"connector_id": "test-slack-resilience-2575804741312", "operation": "conversations.info", "status": "error", "duration_ms": 490.4162883758545, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:18.502169"}
+{"connector_id": "test-slack-resilience-2575804741312", "operation": "conversations.info", "status": "error", "duration_ms": 458.310604095459, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:19.741212"}
+{"connector_id": "test-slack-resilience-2575804741312", "operation": "conversations.info", "status": "error", "duration_ms": 459.8650932312012, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:19.742123"}
+{"connector_id": "test-slack-resilience-2575804743136", "operation": "conversations.list", "status": "error", "duration_ms": 435.2591037750244, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:20.299412"}
+{"connector_id": "test-slack-resilience-2575804743136", "operation": "conversations.list", "status": "error", "duration_ms": 436.83362007141113, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:20.300559"}
+{"connector_id": "test-slack-resilience-2575804743136", "operation": "conversations.list", "status": "error", "duration_ms": 452.1610736846924, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:21.136850"}
+{"connector_id": "test-slack-resilience-2575804743136", "operation": "conversations.list", "status": "error", "duration_ms": 453.80187034606934, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:21.138001"}
+{"connector_id": "test-slack-resilience-2575804743136", "operation": "conversations.list", "status": "error", "duration_ms": 554.9952983856201, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:22.342789"}
+{"connector_id": "test-slack-resilience-2575804743136", "operation": "conversations.list", "status": "error", "duration_ms": 556.4167499542236, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:22.343370"}
+{"connector_id": "test-slack-resilience-2575804736704", "operation": "conversations.list", "status": "error", "duration_ms": 1277.0237922668457, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:23.685536"}
+{"connector_id": "test-slack-resilience-2575804736704", "operation": "conversations.list", "status": "error", "duration_ms": 1278.9947986602783, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:23.686795"}
+{"connector_id": "test-slack-resilience-2575804736704", "operation": "conversations.list", "status": "error", "duration_ms": 434.0243339538574, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:24.480670"}
+{"connector_id": "test-slack-resilience-2575804736704", "operation": "conversations.list", "status": "error", "duration_ms": 435.4383945465088, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:24.481434"}
+{"connector_id": "test-slack-resilience-2575804736704", "operation": "conversations.list", "status": "error", "duration_ms": 357.5923442840576, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:25.589533"}
+{"connector_id": "test-slack-resilience-2575804736704", "operation": "conversations.list", "status": "error", "duration_ms": 358.5987091064453, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:49:25.589898"}
+{"connector_id": "test-slack-resilience-2590602896336", "operation": "conversations.list", "status": "error", "duration_ms": 471.0240364074707, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:33.467913"}
+{"connector_id": "test-slack-resilience-2590602896336", "operation": "conversations.list", "status": "error", "duration_ms": 472.1972942352295, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:33.468817"}
+{"connector_id": "test-slack-resilience-2590602896336", "operation": "conversations.list", "status": "error", "duration_ms": 474.4534492492676, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:34.396036"}
+{"connector_id": "test-slack-resilience-2590602896336", "operation": "conversations.list", "status": "error", "duration_ms": 476.06658935546875, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:34.397011"}
+{"connector_id": "test-slack-resilience-2590602896336", "operation": "conversations.list", "status": "error", "duration_ms": 486.6492748260498, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:35.542671"}
+{"connector_id": "test-slack-resilience-2590602896336", "operation": "conversations.list", "status": "error", "duration_ms": 488.325834274292, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:35.543357"}
+{"connector_id": "test-slack-resilience-2590602898160", "operation": "conversations.list", "status": "error", "duration_ms": 484.96294021606445, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:36.255984"}
+{"connector_id": "test-slack-resilience-2590602898160", "operation": "conversations.list", "status": "error", "duration_ms": 486.94372177124023, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:36.257253"}
+{"connector_id": "test-slack-resilience-2590602898160", "operation": "conversations.list", "status": "error", "duration_ms": 447.39484786987305, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:37.068621"}
+{"connector_id": "test-slack-resilience-2590602898160", "operation": "conversations.list", "status": "error", "duration_ms": 449.1701126098633, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:37.069803"}
+{"connector_id": "test-slack-resilience-2590602898160", "operation": "conversations.list", "status": "error", "duration_ms": 449.1097927093506, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:38.415517"}
+{"connector_id": "test-slack-resilience-2590602898160", "operation": "conversations.list", "status": "error", "duration_ms": 450.6800174713135, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:38.416106"}
+{"connector_id": "test-slack-resilience-2590602901152", "operation": "conversations.list", "status": "error", "duration_ms": 453.8755416870117, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:38.940409"}
+{"connector_id": "test-slack-resilience-2590602901152", "operation": "conversations.list", "status": "error", "duration_ms": 455.71184158325195, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:38.941943"}
+{"connector_id": "test-slack-resilience-2590602901152", "operation": "conversations.list", "status": "error", "duration_ms": 423.04491996765137, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:39.729820"}
+{"connector_id": "test-slack-resilience-2590602901152", "operation": "conversations.list", "status": "error", "duration_ms": 424.6346950531006, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:39.730902"}
+{"connector_id": "test-slack-resilience-2590602901152", "operation": "conversations.list", "status": "error", "duration_ms": 494.71545219421387, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:41.047904"}
+{"connector_id": "test-slack-resilience-2590602901152", "operation": "conversations.list", "status": "error", "duration_ms": 496.25110626220703, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:41.048516"}
+{"connector_id": "test-slack-resilience-2590602901952", "operation": "conversations.info", "status": "error", "duration_ms": 389.86778259277344, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:41.497955"}
+{"connector_id": "test-slack-resilience-2590602901952", "operation": "conversations.info", "status": "error", "duration_ms": 391.4377689361572, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:41.498996"}
+{"connector_id": "test-slack-resilience-2590602901952", "operation": "conversations.info", "status": "error", "duration_ms": 417.9215431213379, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:42.305832"}
+{"connector_id": "test-slack-resilience-2590602901952", "operation": "conversations.info", "status": "error", "duration_ms": 419.5883274078369, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:42.307047"}
+{"connector_id": "test-slack-resilience-2590602901952", "operation": "conversations.info", "status": "error", "duration_ms": 470.9432125091553, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:43.498766"}
+{"connector_id": "test-slack-resilience-2590602901952", "operation": "conversations.info", "status": "error", "duration_ms": 472.40424156188965, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:43.499320"}
+{"connector_id": "test-slack-resilience-2590602899488", "operation": "conversations.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:50:43.572351"}
+{"connector_id": "test-slack-resilience-2590602899456", "operation": "conversations.list", "status": "error", "duration_ms": 524.2173671722412, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:44.167062"}
+{"connector_id": "test-slack-resilience-2590602899456", "operation": "conversations.list", "status": "error", "duration_ms": 525.6791114807129, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:44.168139"}
+{"connector_id": "test-slack-resilience-2590602899456", "operation": "conversations.list", "status": "error", "duration_ms": 438.5247230529785, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:44.939350"}
+{"connector_id": "test-slack-resilience-2590602899456", "operation": "conversations.list", "status": "error", "duration_ms": 440.0594234466553, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:44.940437"}
+{"connector_id": "test-slack-resilience-2590602899456", "operation": "conversations.list", "status": "error", "duration_ms": 480.3023338317871, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:46.186469"}
+{"connector_id": "test-slack-resilience-2590602899456", "operation": "conversations.list", "status": "error", "duration_ms": 482.0828437805176, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:46.187391"}
+{"connector_id": "test-slack-resilience-2590602901312", "operation": "conversations.list", "status": "error", "duration_ms": 472.0590114593506, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:46.724649"}
+{"connector_id": "test-slack-resilience-2590602901312", "operation": "conversations.list", "status": "error", "duration_ms": 473.53100776672363, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:46.725787"}
+{"connector_id": "test-slack-resilience-2590602901312", "operation": "conversations.list", "status": "error", "duration_ms": 432.45863914489746, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:47.500125"}
+{"connector_id": "test-slack-resilience-2590602901312", "operation": "conversations.list", "status": "error", "duration_ms": 434.0848922729492, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:47.501200"}
+{"connector_id": "test-slack-resilience-2590602901312", "operation": "conversations.list", "status": "error", "duration_ms": 449.7971534729004, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:48.772787"}
+{"connector_id": "test-slack-resilience-2590602901312", "operation": "conversations.list", "status": "error", "duration_ms": 451.4040946960449, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:50:48.773378"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:50:57.906693"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:50:57.952430"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:50:57.999501"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:50:58.046425"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:50:58.093618"}
+{"connector_id": "test-slack", "operation": "conversations.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:51:06.233930"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:51:06.283861"}
+{"connector_id": "test-slack", "operation": "users.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:51:06.386703"}
+{"connector_id": "test-slack", "operation": "conversations.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:51:06.437958"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:51:06.485870"}
+{"connector_id": "test-slack", "operation": "users.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:51:06.535364"}
+{"connector_id": "test-slack", "operation": "chat.postMessage", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:51:06.582148"}
+{"connector_id": "test-slack", "operation": "chat.update", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:51:06.679424"}
+{"connector_id": "test-slack", "operation": "chat.delete", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:51:06.734181"}
+{"connector_id": "test-slack", "operation": "conversations.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:51:56.312890"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:51:56.362838"}
+{"connector_id": "test-slack", "operation": "users.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:51:56.454539"}
+{"connector_id": "test-slack", "operation": "conversations.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:51:56.501883"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:51:56.547822"}
+{"connector_id": "test-slack", "operation": "users.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:51:56.596768"}
+{"connector_id": "test-slack", "operation": "chat.postMessage", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:51:56.644779"}
+{"connector_id": "test-slack", "operation": "chat.update", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:51:56.742404"}
+{"connector_id": "test-slack", "operation": "chat.delete", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:51:56.791543"}
+{"connector_id": "test-slack-resilience-2660324024544", "operation": "conversations.list", "status": "error", "duration_ms": 539.0191078186035, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:51:57.441569"}
+{"connector_id": "test-slack-resilience-2660324024544", "operation": "conversations.list", "status": "error", "duration_ms": 540.6525135040283, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:51:57.442661"}
+{"connector_id": "test-slack-resilience-2660324024544", "operation": "conversations.list", "status": "error", "duration_ms": 464.4014835357666, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:51:58.289844"}
+{"connector_id": "test-slack-resilience-2660324024544", "operation": "conversations.list", "status": "error", "duration_ms": 466.0654067993164, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:51:58.291031"}
+{"connector_id": "test-slack-resilience-2660324024544", "operation": "conversations.list", "status": "error", "duration_ms": 438.91048431396484, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:51:59.645905"}
+{"connector_id": "test-slack-resilience-2660324024544", "operation": "conversations.list", "status": "error", "duration_ms": 440.950870513916, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:51:59.646835"}
+{"connector_id": "test-slack-resilience-2660324025888", "operation": "conversations.list", "status": "error", "duration_ms": 442.07239151000977, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:00.145548"}
+{"connector_id": "test-slack-resilience-2660324025888", "operation": "conversations.list", "status": "error", "duration_ms": 443.27259063720703, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:00.146359"}
+{"connector_id": "test-slack-resilience-2660324025888", "operation": "conversations.list", "status": "error", "duration_ms": 519.7997093200684, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:01.029107"}
+{"connector_id": "test-slack-resilience-2660324025888", "operation": "conversations.list", "status": "error", "duration_ms": 521.507978439331, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:01.030212"}
+{"connector_id": "test-slack-resilience-2660324025888", "operation": "conversations.list", "status": "error", "duration_ms": 447.13401794433594, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:02.299052"}
+{"connector_id": "test-slack-resilience-2660324025888", "operation": "conversations.list", "status": "error", "duration_ms": 448.26316833496094, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:02.299462"}
+{"connector_id": "test-slack-resilience-2660324025968", "operation": "conversations.list", "status": "error", "duration_ms": 496.4110851287842, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:02.853013"}
+{"connector_id": "test-slack-resilience-2660324025968", "operation": "conversations.list", "status": "error", "duration_ms": 497.67041206359863, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:02.853899"}
+{"connector_id": "test-slack-resilience-2660324025968", "operation": "conversations.list", "status": "error", "duration_ms": 510.44774055480957, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:03.692715"}
+{"connector_id": "test-slack-resilience-2660324025968", "operation": "conversations.list", "status": "error", "duration_ms": 512.1831893920898, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:03.694309"}
+{"connector_id": "test-slack-resilience-2660324025968", "operation": "conversations.list", "status": "error", "duration_ms": 444.0128803253174, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:05.081063"}
+{"connector_id": "test-slack-resilience-2660324025968", "operation": "conversations.list", "status": "error", "duration_ms": 446.13122940063477, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:05.081837"}
+{"connector_id": "test-slack-resilience-2660324025840", "operation": "conversations.info", "status": "error", "duration_ms": 456.986665725708, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:05.593962"}
+{"connector_id": "test-slack-resilience-2660324025840", "operation": "conversations.info", "status": "error", "duration_ms": 458.1947326660156, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:05.594746"}
+{"connector_id": "test-slack-resilience-2660324025840", "operation": "conversations.info", "status": "error", "duration_ms": 525.9785652160645, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:06.518383"}
+{"connector_id": "test-slack-resilience-2660324025840", "operation": "conversations.info", "status": "error", "duration_ms": 527.8456211090088, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:06.519956"}
+{"connector_id": "test-slack-resilience-2660324025840", "operation": "conversations.info", "status": "error", "duration_ms": 516.0806179046631, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:07.907516"}
+{"connector_id": "test-slack-resilience-2660324025840", "operation": "conversations.info", "status": "error", "duration_ms": 517.2932147979736, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:07.907954"}
+{"connector_id": "test-slack-resilience-2660324025888", "operation": "conversations.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:07.970079"}
+{"connector_id": "test-slack-resilience-2660324024544", "operation": "conversations.list", "status": "error", "duration_ms": 467.6055908203125, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:08.497265"}
+{"connector_id": "test-slack-resilience-2660324024544", "operation": "conversations.list", "status": "error", "duration_ms": 469.31934356689453, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:08.498574"}
+{"connector_id": "test-slack-resilience-2660324024544", "operation": "conversations.list", "status": "error", "duration_ms": 446.89488410949707, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:09.421214"}
+{"connector_id": "test-slack-resilience-2660324024544", "operation": "conversations.list", "status": "error", "duration_ms": 448.2600688934326, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:09.422171"}
+{"connector_id": "test-slack-resilience-2660324024544", "operation": "conversations.list", "status": "error", "duration_ms": 473.3288288116455, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:10.579457"}
+{"connector_id": "test-slack-resilience-2660324024544", "operation": "conversations.list", "status": "error", "duration_ms": 475.45647621154785, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:10.580297"}
+{"connector_id": "test-slack-resilience-2660324026080", "operation": "conversations.list", "status": "error", "duration_ms": 416.2285327911377, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:11.058163"}
+{"connector_id": "test-slack-resilience-2660324026080", "operation": "conversations.list", "status": "error", "duration_ms": 417.24181175231934, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:11.058971"}
+{"connector_id": "test-slack-resilience-2660324026080", "operation": "conversations.list", "status": "error", "duration_ms": 458.3420753479004, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:11.896887"}
+{"connector_id": "test-slack-resilience-2660324026080", "operation": "conversations.list", "status": "error", "duration_ms": 459.4838619232178, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:11.897780"}
+{"connector_id": "test-slack-resilience-2660324026080", "operation": "conversations.list", "status": "error", "duration_ms": 463.7410640716553, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:13.169867"}
+{"connector_id": "test-slack-resilience-2660324026080", "operation": "conversations.list", "status": "error", "duration_ms": 464.8714065551758, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:52:13.170308"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:52:13.226061"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:52:13.273544"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:52:13.319938"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:52:13.367583"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:52:13.423889"}
+{"connector_id": "test-slack", "operation": "conversations.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:25.348279"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:25.414181"}
+{"connector_id": "test-slack", "operation": "users.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:25.525395"}
+{"connector_id": "test-slack", "operation": "conversations.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:25.571819"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:25.625693"}
+{"connector_id": "test-slack", "operation": "users.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:25.687146"}
+{"connector_id": "test-slack", "operation": "chat.postMessage", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:25.747001"}
+{"connector_id": "test-slack", "operation": "chat.update", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:25.851504"}
+{"connector_id": "test-slack", "operation": "chat.delete", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:25.898988"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:52:25.993232"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:52:26.037151"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:52:26.087108"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:52:26.135278"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:52:26.182790"}
+{"connector_id": "test-slack", "operation": "conversations.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:38.152065"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:38.202338"}
+{"connector_id": "test-slack", "operation": "users.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:38.321916"}
+{"connector_id": "test-slack", "operation": "conversations.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:38.380707"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:38.436728"}
+{"connector_id": "test-slack", "operation": "users.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:38.492978"}
+{"connector_id": "test-slack", "operation": "chat.postMessage", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:38.541556"}
+{"connector_id": "test-slack", "operation": "chat.update", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:38.632261"}
+{"connector_id": "test-slack", "operation": "chat.delete", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:38.676059"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:52:38.770996"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:52:38.814593"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:52:38.860077"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:52:38.909509"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:52:38.958489"}
+{"connector_id": "test-slack", "operation": "conversations.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:54.393143"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:54.441299"}
+{"connector_id": "test-slack", "operation": "users.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:54.533183"}
+{"connector_id": "test-slack", "operation": "conversations.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:54.582026"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:54.633663"}
+{"connector_id": "test-slack", "operation": "users.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:54.682176"}
+{"connector_id": "test-slack", "operation": "chat.postMessage", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:54.730769"}
+{"connector_id": "test-slack", "operation": "chat.update", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:54.824415"}
+{"connector_id": "test-slack", "operation": "chat.delete", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:52:54.874406"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:52:54.973162"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:52:55.020607"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:52:55.068433"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:52:55.123227"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:52:55.187089"}
+{"connector_id": "test-slack", "operation": "conversations.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:53:04.562657"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:53:04.610947"}
+{"connector_id": "test-slack", "operation": "users.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:53:04.704947"}
+{"connector_id": "test-slack", "operation": "conversations.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:53:04.749878"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:53:04.795005"}
+{"connector_id": "test-slack", "operation": "users.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:53:04.842515"}
+{"connector_id": "test-slack", "operation": "chat.postMessage", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:53:04.889772"}
+{"connector_id": "test-slack", "operation": "chat.update", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:53:04.984716"}
+{"connector_id": "test-slack", "operation": "chat.delete", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:53:05.034151"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:53:05.129742"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:53:05.177920"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:53:05.226491"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:53:05.272555"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:53:05.315230"}
+{"connector_id": "test-slack", "operation": "conversations.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:56:30.261207"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:56:30.307305"}
+{"connector_id": "test-slack", "operation": "users.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:56:30.408275"}
+{"connector_id": "test-slack", "operation": "conversations.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:56:30.466262"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:56:30.516522"}
+{"connector_id": "test-slack", "operation": "users.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:56:30.566342"}
+{"connector_id": "test-slack", "operation": "chat.postMessage", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:56:30.616799"}
+{"connector_id": "test-slack", "operation": "chat.update", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:56:30.714983"}
+{"connector_id": "test-slack", "operation": "chat.delete", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:56:30.768255"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:56:38.815674"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:56:38.859142"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:56:38.904325"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:56:38.959833"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:56:39.023035"}
+{"connector_id": "test-slack-resilience-1969317814464", "operation": "conversations.list", "status": "error", "duration_ms": 538.7477874755859, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:47.171394"}
+{"connector_id": "test-slack-resilience-1969317814464", "operation": "conversations.list", "status": "error", "duration_ms": 540.0524139404297, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:47.172281"}
+{"connector_id": "test-slack-resilience-1969317814464", "operation": "conversations.list", "status": "error", "duration_ms": 417.36531257629395, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:47.950384"}
+{"connector_id": "test-slack-resilience-1969317814464", "operation": "conversations.list", "status": "error", "duration_ms": 418.8704490661621, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:47.951545"}
+{"connector_id": "test-slack-resilience-1969317814464", "operation": "conversations.list", "status": "error", "duration_ms": 468.2488441467285, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:49.194258"}
+{"connector_id": "test-slack-resilience-1969317814464", "operation": "conversations.list", "status": "error", "duration_ms": 469.5425033569336, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:49.194679"}
+{"connector_id": "test-slack-resilience-1969317817664", "operation": "conversations.list", "status": "error", "duration_ms": 351.2129783630371, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:49.769605"}
+{"connector_id": "test-slack-resilience-1969317817664", "operation": "conversations.list", "status": "error", "duration_ms": 352.7545928955078, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:49.770704"}
+{"connector_id": "test-slack-resilience-1969317817664", "operation": "conversations.list", "status": "error", "duration_ms": 443.42684745788574, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:50.589894"}
+{"connector_id": "test-slack-resilience-1969317817664", "operation": "conversations.list", "status": "error", "duration_ms": 445.15275955200195, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:50.591092"}
+{"connector_id": "test-slack-resilience-1969317817664", "operation": "conversations.list", "status": "error", "duration_ms": 445.9497928619385, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:51.906909"}
+{"connector_id": "test-slack-resilience-1969317817664", "operation": "conversations.list", "status": "error", "duration_ms": 447.6494789123535, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:51.907593"}
+{"connector_id": "test-slack-resilience-1969317820080", "operation": "conversations.list", "status": "error", "duration_ms": 533.3478450775146, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:52.513115"}
+{"connector_id": "test-slack-resilience-1969317820080", "operation": "conversations.list", "status": "error", "duration_ms": 535.0632667541504, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:52.514483"}
+{"connector_id": "test-slack-resilience-1969317820080", "operation": "conversations.list", "status": "error", "duration_ms": 463.5756015777588, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:53.395140"}
+{"connector_id": "test-slack-resilience-1969317820080", "operation": "conversations.list", "status": "error", "duration_ms": 465.05069732666016, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:53.395932"}
+{"connector_id": "test-slack-resilience-1969317820080", "operation": "conversations.list", "status": "error", "duration_ms": 395.1082229614258, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:54.482146"}
+{"connector_id": "test-slack-resilience-1969317820080", "operation": "conversations.list", "status": "error", "duration_ms": 396.30794525146484, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:54.482554"}
+{"connector_id": "test-slack-resilience-1969317820880", "operation": "conversations.info", "status": "error", "duration_ms": 407.67621994018555, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:54.947873"}
+{"connector_id": "test-slack-resilience-1969317820880", "operation": "conversations.info", "status": "error", "duration_ms": 409.2254638671875, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:54.948884"}
+{"connector_id": "test-slack-resilience-1969317820880", "operation": "conversations.info", "status": "error", "duration_ms": 492.279052734375, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:55.842909"}
+{"connector_id": "test-slack-resilience-1969317820880", "operation": "conversations.info", "status": "error", "duration_ms": 493.4828281402588, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:55.843704"}
+{"connector_id": "test-slack-resilience-1969317820880", "operation": "conversations.info", "status": "error", "duration_ms": 419.4989204406738, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:57.194196"}
+{"connector_id": "test-slack-resilience-1969317820880", "operation": "conversations.info", "status": "error", "duration_ms": 421.72789573669434, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:57.195012"}
+{"connector_id": "test-slack-resilience-1969317815776", "operation": "conversations.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:56:57.276566"}
+{"connector_id": "test-slack-resilience-1969317815584", "operation": "conversations.list", "status": "error", "duration_ms": 459.7287178039551, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:57.794533"}
+{"connector_id": "test-slack-resilience-1969317815584", "operation": "conversations.list", "status": "error", "duration_ms": 461.3199234008789, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:57.795802"}
+{"connector_id": "test-slack-resilience-1969317815584", "operation": "conversations.list", "status": "error", "duration_ms": 426.7141819000244, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:58.646058"}
+{"connector_id": "test-slack-resilience-1969317815584", "operation": "conversations.list", "status": "error", "duration_ms": 427.7071952819824, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:58.646698"}
+{"connector_id": "test-slack-resilience-1969317815584", "operation": "conversations.list", "status": "error", "duration_ms": 474.2093086242676, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:59.919778"}
+{"connector_id": "test-slack-resilience-1969317815584", "operation": "conversations.list", "status": "error", "duration_ms": 475.83913803100586, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:56:59.920409"}
+{"connector_id": "test-slack-resilience-1969317817680", "operation": "conversations.list", "status": "error", "duration_ms": 376.12438201904297, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:57:00.362920"}
+{"connector_id": "test-slack-resilience-1969317817680", "operation": "conversations.list", "status": "error", "duration_ms": 377.6836395263672, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:57:00.363972"}
+{"connector_id": "test-slack-resilience-1969317817680", "operation": "conversations.list", "status": "error", "duration_ms": 405.3330421447754, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:57:01.245596"}
+{"connector_id": "test-slack-resilience-1969317817680", "operation": "conversations.list", "status": "error", "duration_ms": 406.1715602874756, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:57:01.246066"}
+{"connector_id": "test-slack-resilience-1969317817680", "operation": "conversations.list", "status": "error", "duration_ms": 597.893238067627, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:57:02.651914"}
+{"connector_id": "test-slack-resilience-1969317817680", "operation": "conversations.list", "status": "error", "duration_ms": 600.1319885253906, "error": "Slack API error: invalid_auth", "timestamp": "2025-10-04T07:57:02.652660"}
+{"connector_id": "test-slack", "operation": "conversations.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:57:28.564784"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:57:28.627551"}
+{"connector_id": "test-slack", "operation": "users.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:57:28.725815"}
+{"connector_id": "test-slack", "operation": "conversations.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:57:28.771650"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:57:28.815930"}
+{"connector_id": "test-slack", "operation": "users.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:57:28.867652"}
+{"connector_id": "test-slack", "operation": "chat.postMessage", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:57:28.922182"}
+{"connector_id": "test-slack", "operation": "chat.update", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:57:29.026402"}
+{"connector_id": "test-slack", "operation": "chat.delete", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:57:29.083422"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:57:29.204601"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:57:29.261510"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:57:29.319777"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:57:29.378395"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:57:29.435871"}
+{"connector_id": "test-slack", "operation": "conversations.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:58:56.143277"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:58:56.201365"}
+{"connector_id": "test-slack", "operation": "users.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:58:56.315014"}
+{"connector_id": "test-slack", "operation": "conversations.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:58:56.377949"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:58:56.443158"}
+{"connector_id": "test-slack", "operation": "users.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:58:56.495168"}
+{"connector_id": "test-slack", "operation": "chat.postMessage", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:58:56.547018"}
+{"connector_id": "test-slack", "operation": "chat.update", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:58:56.644789"}
+{"connector_id": "test-slack", "operation": "chat.delete", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:58:56.691262"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:58:56.796563"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:58:56.995754"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:58:57.101605"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:58:57.156475"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:58:57.215155"}
+{"connector_id": "test-slack", "operation": "conversations.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:59:30.897168"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:59:30.946822"}
+{"connector_id": "test-slack", "operation": "users.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:59:31.047799"}
+{"connector_id": "test-slack", "operation": "conversations.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:59:31.098341"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:59:31.144794"}
+{"connector_id": "test-slack", "operation": "users.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:59:31.196653"}
+{"connector_id": "test-slack", "operation": "chat.postMessage", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:59:31.254626"}
+{"connector_id": "test-slack", "operation": "chat.update", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:59:31.362143"}
+{"connector_id": "test-slack", "operation": "chat.delete", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T07:59:31.423869"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:59:31.540207"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:59:31.594795"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:59:31.644453"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:59:31.694547"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T07:59:31.743344"}

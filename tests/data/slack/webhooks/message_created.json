@@ -1,0 +1,28 @@
+{
+  "token": "XXYYZZ",
+  "team_id": "T1234567890",
+  "api_app_id": "A1234567890",
+  "type": "event_callback",
+  "event_id": "Ev1234567890",
+  "event_time": 1609459200,
+  "event": {
+    "type": "message",
+    "channel": "C1234567890",
+    "user": "U1234567890",
+    "text": "Hello, world!",
+    "ts": "1609459200.000100",
+    "event_ts": "1609459200.000100",
+    "channel_type": "channel"
+  },
+  "authorizations": [
+    {
+      "enterprise_id": null,
+      "team_id": "T1234567890",
+      "user_id": "U0987654321",
+      "is_bot": true,
+      "is_enterprise_install": false
+    }
+  ],
+  "is_ext_shared_channel": false,
+  "event_context": "1-message-T1234567890-C1234567890"
+}

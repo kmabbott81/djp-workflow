@@ -175,6 +175,21 @@ class SchemaAdapter:
                 },
             }
 
+        elif service == "slack":
+            # Slack users
+            profile = contact.get("profile", {})
+            return {
+                "id": contact.get("id", ""),
+                "name": contact.get("real_name", "") or contact.get("name", ""),
+                "email": profile.get("email", ""),
+                "phone": profile.get("phone", ""),
+                "metadata": {
+                    "is_bot": contact.get("is_bot", False),
+                    "is_admin": contact.get("is_admin", False),
+                    "display_name": profile.get("display_name", ""),
+                },
+            }
+
         else:
             raise ValueError(f"Unsupported service for contacts: {service}")
 
@@ -251,13 +266,27 @@ ENDPOINT_REGISTRY: dict[tuple[str, str], EndpointMap] = {
         update_url="users/{user_id}/contacts/{resource_id}",
         delete_url="users/{user_id}/contacts/{resource_id}",
     ),
-    # Slack (template examples - full implementation TBD)
+    # Slack
+    ("slack", "channels"): EndpointMap(
+        list_url="conversations.list",
+        get_url="conversations.info",
+        create_url="conversations.create",
+        update_url="conversations.rename",
+        delete_url="conversations.archive",
+    ),
     ("slack", "messages"): EndpointMap(
-        list_url="conversations.history?channel={channel_id}",
-        get_url="conversations.history?channel={channel_id}&latest={resource_id}&limit=1",
+        list_url="conversations.history",
+        get_url="conversations.history",
         create_url="chat.postMessage",
         update_url="chat.update",
         delete_url="chat.delete",
+    ),
+    ("slack", "users"): EndpointMap(
+        list_url="users.list",
+        get_url="users.info",
+        create_url="",  # Not supported by Slack API
+        update_url="users.profile.set",
+        delete_url="",  # Not supported by Slack API
     ),
 }
 
