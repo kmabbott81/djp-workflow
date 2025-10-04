@@ -56,3 +56,9 @@ docker-test:  ## Run tests in Docker
 
 docker-clean:  ## Clean Docker resources
 	$(MAKE) -C docker clean
+
+# Performance budget targets
+perf-baseline:  ## Generate performance baseline report
+	pytest -q --durations=25 -m "not slow" | tee durations.txt
+	python scripts/ci_perf_budget.py
+	@echo "Review perf-report.md; if acceptable, copy JSON metrics into dashboards/ci/baseline.json and commit."
