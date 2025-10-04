@@ -1,0 +1,21 @@
+{
+  "changeType": "created",
+  "resource": "teams/team-123/channels/channel-456/messages/msg-789",
+  "resourceData": {
+    "id": "msg-789",
+    "createdDateTime": "2025-10-04T12:00:00Z",
+    "from": {
+      "user": {
+        "id": "user-001",
+        "displayName": "John Doe"
+      }
+    },
+    "body": {
+      "contentType": "text",
+      "content": "Hello Teams!"
+    }
+  },
+  "subscriptionId": "sub-abc",
+  "subscriptionExpirationDateTime": "2025-10-05T12:00:00Z",
+  "tenantId": "tenant-xyz"
+}

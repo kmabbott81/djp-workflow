@@ -1,0 +1,94 @@
+# Archive Rotation Demo Workflow Template
+#
+# Simple template for generating test artifacts in the archive rotation demo.
+# Used by src/workflows/stress/archive_rotation_demo.py
+
+workflow_name: "archive_rotation_demo"
+description: "Generate test artifacts for demonstrating tiered storage lifecycle"
+
+# Configuration parameters
+parameters:
+  # Title prefix for generated documents
+  title_prefix: "Archive Demo Document"
+
+  # Number of lines per generated file (approximate)
+  lines_per_file: 30
+
+  # Include SHA-256 checksum footer in each document
+  include_checksum: true
+
+  # Artifact naming pattern
+  artifact_pattern: "demo_doc_{index:04d}.md"
+
+  # Workflow ID used for tenant-scoped paths
+  workflow_id: "archive_demo"
+
+  # Default tenant if not specified via CLI
+  default_tenant: "local-dev"
+
+# Document structure
+document_structure:
+  sections:
+    - name: "header"
+      content:
+        - "# {title_prefix} {index}"
+        - ""
+        - "**Generated:** {timestamp}"
+        - "**Tenant:** {tenant_id}"
+        - "**Document ID:** {index:04d}"
+        - ""
+
+    - name: "summary"
+      content:
+        - "## Summary"
+        - ""
+        - "This is a test document generated for archive rotation demo purposes."
+        - "Document number {index} in the series."
+        - ""
+
+    - name: "content"
+      content:
+        - "## Content"
+        - ""
+        - "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+        - "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+        - "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris."
+        - ""
+        - "### Section {index}.1"
+        - ""
+        - "Additional content to make this document more realistic."
+        - "Multiple paragraphs help test storage and retrieval."
+        - ""
+        - "### Section {index}.2"
+        - ""
+        - "Final section with closing remarks."
+        - "End of document content."
+        - ""
+
+    - name: "checksum_footer"
+      content:
+        - "---"
+        - "**Checksum (SHA-256):** `{checksum}`"
+        - ""
+      enabled_when: "include_checksum == true"
+
+# Metadata attached to each artifact
+metadata:
+  demo_index: "{index}"
+  created_by: "archive_rotation_demo"
+  checksum_included: "{include_checksum}"
+  workflow_version: "1.0"
+
+# Usage examples (for documentation)
+usage_examples:
+  - description: "Generate 5 artifacts with default settings"
+    command: "python src/workflows/stress/archive_rotation_demo.py --count 5"
+
+  - description: "Generate 50 artifacts for specific tenant"
+    command: "python src/workflows/stress/archive_rotation_demo.py --tenant acme_corp --count 50"
+
+  - description: "Dry run with forced aging"
+    command: "python src/workflows/stress/archive_rotation_demo.py --count 25 --force-age 10 --dry-run"
+
+  - description: "Full lifecycle demo"
+    command: "python src/workflows/stress/archive_rotation_demo.py --count 100 --force-age 35"

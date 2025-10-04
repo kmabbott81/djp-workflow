@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "djp-workflow"
-version = "1.0.2"
+version = "1.0.1rc1"
 description = "Debate-Judge-Publish workflow pipeline with grounded mode and redaction"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -29,6 +29,10 @@ dependencies = [
     "ujson>=5.0.0",
     "jsonschema>=4.0.0",
     "pydantic>=2.0.0",
+    "cryptography>=41.0.0",
+    "python-docx>=1.0.0",
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
 ]
 
 [project.optional-dependencies]
@@ -58,6 +62,7 @@ Issues = "https://github.com/kmabbott81/djp-workflow/issues"
 
 [project.scripts]
 djp = "src.run_workflow:main"
+djp-ui = "dashboards.app:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -148,11 +153,13 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 minversion = "7.0"
 addopts = "-ra -q --strict-markers"
-testpaths = ["tests"]
+testpaths = ["tests", "tests_e2e"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
+    "live: marks tests requiring live API credentials (skip unless LIVE=true)",
+    "e2e: marks tests as end-to-end smoke tests (offline, CI-ready)",
 ]

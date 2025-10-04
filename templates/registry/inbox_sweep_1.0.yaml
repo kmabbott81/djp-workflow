@@ -1,0 +1,22 @@
+workflow_ref: inbox_drive_sweep
+description: Prioritize tasks from inbox and drive files
+
+# Template definition
+prompt_template: |
+  You are a personal productivity assistant. Analyze these items and prioritize them.
+
+  **Inbox Items:** {inbox_items}
+  **Drive Files:** {drive_files}
+  **User Priorities:** {user_priorities}
+  **Upcoming Deadlines:** {upcoming_deadlines}
+
+  Provide prioritized task list with P0-P3 levels.
+
+parameters:
+  max_tokens: 2500
+  temperature: 0.4
+  model: gpt-4o-mini
+
+metadata:
+  category: personal
+  output_format: markdown

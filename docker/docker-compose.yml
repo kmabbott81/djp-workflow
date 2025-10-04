@@ -1,0 +1,157 @@
+version: '3.8'
+
+# DJP Workflow Platform - Development Stack
+# Services: app (dashboard/API), worker (queue processor), redis (message broker)
+# Volumes: logs, artifacts, audit data
+# Network: Internal bridge network for service communication
+
+services:
+  # Application service: Dashboard + APIs + Health Server
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.app
+    container_name: djp-app
+    hostname: djp-app
+    ports:
+      - "8501:8501"  # Streamlit dashboard
+      - "8080:8080"  # Health check server
+    env_file:
+      - ../.env  # Load environment variables from project root
+    environment:
+      # Override specific settings for containerized environment
+      STREAMLIT_SERVER_PORT: 8501
+      STREAMLIT_SERVER_ADDRESS: 0.0.0.0
+      HEALTH_PORT: 8080
+      QUEUE_BACKEND: redis
+      REDIS_URL: redis://redis:6379/0
+      LOG_LEVEL: INFO
+      # Feature flags
+      FEATURE_MULTI_REGION: "false"
+      FEATURE_BLUE_GREEN: "false"
+    volumes:
+      # Mount volumes for persistent data
+      - ../logs:/app/logs
+      - ../artifacts:/app/artifacts
+      - ../audit:/app/audit
+      - ../runs:/app/runs
+      - ../corpus:/app/corpus
+      # Mount configs for easy editing during development
+      - ../config:/app/config:ro
+      - ../templates:/app/templates:ro
+      - ../policies:/app/policies:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - djp-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    labels:
+      - "com.djp.service=app"
+      - "com.djp.version=1.0"
+
+  # Worker service: Queue processor for job execution
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.worker
+    container_name: djp-worker-1
+    hostname: djp-worker-1
+    env_file:
+      - ../.env  # Load environment variables from project root
+    environment:
+      # Worker-specific configuration
+      QUEUE_BACKEND: redis
+      REDIS_URL: redis://redis:6379/0
+      WORKER_ID: worker-1
+      MAX_JOB_RETRIES: 3
+      LEASE_HEARTBEAT_MS: 15000
+      REQUEUE_BASE_MS: 500
+      REQUEUE_CAP_MS: 60000
+      REQUEUE_JITTER_PCT: 0.2
+      RATE_LIMIT_RETRY_DELAY_MS: 8000
+      ORCH_EVENTS_PATH: logs/orchestrator_events.jsonl
+      WORKER_HEALTH_FILE: /tmp/worker/heartbeat.txt
+      LOG_LEVEL: INFO
+    volumes:
+      # Mount volumes for persistent data
+      - ../logs:/app/logs
+      - ../artifacts:/app/artifacts
+      - ../audit:/app/audit
+      - ../runs:/app/runs
+      - ../workflows:/app/workflows:ro
+      # Temporary volume for health checks
+      - worker-tmp:/tmp/worker
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - djp-network
+    restart: unless-stopped
+    healthcheck:
+      test: |
+        test -f /tmp/worker/heartbeat.txt && \
+        test $(( $$(date +%s) - $$(stat -c %Y /tmp/worker/heartbeat.txt) )) -lt 60 || exit 1
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    labels:
+      - "com.djp.service=worker"
+      - "com.djp.version=1.0"
+
+  # Redis service: Message broker and queue backend
+  redis:
+    image: redis:7-alpine
+    container_name: djp-redis
+    hostname: djp-redis
+    command: redis-server --appendonly yes --appendfsync everysec --maxmemory 512mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"  # Expose for local development/debugging
+    volumes:
+      # Persist Redis data
+      - redis-data:/data
+    networks:
+      - djp-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    labels:
+      - "com.djp.service=redis"
+      - "com.djp.version=7"
+
+# Named volumes for persistent data
+volumes:
+  redis-data:
+    driver: local
+    labels:
+      - "com.djp.volume=redis-data"
+  worker-tmp:
+    driver: local
+    labels:
+      - "com.djp.volume=worker-tmp"
+
+# Internal network for service communication
+networks:
+  djp-network:
+    driver: bridge
+    labels:
+      - "com.djp.network=main"
+
+# Usage:
+# 1. Development: docker-compose up
+# 2. Production: docker-compose -f docker-compose.yml up -d
+# 3. Scaling workers: docker-compose up -d --scale worker=3
+# 4. View logs: docker-compose logs -f [service]
+# 5. Stop: docker-compose down
+# 6. Clean up: docker-compose down -v (removes volumes)

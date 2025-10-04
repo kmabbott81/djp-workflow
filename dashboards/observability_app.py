@@ -10,7 +10,15 @@ import streamlit as st
 
 # Add parent directory to path to import src modules
 sys.path.append(str(Path(__file__).parent.parent))
-from src.metrics import filter_runs_by_date, filter_runs_by_preset, filter_runs_by_provider, load_runs, summarize_kpis
+from src.metrics import (
+    filter_runs_by_date,
+    filter_runs_by_preset,
+    filter_runs_by_provider,
+    filter_runs_by_template,
+    load_runs,
+    summarize_kpis,
+    summarize_template_kpis,
+)
 
 st.set_page_config(
     page_title="DJP Workflow Observability", page_icon="📊", layout="wide", initial_sidebar_state="expanded"
@@ -64,14 +72,20 @@ selected_provider = st.sidebar.selectbox("Provider", providers)
 if selected_provider != "All":
     filtered_df = filter_runs_by_provider(filtered_df, selected_provider)
 
+# Template filter (Sprint 3)
+templates = ["All"] + sorted(df[df["template_name"] != ""]["template_name"].unique().tolist())
+selected_template = st.sidebar.selectbox("Template", templates)
+if selected_template != "All":
+    filtered_df = filter_runs_by_template(filtered_df, selected_template)
+
 # Grounded and Redacted filters
 grounded_only = st.sidebar.checkbox("Grounded Only")
 if grounded_only:
-    filtered_df = filtered_df[filtered_df["grounded"] == True]
+    filtered_df = filtered_df[filtered_df["grounded"]]
 
 redacted_only = st.sidebar.checkbox("Redacted Only")
 if redacted_only:
-    filtered_df = filtered_df[filtered_df["redacted"] == True]
+    filtered_df = filtered_df[filtered_df["redacted"]]
 
 # Calculate KPIs for filtered data
 kpis = summarize_kpis(filtered_df)
@@ -114,17 +128,17 @@ with col4:
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    grounded_count = filtered_df[filtered_df["grounded"] == True].shape[0]
+    grounded_count = filtered_df[filtered_df["grounded"]].shape[0]
     grounded_pct = (grounded_count / kpis["total_runs"] * 100) if kpis["total_runs"] > 0 else 0
     st.metric("Grounded Runs", f"{grounded_count} ({grounded_pct:.1f}%)")
 
 with col2:
-    grounded_runs = filtered_df[filtered_df["grounded"] == True]
+    grounded_runs = filtered_df[filtered_df["grounded"]]
     avg_citations = grounded_runs["citations_count"].mean() if len(grounded_runs) > 0 else 0
     st.metric("Avg Citations/Run", f"{avg_citations:.1f}")
 
 with col3:
-    redacted_count = filtered_df[filtered_df["redacted"] == True].shape[0]
+    redacted_count = filtered_df[filtered_df["redacted"]].shape[0]
     redacted_pct = (redacted_count / kpis["total_runs"] * 100) if kpis["total_runs"] > 0 else 0
     st.metric("Redacted Runs", f"{redacted_count} ({redacted_pct:.1f}%)")
 
@@ -263,6 +277,32 @@ if any(filtered_df["citations_required"] > 0):
             color_discrete_map={"Compliant": "#28a745", "Non-compliant": "#dc3545"},
         )
         st.plotly_chart(fig_citations, use_container_width=True)
+
+# Template KPIs (Sprint 3)
+template_kpis = summarize_template_kpis(filtered_df)
+if not template_kpis.empty:
+    st.header("📝 Template Performance")
+
+    st.dataframe(
+        template_kpis,
+        column_config={
+            "template_name": "Template",
+            "template_version": "Version",
+            "total_runs": "Total Runs",
+            "published_runs": "Published",
+            "advisory_runs": "Advisory",
+            "success_rate": st.column_config.NumberColumn("Success Rate", format="%.1f%%", help="Published / Total"),
+            "avg_cost": st.column_config.NumberColumn("Avg Cost", format="$%.4f"),
+            "avg_tokens": st.column_config.NumberColumn("Avg Tokens", format="%.0f"),
+            "total_cost": st.column_config.NumberColumn("Total Cost", format="$%.4f"),
+        },
+        use_container_width=True,
+        height=400,
+    )
+
+    # Convert success_rate to percentage for display
+    display_kpis = template_kpis.copy()
+    display_kpis["success_rate"] = display_kpis["success_rate"] * 100
 
 # Artifact viewer
 st.header("🔍 Artifact Inspector")

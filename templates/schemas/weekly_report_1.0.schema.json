@@ -1,0 +1,20 @@
+{
+  "fields": {
+    "start_date": {
+      "type": "string",
+      "required": true,
+      "description": "Report start date (YYYY-MM-DD)"
+    },
+    "end_date": {
+      "type": "string",
+      "required": true,
+      "description": "Report end date (YYYY-MM-DD)"
+    },
+    "context": {
+      "type": "string",
+      "required": false,
+      "default": "Weekly activities and updates",
+      "description": "Team activities and metrics"
+    }
+  }
+}

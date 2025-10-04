@@ -28,7 +28,7 @@ def test_byte_exact_publish():
     allowed = ["openai/gpt-4o"]
 
     # Test publish selection
-    status, provider, text = select_publish_text(judgment, [draft], allowed)
+    status, provider, text, _reason, _redaction_meta = select_publish_text(judgment, [draft], allowed)
 
     # Assertions
     assert status == "published"
@@ -178,7 +178,7 @@ def test_advisory_only_when_no_allowed_providers():
     allowed = ["openai/gpt-4o"]  # Claude not in allowed list
 
     # Test publish selection
-    status, provider, text = select_publish_text(judgment, [draft], allowed)
+    status, provider, text, _reason, _redaction_meta = select_publish_text(judgment, [draft], allowed)
 
     # Should be advisory only
     assert status == "advisory_only"

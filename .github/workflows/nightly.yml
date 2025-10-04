@@ -1,0 +1,52 @@
+name: Nightly Full Test Suite
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # 2 AM UTC daily
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  full-test:
+    runs-on: ubuntu-latest
+    env:
+      FEATURE_RBAC_ENFORCE: "true"
+      FEATURE_BUDGETS: "true"
+      PYTHONUNBUFFERED: "1"
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-xdist jsonschema ujson pip-audit
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install git+https://github.com/openai/swarm.git || true
+
+    - name: Dependency audit (blocking)
+      run: |
+        pip-audit
+
+    - name: Run ALL tests (including slow)
+      run: |
+        python -m pytest -v -n auto || python -m pytest -v
+
+    - name: Upload full test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: nightly-test-results-py${{ matrix.python-version }}
+        path: |
+          .pytest_cache
+          runs/**/*.json
+          runs/**/*.md
+        if-no-files-found: warn

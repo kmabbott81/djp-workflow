@@ -1,0 +1,4 @@
+{"event": "schedule_enqueued", "schedule_id": "test_schedule", "dag_path": "test.yaml", "tenant": "test-tenant", "minute": "2025-10-03 14:05", "timestamp": "2025-10-03T17:57:21.167401+00:00"}
+{"event": "schedule_enqueued", "schedule_id": "test_schedule", "dag_path": "test.yaml", "tenant": "test-tenant", "minute": "2025-10-03 14:05", "timestamp": "2025-10-03T17:57:21.320844+00:00"}
+{"event": "schedule_enqueued", "schedule_id": "test_schedule", "dag_path": "test.yaml", "tenant": "test-tenant", "minute": "2025-10-03 14:05", "timestamp": "2025-10-03T17:57:52.838988+00:00"}
+{"event": "schedule_enqueued", "schedule_id": "test_schedule", "dag_path": "test.yaml", "tenant": "test-tenant", "minute": "2025-10-03 14:05", "timestamp": "2025-10-03T17:57:52.977044+00:00"}

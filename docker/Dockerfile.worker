@@ -1,0 +1,100 @@
+# Multi-stage build for DJP Workflow Worker Container
+# Runs: Queue worker processes for job execution
+# Monitors: Worker heartbeat/health file
+
+FROM python:3.11-slim AS builder
+
+WORKDIR /build
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy and install Python dependencies
+COPY requirements.txt requirements-cloud.txt ./
+RUN pip install --no-cache-dir --user -r requirements.txt && \
+    pip install --no-cache-dir --user -r requirements-cloud.txt && \
+    pip install --no-cache-dir --user redis>=5.0.0 pyyaml>=6.0
+
+# Production stage
+FROM python:3.11-slim
+
+# Metadata labels
+LABEL maintainer="DJP Workflow Platform"
+LABEL description="Worker container for DJP Workflow (queue processing, job execution)"
+LABEL version="1.0"
+
+WORKDIR /app
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user for security
+RUN groupadd -r djpworker --gid=1001 && \
+    useradd -r -g djpworker --uid=1001 --home-dir=/app --shell=/bin/bash djpworker && \
+    mkdir -p /app && \
+    chown -R djpworker:djpworker /app
+
+# Copy Python dependencies from builder
+COPY --from=builder --chown=djpworker:djpworker /root/.local /home/djpworker/.local
+
+# Set PATH for installed packages
+ENV PATH=/home/djpworker/.local/bin:$PATH
+
+# Copy application code
+COPY --chown=djpworker:djpworker src/ ./src/
+COPY --chown=djpworker:djpworker schemas/ ./schemas/
+COPY --chown=djpworker:djpworker scripts/ ./scripts/
+COPY --chown=djpworker:djpworker pyproject.toml README.md LICENSE ./
+
+# Create directories for runtime data with proper permissions
+RUN mkdir -p runs artifacts logs audit workflows && \
+    chown -R djpworker:djpworker runs artifacts logs audit workflows
+
+# Create health check file location
+RUN mkdir -p /tmp/worker && \
+    chown -R djpworker:djpworker /tmp/worker
+
+# Switch to non-root user
+USER djpworker
+
+# Environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    QUEUE_BACKEND=redis \
+    REDIS_URL=redis://redis:6379/0 \
+    MAX_JOB_RETRIES=3 \
+    LEASE_HEARTBEAT_MS=15000 \
+    REQUEUE_BASE_MS=500 \
+    REQUEUE_CAP_MS=60000 \
+    REQUEUE_JITTER_PCT=0.2 \
+    RATE_LIMIT_RETRY_DELAY_MS=8000 \
+    ORCH_EVENTS_PATH=logs/orchestrator_events.jsonl \
+    WORKER_HEALTH_FILE=/tmp/worker/heartbeat.txt \
+    LOG_LEVEL=INFO
+
+# No ports exposed - worker is backend-only
+
+# Health check using worker heartbeat file
+# Worker should touch this file periodically to indicate it's alive
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD test -f ${WORKER_HEALTH_FILE} && \
+        test $(( $(date +%s) - $(stat -c %Y ${WORKER_HEALTH_FILE}) )) -lt 60 || exit 1
+
+# Wrapper script to maintain heartbeat file
+# The wrapper touches the health file every 15 seconds while the worker runs
+CMD ["/bin/bash", "-c", "\
+    trap 'kill 0' SIGTERM SIGINT; \
+    (while true; do \
+        touch ${WORKER_HEALTH_FILE}; \
+        sleep 15; \
+    done) & \
+    python -m src.queue.worker \
+        --poll-ms=1000 \
+        --worker-id=${WORKER_ID:-worker-1}; \
+    wait"]

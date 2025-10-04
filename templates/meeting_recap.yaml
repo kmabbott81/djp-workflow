@@ -1,0 +1,66 @@
+name: Meeting Recap (Actionable)
+version: "1.0"
+description: Concise meeting recap with decisions, owners, and deadlines.
+context: markdown
+
+inputs:
+  - id: title
+    label: Meeting Title
+    type: string
+    required: true
+    default: "Client Ops Sync"
+    help: Brief title for the meeting
+
+  - id: date
+    label: Meeting Date
+    type: date
+    required: true
+    default: "2025-10-01"
+    help: Date of the meeting
+
+  - id: attendees
+    label: Attendees
+    type: text
+    required: true
+    default: "You\nPartner\nClient PM"
+    help: List of attendees (one per line)
+
+  - id: agenda_points
+    label: Agenda Points
+    type: text
+    required: true
+    default: "Pipeline status\nRisks\nNext steps"
+    help: Key agenda items discussed (one per line)
+
+  - id: decisions
+    label: Decisions Made
+    type: text
+    required: true
+    default: "Move forward with pilot\nWeekly standup on Tuesdays"
+    help: Key decisions from the meeting (one per line)
+
+  - id: owners
+    label: Action Items (JSON)
+    type: text
+    required: false
+    default: '[{"item": "Pilot kickoff deck", "owner": "You", "due": "2025-10-04"}]'
+    help: Action items as JSON array with item, owner, due fields
+
+  - id: risks
+    label: Risks Identified
+    type: text
+    required: false
+    default: "Data access still pending"
+    help: Risks or blockers identified (one per line)
+
+rendering:
+  body: |
+    Create a crisp meeting recap titled "{{ title }}" ({{ date }}).
+    Include:
+    - Attendees: {{ attendees | replace("\n", ", ") }}
+    - Agenda Highlights: {% for a in agenda_points.split("\n") %}• {{ a }} {% endfor %}
+    - Decisions: {% for d in decisions.split("\n") %}• {{ d }} {% endfor %}
+    - Owners & Deadlines:
+    {% if owners %}{% for o in owners %}- {{ o.item }} — Owner: {{ o.owner }}, Due: {{ o.due }}{% endfor %}{% endif %}
+    - Risks: {% if risks %}{% for r in risks.split("\n") %}• {{ r }} {% endfor %}{% endif %}
+    Output as well-structured paragraphs suitable for an email summary.

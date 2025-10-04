@@ -92,7 +92,7 @@ def test_none_policy_forces_advisory():
     ]
 
     # Test publish selection with empty allow list
-    status, provider, text, reason = select_publish_text(judgment, original_drafts, allowed_models)
+    status, provider, text, reason, _reason = select_publish_text(judgment, original_drafts, allowed_models)
 
     assert status == "advisory_only", f"Expected advisory_only, got {status}"
     assert provider == "openai/gpt-4o"
