@@ -45,6 +45,7 @@ def test_token_bucket_refill():
         bucket.allow(1.0)
 
     # Wait for refill (0.1 second = 10 tokens at 100/sec)
+    # TODO(Sprint 45): replace with wait_until(...) for faster polling
     time.sleep(0.15)
 
     # Should have refilled

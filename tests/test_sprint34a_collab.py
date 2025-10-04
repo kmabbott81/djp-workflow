@@ -107,6 +107,7 @@ class TestDelegation:
         assert len(active) == 1
 
         # Should expire after 2 seconds
+        # TODO(Sprint 45): replace with wait_until(...) for faster polling
         time.sleep(2)
         active = list_active_delegations("team", "team-eng", now=datetime.now(UTC))
         assert len(active) == 0

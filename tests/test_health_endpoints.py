@@ -17,6 +17,7 @@ def health_server():
     os.environ["HEALTH_PORT"] = str(port)
 
     start_health_server(port)
+    # TODO(Sprint 45): replace with wait_until(...) for faster polling
     time.sleep(0.1)  # Give server time to start
 
     yield port

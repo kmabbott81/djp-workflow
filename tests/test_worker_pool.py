@@ -1,10 +1,9 @@
 """Tests for worker pool management."""
 
-import pytest
-import time
 import threading
+import time
 
-from src.scale.worker_pool import Job, WorkerPool, WorkerStats
+from src.scale.worker_pool import Job, WorkerPool
 
 
 def test_initial_worker_spawn():
@@ -12,6 +11,7 @@ def test_initial_worker_spawn():
     pool = WorkerPool(initial_workers=3)
 
     # Wait briefly for workers to start
+    # TODO(Sprint 45): replace with wait_until(...) for faster polling
     time.sleep(0.1)
 
     stats = pool.get_stats()
@@ -38,6 +38,7 @@ def test_job_submission_and_execution():
     pool.submit_job(job)
 
     # Wait for job to complete
+    # TODO(Sprint 45): replace with wait_until(...) for faster polling
     time.sleep(0.5)
 
     assert 42 in results
@@ -63,6 +64,7 @@ def test_job_execution_with_kwargs():
     )
 
     pool.submit_job(job)
+    # TODO(Sprint 45): replace with wait_until(...) for faster polling
     time.sleep(0.5)
 
     assert len(results) == 1
@@ -74,6 +76,7 @@ def test_job_execution_with_kwargs():
 def test_scale_up_add_workers():
     """Worker pool scales up by adding workers."""
     pool = WorkerPool(initial_workers=2)
+    # TODO(Sprint 45): replace with wait_until(...) for faster polling
     time.sleep(0.1)
 
     initial_stats = pool.get_stats()
@@ -81,6 +84,7 @@ def test_scale_up_add_workers():
 
     # Scale up to 5 workers
     success = pool.scale_to(5)
+    # TODO(Sprint 45): replace with wait_until(...) for faster polling
     time.sleep(0.1)
 
     assert success is True
@@ -95,6 +99,7 @@ def test_scale_down_with_graceful_drain(monkeypatch):
     monkeypatch.setenv("WORKER_SHUTDOWN_TIMEOUT_S", "5")
 
     pool = WorkerPool(initial_workers=6)
+    # TODO(Sprint 45): replace with wait_until(...) for faster polling
     time.sleep(0.1)
 
     initial_stats = pool.get_stats()
@@ -113,6 +118,7 @@ def test_scale_down_with_graceful_drain(monkeypatch):
 def test_scale_to_same_count_is_noop():
     """Worker pool scaling to current count is no-op."""
     pool = WorkerPool(initial_workers=4)
+    # TODO(Sprint 45): replace with wait_until(...) for faster polling
     time.sleep(0.1)
 
     # Scale to same count
@@ -156,6 +162,7 @@ def test_statistics_tracking():
         pool.submit_job(job)
 
     # Wait for jobs to complete
+    # TODO(Sprint 45): replace with wait_until(...) for faster polling
     time.sleep(1.0)
 
     stats = pool.get_stats()
@@ -184,6 +191,7 @@ def test_active_jobs_tracking():
         pool.submit_job(job)
 
     # Wait for jobs to start
+    # TODO(Sprint 45): replace with wait_until(...) for faster polling
     time.sleep(0.3)
 
     stats = pool.get_stats()
@@ -192,6 +200,7 @@ def test_active_jobs_tracking():
 
     # Release jobs
     event.set()
+    # TODO(Sprint 45): replace with wait_until(...) for faster polling
     time.sleep(0.3)
 
     stats = pool.get_stats()
@@ -220,6 +229,7 @@ def test_queue_depth_tracking():
         pool.submit_job(job)
 
     # Wait for first job to start, others queued
+    # TODO(Sprint 45): replace with wait_until(...) for faster polling
     time.sleep(0.3)
 
     stats = pool.get_stats()
@@ -227,6 +237,7 @@ def test_queue_depth_tracking():
 
     # Release jobs
     event.set()
+    # TODO(Sprint 45): replace with wait_until(...) for faster polling
     time.sleep(0.5)
 
     stats = pool.get_stats()
@@ -244,6 +255,7 @@ def test_shutdown_with_graceful_drain(monkeypatch):
 
     def quick_job(job_id):
         completed.append(job_id)
+        # TODO(Sprint 45): replace with wait_until(...) for faster polling
         time.sleep(0.1)
 
     # Submit several jobs
@@ -283,6 +295,7 @@ def test_shutdown_timeout(monkeypatch):
         )
         pool.submit_job(job)
 
+    # TODO(Sprint 45): replace with wait_until(...) for faster polling
     time.sleep(0.2)
 
     # Shutdown with short timeout
@@ -336,6 +349,7 @@ def test_concurrent_job_execution():
     def timed_job(job_id):
         with lock:
             start_times[job_id] = time.time()
+        # TODO(Sprint 45): replace with wait_until(...) for faster polling
         time.sleep(0.3)
 
     # Submit 3 jobs
@@ -349,6 +363,7 @@ def test_concurrent_job_execution():
         pool.submit_job(job)
 
     # Wait for all jobs to complete
+    # TODO(Sprint 45): replace with wait_until(...) for faster polling
     time.sleep(1.0)
 
     # All 3 jobs should start within a short window (concurrent execution)
@@ -373,10 +388,12 @@ def test_job_failure_does_not_crash_worker():
 
     # Submit failing job
     pool.submit_job(Job(job_id="fail", task=failing_job, args=(), kwargs={}))
+    # TODO(Sprint 45): replace with wait_until(...) for faster polling
     time.sleep(0.2)
 
     # Submit successful job
     pool.submit_job(Job(job_id="success", task=success_job, args=(42,), kwargs={}))
+    # TODO(Sprint 45): replace with wait_until(...) for faster polling
     time.sleep(0.2)
 
     # Worker should still process successful job after failure
@@ -391,6 +408,7 @@ def test_job_failure_does_not_crash_worker():
 def test_empty_pool_shutdown():
     """Worker pool can shutdown with no active jobs."""
     pool = WorkerPool(initial_workers=2)
+    # TODO(Sprint 45): replace with wait_until(...) for faster polling
     time.sleep(0.1)
 
     # Shutdown immediately

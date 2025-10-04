@@ -125,6 +125,7 @@ def test_deterministic_workflow_reproducibility(sample_tasks, temp_runs_dir):
 
     # Run workflow twice with deterministic preset
     artifact1 = run_djp_workflow(task, preset="deterministic", runs_dir=temp_runs_dir)
+    # TODO(Sprint 45): replace with wait_until(...) for faster polling
     time.sleep(1)  # Ensure different timestamps
     artifact2 = run_djp_workflow(task, preset="deterministic", runs_dir=temp_runs_dir)
 
