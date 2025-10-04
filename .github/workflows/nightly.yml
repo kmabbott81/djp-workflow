@@ -36,9 +36,14 @@ jobs:
       run: |
         pip-audit
 
-    - name: Run ALL tests (including slow)
+    - name: Run ALL tests (including slow) with durations
       run: |
-        python -m pytest -v -n auto || python -m pytest -v
+        python -m pytest -v -n auto --durations=25 | tee durations.txt || python -m pytest -v --durations=25 | tee durations.txt
+
+    - name: Generate slowest tests report
+      if: always()
+      run: |
+        python scripts/report_slowest.py durations.txt slowest-tests.md || echo "No durations to parse"
 
     - name: Upload full test results
       if: always()
@@ -49,4 +54,6 @@ jobs:
           .pytest_cache
           runs/**/*.json
           runs/**/*.md
+          durations.txt
+          slowest-tests.md
         if-no-files-found: warn
