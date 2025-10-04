@@ -1,4 +1,4 @@
-.PHONY: help install test test-fast test-e2e test-all clean build lint format up down logs
+.PHONY: help install test test-fast test-full test-e2e test-all clean build lint format up down logs
 
 help:  ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -14,10 +14,13 @@ test:  ## Run unit tests (fast subset, no slow tests)
 test-fast:  ## Run unit tests with parallel execution
 	pytest -v -m "not slow" --ignore=tests_e2e -n auto || pytest -v -m "not slow" --ignore=tests_e2e
 
+test-full:  ## Run entire test suite (no markers excluded)
+	pytest -v
+
 test-e2e:  ## Run e2e smoke tests
 	pytest -m e2e -v
 
-test-all:  ## Run all tests including slow ones
+test-all:  ## Run all tests including slow ones (alias for test-full)
 	pytest -v
 
 clean:  ## Clean build artifacts and cache
