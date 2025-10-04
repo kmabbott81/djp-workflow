@@ -1,4 +1,7 @@
-"""FastAPI web API for templates and triage endpoints."""
+"""FastAPI web API for templates and triage endpoints.
+
+Sprint 46: Added /metrics endpoint and telemetry middleware.
+"""
 
 import os
 from base64 import b64encode
@@ -8,12 +11,17 @@ from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
+from .telemetry.middleware import TelemetryMiddleware
 from .templates import list_templates
 from .templates import render_template as render_template_content
 
 app = FastAPI(title="DJP Workflow API", version="1.0.0")
+
+# Sprint 46: Add telemetry middleware if enabled
+app.add_middleware(TelemetryMiddleware)
 
 # CORS for local Outlook/VS Code development
 app.add_middleware(
@@ -82,8 +90,25 @@ def root():
             "templates": "/api/templates",
             "render": "/api/render",
             "triage": "/api/triage",
+            "metrics": "/metrics",
         },
     }
+
+
+@app.get("/metrics", response_class=PlainTextResponse)
+def metrics():
+    """
+    Prometheus metrics endpoint.
+
+    Returns metrics in Prometheus text exposition format.
+    If telemetry is disabled or prometheus-client is not installed,
+    returns empty response.
+
+    Sprint 46: Phase 1 (Metrics) implementation.
+    """
+    from .telemetry.prom import generate_metrics_text
+
+    return generate_metrics_text()
 
 
 @app.get("/api/templates", response_model=list[TemplateInfo])
