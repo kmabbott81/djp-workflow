@@ -201,6 +201,29 @@ pytest --cov=src --cov-report=html
 pytest -m "not slow"
 ```
 
+### Network Blocking in Tests
+
+Tests automatically block outbound network calls to ensure fast, deterministic execution. Localhost connections (127.0.0.1) are allowed for Redis, databases, and other local services.
+
+**Control network blocking:**
+- **CI (default)**: Outbound calls blocked automatically
+- **Local (default)**: Outbound calls allowed by default
+- **Override**: Set `TEST_OFFLINE=true` to enable blocking locally, or `TEST_OFFLINE=false` to disable in CI
+
+```bash
+# Run tests with network blocking enabled (local dev)
+TEST_OFFLINE=true pytest
+
+# Run tests allowing network (debugging)
+TEST_OFFLINE=false pytest
+```
+
+**How it works:**
+- Socket-level blocking via `tests/utils/netblock.py`
+- HTTP mocking via `tests/utils/http_fakes.py`
+- Connector tests use stub responses automatically
+- External API calls return fast mock data
+
 ### Writing Tests
 
 - Place tests in `tests/` directory

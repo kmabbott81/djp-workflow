@@ -200,3 +200,36 @@ def http_get_with_retry(host: str, port: int, path: str, max_retries: int = 3, t
 
 # Export helper for use in tests
 __all__ = ["http_get_with_retry"]
+
+
+# Sprint 42: HTTP mocking for external calls (Issue #15)
+
+
+@pytest.fixture(autouse=True)
+def mock_external_http(monkeypatch):
+    """Mock external HTTP calls in e2e tests.
+
+    Automatically applies to all e2e tests to prevent real network calls.
+    Uses httpx MockTransport if available, otherwise falls back to
+    requests monkeypatch.
+
+    Provides stub responses for common connector API patterns.
+    """
+    from tests.utils.http_fakes import install_httpx_transport, install_requests_fake, make_httpx_mock
+
+    # Standard stub response for connector APIs
+    payload = {
+        "ok": True,
+        "items": [],
+        "messages": [],
+        "files": [],
+        "note": "stubbed by e2e mock",
+    }
+
+    handler = make_httpx_mock(payload)
+    if handler is not None:
+        install_httpx_transport(monkeypatch, handler)
+    else:
+        install_requests_fake(monkeypatch, payload)
+
+    yield

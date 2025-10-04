@@ -18,7 +18,11 @@ From `dashboards/ci/slowest-tests.md`:
 - Avoid per-function setup for database connections, API clients
 - Cache computed test data across parametrized runs
 
-**2. Network/External Call Mocking**
+**2. Network/External Call Mocking** ✅ **Issue #15 - Implemented**
+- **Socket-level blocking**: `tests/utils/netblock.py` blocks outbound network at socket layer
+- **HTTP mocking**: `tests/utils/http_fakes.py` provides httpx/requests stubs for connector APIs
+- **TEST_OFFLINE control**: CI blocks by default; local allows override
+- **Expected impact**: ≥20% reduction in e2e suite time by eliminating real API calls
 - Replace real API calls with mocks or VCR cassettes
 - Use in-memory databases instead of Redis/PostgreSQL where feasible
 - Mock file system operations with tmpdir or in-memory structures
