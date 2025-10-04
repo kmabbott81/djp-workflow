@@ -2,6 +2,25 @@
 
 All notable changes to the DJP Workflow system will be documented in this file.
 
+## [Unreleased] - v1.0.1-dev
+
+### Added
+- TBD
+
+### Changed
+- TBD
+
+### Fixed
+- TBD
+
+### Security
+- TBD
+
+### Documentation
+- TBD
+
+---
+
 ## [1.0.0] - 2025-10-04 - Enterprise Readiness Release
 
 ### Major Milestone: Production-Ready Platform
