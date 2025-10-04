@@ -470,3 +470,28 @@ def shared_tmpdir(tmp_path_factory):
     d = tmp_path_factory.mktemp("shared-workspace")
     yield d
     # no cleanup needed; tmp_path_factory handles removal
+
+
+@pytest.fixture(scope="session")
+def small_dataset_cap():
+    """Soft cap size for generated test data to keep PR suite fast.
+
+    Use this fixture in parametrized tests to limit generated data size.
+    Helps maintain CI PR suite <= 90s target.
+    """
+    return 500  # adjust as needed; PR suite should remain lightweight
+
+
+def pytest_runtest_logreport(report):
+    """Local developer hint: warn if an individual test exceeds threshold.
+
+    Enable with HOTSPOT_WATCH=1 environment variable.
+    Disabled on CI by default to avoid noise.
+    Helps identify slow tests during local development.
+    """
+    import os
+
+    if os.getenv("HOTSPOT_WATCH", "0") in {"1", "true", "yes"} and report.when == "call":
+        duration = getattr(report, "duration", 0)
+        if duration > 5.0:
+            print(f"\n[hotspot] {report.nodeid} took {duration:.2f}s")

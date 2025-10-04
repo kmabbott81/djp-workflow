@@ -417,6 +417,7 @@ class TestRecentEvents:
     def test_get_recent_events_returns_most_recent(self, lifecycle_env):
         """Test getting recent events returns most recent first."""
         log_lifecycle_event({"event_type": "old"})
+        # TODO(Sprint 45): replace with wait_until(...) for faster polling
         time.sleep(0.01)
         log_lifecycle_event({"event_type": "new"})
 
@@ -446,6 +447,7 @@ class TestLastLifecycleJob:
     def test_get_last_job_returns_most_recent(self, lifecycle_env):
         """Test getting last job returns most recent run."""
         run_lifecycle_job(dry_run=True)
+        # TODO(Sprint 45): replace with wait_until(...) for faster polling
         time.sleep(0.01)
         run_lifecycle_job(dry_run=False)
 
