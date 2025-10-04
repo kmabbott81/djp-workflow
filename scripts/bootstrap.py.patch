@@ -1,0 +1,2 @@
+# Simple idempotency enhancement: Add --dry-run flag and check-only mode
+# This preserves the existing idempotent behavior but adds diagnostics
