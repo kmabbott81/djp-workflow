@@ -2,7 +2,26 @@
 
 All notable changes to the DJP Workflow system will be documented in this file.
 
-## [Unreleased] - v1.0.1-dev
+## [Unreleased] - v1.0.2-dev
+
+### Added
+- TBD
+
+### Changed
+- TBD
+
+### Fixed
+- TBD
+
+### Security
+- TBD
+
+### Documentation
+- TBD
+
+---
+
+## [1.0.1-rc1] - 2025-10-04 - Post-GA DX & Hardening Release Candidate
 
 ### Added
 - **CI/CD Improvements**: Nightly workflow for full test suite across Python 3.9-3.12
@@ -16,10 +35,20 @@ All notable changes to the DJP Workflow system will be documented in this file.
 - **Dependency Audits**: pip-audit runs on PRs (non-blocking warning) and nightly (blocking)
 
 ### Fixed
-- TBD
+- **CI Dependencies**: Package now installs with [dev] extras to ensure all test dependencies available
 
 ### Security
 - **Dependency Policy**: Documented in SECURITY.md with pip-audit integration and CVE response procedures
+
+### Documentation
+- **OPERATIONS.md**: Added "First 10 Minutes On-Call" rapid triage checklist
+- **OPERATIONS.md**: Added "Backup & Restore Dry-Run" procedures with quarterly drill schedule
+- **SECURITY.md**: Added dependency management policy, override guidelines, and CVE handling
+- **DEVELOPMENT.md**: Complete local development guide with common issues and IDE setup
+- **SUPPORT.md**: Support windows, version policy, and community resources
+
+---
+
 
 ### Documentation
 - **OPERATIONS.md**: Added "First 10 Minutes On-Call" rapid triage checklist
