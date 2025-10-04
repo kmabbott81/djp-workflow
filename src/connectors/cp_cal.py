@@ -89,6 +89,30 @@ class SchemaAdapter:
                 },
             }
 
+        elif service == "gmail":
+            # Extract subject and from from payload headers
+            headers = message.get("payload", {}).get("headers", [])
+            subject = ""
+            from_address = ""
+            for header in headers:
+                if header.get("name") == "Subject":
+                    subject = header.get("value", "")
+                elif header.get("name") == "From":
+                    from_address = header.get("value", "")
+
+            return {
+                "id": message.get("id", ""),
+                "subject": subject,
+                "body": message.get("snippet", ""),
+                "from": from_address,
+                "timestamp": message.get("internalDate", ""),
+                "metadata": {
+                    "threadId": message.get("threadId"),
+                    "labelIds": message.get("labelIds", []),
+                    "historyId": message.get("historyId"),
+                },
+            }
+
         else:
             raise ValueError(f"Unsupported service: {service}")
 
@@ -128,6 +152,14 @@ class SchemaAdapter:
             return {
                 "text": normalized.get("body", ""),
                 "thread_ts": normalized.get("metadata", {}).get("thread_ts"),
+            }
+
+        elif service == "gmail":
+            # Gmail requires base64url-encoded RFC 2822 message
+            # This is a simplified version; full implementation would encode properly
+            return {
+                "raw": normalized.get("metadata", {}).get("raw", ""),
+                "threadId": normalized.get("metadata", {}).get("threadId"),
             }
 
         else:
@@ -287,6 +319,28 @@ ENDPOINT_REGISTRY: dict[tuple[str, str], EndpointMap] = {
         create_url="",  # Not supported by Slack API
         update_url="users.profile.set",
         delete_url="",  # Not supported by Slack API
+    ),
+    # Gmail
+    ("gmail", "messages"): EndpointMap(
+        list_url="users/me/messages",
+        get_url="users/me/messages/{resource_id}",
+        create_url="users/me/messages/send",
+        update_url="users/me/messages/{resource_id}/modify",
+        delete_url="users/me/messages/{resource_id}",
+    ),
+    ("gmail", "threads"): EndpointMap(
+        list_url="users/me/threads",
+        get_url="users/me/threads/{resource_id}",
+        create_url="",  # Not directly supported
+        update_url="users/me/threads/{resource_id}/modify",
+        delete_url="users/me/threads/{resource_id}",
+    ),
+    ("gmail", "labels"): EndpointMap(
+        list_url="users/me/labels",
+        get_url="users/me/labels/{resource_id}",
+        create_url="users/me/labels",
+        update_url="users/me/labels/{resource_id}",
+        delete_url="users/me/labels/{resource_id}",
     ),
 }
 

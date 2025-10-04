@@ -1,0 +1,14 @@
+{
+  "message": {
+    "data": "eyJlbWFpbEFkZHJlc3MiOiAidGVzdEBleGFtcGxlLmNvbSIsICJoaXN0b3J5SWQiOiAiMTIzNDU2In0=",
+    "messageId": "2070443601311540",
+    "message_id": "2070443601311540",
+    "publishTime": "2021-02-26T19:13:55.749Z",
+    "publish_time": "2021-02-26T19:13:55.749Z"
+  },
+  "subscription": "projects/myproject/subscriptions/mysubscription",
+  "decoded_data": {
+    "emailAddress": "test@example.com",
+    "historyId": "123456"
+  }
+}

@@ -3,6 +3,8 @@
 Normalizes events from various connector sources.
 """
 
+import base64
+import json
 from datetime import datetime
 
 from .metrics import record_call
@@ -25,6 +27,8 @@ def ingest_event(connector_type: str, payload: dict) -> dict:
         return _normalize_teams_event(payload)
     elif connector_type == "slack":
         return _normalize_slack_event(payload)
+    elif connector_type == "gmail":
+        return _normalize_gmail_event(payload)
     else:
         raise ValueError(f"Unknown connector type: {connector_type}")
 
@@ -148,5 +152,72 @@ def _normalize_slack_event(payload: dict) -> dict:
         "resource_id": "",
         "timestamp": datetime.now().isoformat(),
         "data": payload,
+        "raw_payload": payload,
+    }
+
+
+def _normalize_gmail_event(payload: dict) -> dict:
+    """Normalize Gmail Pub/Sub push notification event.
+
+    Args:
+        payload: Gmail Pub/Sub push notification payload
+
+    Returns:
+        Normalized event
+
+    Note:
+        Gmail push notification structure (Cloud Pub/Sub):
+        {
+            "message": {
+                "data": "<base64-encoded JSON>",
+                "messageId": "2070443601311540",
+                "publishTime": "2021-02-26T19:13:55.749Z"
+            },
+            "subscription": "projects/myproject/subscriptions/mysubscription"
+        }
+
+        The data field contains base64-encoded JSON with:
+        {
+            "emailAddress": "user@example.com",
+            "historyId": "123456"
+        }
+
+        To receive push notifications, you must:
+        1. Create a Pub/Sub topic in Google Cloud Console
+        2. Grant publish rights to gmail-api-push@system.gserviceaccount.com
+        3. Call Gmail API watch() to start receiving notifications
+        4. Set up webhook endpoint to receive POST requests
+    """
+    # Extract message data
+    message = payload.get("message", {})
+    message_id = message.get("messageId", "")
+    publish_time = message.get("publishTime", datetime.now().isoformat())
+
+    # Decode base64 data if present
+    decoded_data = {}
+    if "data" in message:
+        try:
+            data_bytes = base64.b64decode(message["data"])
+            decoded_data = json.loads(data_bytes.decode("utf-8"))
+        except (ValueError, KeyError):
+            # If decoding fails, use empty dict
+            decoded_data = {}
+
+    # Extract history ID if present
+    history_id = decoded_data.get("historyId", "")
+    email_address = decoded_data.get("emailAddress", "")
+
+    return {
+        "connector_type": "gmail",
+        "event_type": "message_received",
+        "resource_type": "message",
+        "resource_id": message_id,
+        "timestamp": publish_time,
+        "data": {
+            "historyId": history_id,
+            "emailAddress": email_address,
+            "messageId": message_id,
+            "subscription": payload.get("subscription", ""),
+        },
         "raw_payload": payload,
     }

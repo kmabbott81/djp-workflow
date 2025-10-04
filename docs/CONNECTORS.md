@@ -159,14 +159,48 @@ if connector:
     # Use connector...
 ```
 
+## Available Connectors
+
+### Production Ready
+
+- **Teams** (`src.connectors.teams.TeamsConnector`) - Sprint 35B
+  - See: [CONNECTORS_TEAMS.md](./CONNECTORS_TEAMS.md)
+  - Resources: teams, channels, messages
+  - Auth: OAuth2 (Microsoft Graph)
+
+- **Outlook** (`src.connectors.outlook.OutlookConnector`) - Sprint 35C
+  - See: [CONNECTORS_OUTLOOK.md](./CONNECTORS_OUTLOOK.md)
+  - Resources: messages, folders, contacts, events
+  - Auth: OAuth2 (Microsoft Graph)
+
+- **Slack** (`src.connectors.slack.SlackConnector`) - Sprint 36/36B
+  - See: [CONNECTORS_SLACK.md](./CONNECTORS_SLACK.md)
+  - Resources: channels, messages, users
+  - Auth: Bot Token / OAuth2
+
+- **Gmail** (`src.connectors.gmail.GmailConnector`) - Sprint 37
+  - See: [CONNECTORS_GMAIL.md](./CONNECTORS_GMAIL.md)
+  - Resources: messages, threads, labels
+  - Auth: OAuth2 (Google)
+
+### Testing/Development
+
+- **Sandbox** (`src.connectors.sandbox.SandboxConnector`) - Sprint 34B
+  - In-memory connector for testing
+  - No external dependencies
+
 ## Documentation References
 
 - **`docs/CONNECTOR_SDK.md`** - Complete SDK reference with examples
+- **`docs/CONNECTORS_TEAMS.md`** - Microsoft Teams connector
+- **`docs/CONNECTORS_OUTLOOK.md`** - Microsoft Outlook connector
+- **`docs/CONNECTORS_SLACK.md`** - Slack connector
+- **`docs/CONNECTORS_GMAIL.md`** - Gmail connector
 - `docs/SECURITY.md` - Credential management and tenant isolation
 - `docs/OPERATIONS.md` - Connector troubleshooting and monitoring
 - `docs/COLLABORATION.md` - Team-based connector access control
 
 ---
 
-**Last Updated:** 2025-10-04 (Sprint 34B complete)
-**Next Sprint:** Sprint 34C - Connector Observability & Testing
+**Last Updated:** 2025-10-04 (Sprint 37 complete - Gmail connector shipped)
+**Next Sprint:** TBD - Additional connectors or observability improvements

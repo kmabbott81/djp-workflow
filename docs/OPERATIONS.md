@@ -3844,6 +3844,185 @@ python scripts/connectors_health.py drill <connector_id>
 
 **Escalation:** If unresolved after 30 minutes, open incident and notify platform team.
 
+### Runbook: Gmail Token Refresh Failure (Sprint 37)
+
+**Symptoms:**
+- Gmail connector fails with "Token expired" error
+- 401 Unauthorized responses from Gmail API
+- Error: "No Gmail token found"
+
+**Procedure:**
+
+1. **Verify Token Existence**
+   ```bash
+   # Check token store for Gmail tokens
+   cat logs/oauth2/tokens.jsonl | grep "gmail:" | tail -5
+   ```
+
+2. **Check Token Expiry**
+   ```python
+   from src.connectors.oauth2 import load_token, needs_refresh
+
+   token = load_token("gmail-prod", "gmail:acme-corp")
+   if needs_refresh(token):
+       print("Token expired, refresh needed")
+   ```
+
+3. **Refresh Token** (when implemented)
+   ```bash
+   python scripts/oauth2_refresh.py gmail-prod gmail:acme-corp
+   ```
+
+4. **Manual Token Update** (temporary workaround)
+   ```bash
+   # Set refresh token from Google OAuth2 flow
+   export GOOGLE_REFRESH_TOKEN=your-new-refresh-token
+
+   # Re-register connector
+   python scripts/connectors.py register \
+     --id gmail-prod \
+     --module src.connectors.gmail \
+     --class GmailConnector \
+     --auth-type oauth
+   ```
+
+5. **Verify Recovery**
+   ```bash
+   python scripts/connectors.py test gmail-prod \
+     --action list \
+     --resource-type messages
+   ```
+
+**Prevention:**
+- Implement automatic token refresh (TODO: Sprint 38)
+- Monitor token expiry via health checks
+- Set up alerts for OAuth2 errors
+
+### Runbook: Gmail Rate Limit Exceeded
+
+**Symptoms:**
+- 429 "Quota exceeded" errors
+- Gmail API returning rate limit messages
+- Circuit breaker opening repeatedly
+- Slow message operations
+
+**Diagnosis:**
+
+1. **Check Gmail API Quota**
+   - Visit [Google Cloud Console](https://console.cloud.google.com)
+   - Navigate to "APIs & Services" → "Dashboard"
+   - Select "Gmail API"
+   - Review quota usage graphs
+
+2. **Identify High-Volume Operations**
+   ```bash
+   # Top Gmail endpoints by call count
+   tail -n 1000 logs/connectors/metrics.jsonl | \
+     grep "gmail" | \
+     jq -r '.endpoint' | \
+     sort | uniq -c | sort -rn | head -10
+   ```
+
+3. **Check Recent Rate Limits**
+   ```bash
+   tail -n 500 logs/connectors/metrics.jsonl | \
+     grep "gmail" | \
+     grep "rate_limited"
+   ```
+
+**Resolution:**
+
+1. **Immediate:**
+   - Reduce operation frequency
+   - Increase retry backoff: `export GMAIL_RETRY_STATUS=429,500,502,503,504`
+   - Circuit breaker will auto-throttle
+
+2. **Short-term:**
+   - Implement request batching
+   - Use `format=metadata` for list operations (lighter weight)
+   - Cache label IDs and folder structures
+   - Use incremental sync with `historyId` instead of full scans
+
+3. **Long-term:**
+   - Request quota increase from Google
+   - Implement rate limiting at application level
+   - Use multiple service accounts for higher limits
+   - Optimize query filters to reduce result sets
+
+**Quota Limits:**
+- Messages.send: 100 QPS
+- Messages.list: 250 QPS
+- Messages.get: 250 QPS
+
+### Runbook: Gmail Push Notifications Not Working
+
+**Symptoms:**
+- Webhook endpoint not receiving Gmail push events
+- No Pub/Sub messages arriving
+- Watch expired (after 7 days)
+
+**Diagnosis:**
+
+1. **Check Watch Status**
+   ```bash
+   # Call Gmail API to check watch
+   curl -H "Authorization: Bearer $ACCESS_TOKEN" \
+     https://gmail.googleapis.com/gmail/v1/users/me/watch
+   ```
+
+2. **Verify Pub/Sub Subscription**
+   ```bash
+   gcloud pubsub subscriptions list \
+     --filter="name:gmail-push"
+   ```
+
+3. **Check Webhook Endpoint**
+   ```bash
+   curl -X POST https://your-app.com/api/webhooks/gmail \
+     -H "Content-Type: application/json" \
+     -d '{"test": "ping"}'
+   ```
+
+**Resolution:**
+
+1. **Re-establish Watch**
+   ```bash
+   POST /gmail/v1/users/me/watch
+   {
+     "topicName": "projects/your-project/topics/gmail-notifications",
+     "labelIds": ["INBOX"],
+     "labelFilterAction": "include"
+   }
+   ```
+
+2. **Verify Pub/Sub Permissions**
+   ```bash
+   gcloud pubsub topics add-iam-policy-binding gmail-notifications \
+     --member=serviceAccount:gmail-api-push@system.gserviceaccount.com \
+     --role=roles/pubsub.publisher
+   ```
+
+3. **Test Push Endpoint**
+   ```bash
+   # Send test message to Gmail
+   # Check if webhook receives push notification
+   tail -f logs/webhooks/gmail.log
+   ```
+
+4. **Set Up Monitoring**
+   ```python
+   # Add health check for watch expiry
+   def check_gmail_watch_health():
+       # Call Gmail API
+       # Alert if expiry < 24 hours
+   ```
+
+**Prevention:**
+- Set up automated watch renewal (6 days)
+- Monitor watch expiry via cron job
+- Alert on Pub/Sub delivery failures
+- Test webhook endpoint regularly
+
 ### Runbook: Slack 429 Rate Limit Spike
 
 **Symptoms:**

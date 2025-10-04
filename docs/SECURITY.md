@@ -330,6 +330,53 @@ cat audit/audit-*.jsonl | jq -r .tenant_id | sort | uniq -c
 - Use secrets manager (AWS Secrets Manager, GCP Secret Manager)
 - Never commit credentials to git
 
+## Connector Security (Sprint 37+)
+
+### Gmail Connector Token Handling
+
+Gmail connector uses OAuth2 with the following security measures:
+
+**Token Storage:**
+- Tokens stored in unified OAuth2 token store
+- Multi-tenant isolation via `gmail:{tenant_id}` key format
+- Examples: `gmail:acme-corp`, `gmail:beta-test`
+- Never logged or exposed in error messages
+
+**OAuth2 Scopes:**
+- Minimal scopes principle
+- Read-only: `https://www.googleapis.com/auth/gmail.readonly`
+- Full access: `gmail.readonly`, `gmail.modify`, `gmail.labels`
+- Document required scopes in connector registration
+
+**RBAC Enforcement:**
+| Operation | Minimum Role |
+|-----------|--------------|
+| list_resources | Operator |
+| get_resource | Operator |
+| create_resource | Admin |
+| update_resource | Admin |
+| delete_resource | Admin |
+
+**Token Refresh:**
+- Automatic refresh when tokens expire (when implemented)
+- Refresh tokens stored securely
+- No token reuse across tenants
+
+**Security Best Practices:**
+1. Use service accounts for production
+2. Enable Google Cloud audit logs
+3. Monitor Gmail API quota usage
+4. Implement rate limiting at application level
+5. Review OAuth2 consent screen regularly
+6. Revoke unused tokens via Google Account settings
+
+### Other Connectors (Teams, Outlook, Slack)
+
+Similar security patterns apply:
+- See [CONNECTORS_TEAMS.md](./CONNECTORS_TEAMS.md) for Microsoft Graph security
+- See [CONNECTORS_OUTLOOK.md](./CONNECTORS_OUTLOOK.md) for Outlook-specific guidance
+- See [CONNECTORS_SLACK.md](./CONNECTORS_SLACK.md) for Slack bot token handling
+
 ## Compliance
 
 ### SOC 2 / ISO 27001
