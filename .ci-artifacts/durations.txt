@@ -1,0 +1,27 @@
+============================= slowest 25 durations =============================
+3.45s call     tests/test_workflows_e2e.py::test_full_inbox_drive_sweep_workflow
+2.89s call     tests/test_integration_djp.py::test_djp_workflow_with_real_corpus
+2.67s call     tests/test_nightshift_e2e.py::test_nightshift_full_workflow
+2.34s call     tests/test_integration_grounded.py::test_grounded_workflow_full_chain
+1.98s call     tests/test_orchestrator_runner.py::test_dag_with_checkpoints_and_recovery
+1.87s call     tests/test_connector_ingest_path.py::test_full_ingest_pipeline_slack
+1.76s call     tests/test_graph_search.py::test_urg_search_with_large_corpus
+1.65s call     tests/test_persistent_queue.py::test_queue_with_redis_backend
+1.54s call     tests/test_templates_batch.py::test_batch_render_100_templates
+1.43s call     tests/test_openai_adapter.py::test_swarm_integration_with_tools
+1.32s call     tests/test_gmail_connector_resilience.py::test_gmail_retry_with_backoff
+1.28s call     tests/test_notion_connector_resilience.py::test_notion_rate_limit_handling
+1.21s call     tests/test_slack_connector_resilience.py::test_slack_webhook_validation
+1.15s call     tests/test_lifecycle.py::test_storage_tier_migration_full_cycle
+1.09s call     tests/test_autoscaler.py::test_worker_pool_scale_up_and_down
+1.05s call     tests/test_compliance_export.py::test_full_compliance_export_workflow
+0.98s call     tests/test_blue_green.py::test_blue_green_deployment_full_cycle
+0.95s call     tests/test_keyring.py::test_key_rotation_with_re_encryption
+0.89s call     tests/test_graph_index.py::test_urg_index_batch_insert_1000_nodes
+0.84s call     tests/test_state_store.py::test_checkpoint_recovery_with_large_state
+0.79s call     tests/test_audit.py::test_audit_log_pagination_1000_events
+0.76s call     tests/test_budgets.py::test_budget_enforcement_across_tenants
+0.72s call     tests/test_nlp_planner.py::test_nl_command_planning_with_contacts
+0.68s call     tests/test_corpus.py::test_corpus_load_large_dataset
+0.65s call     tests/test_redaction.py::test_redaction_with_pii_detection
+========================== 25 slowest durations ===========================

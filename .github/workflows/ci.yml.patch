@@ -1,0 +1,3 @@
+        pip install pytest pytest-xdist jsonschema ujson pip-audit
+        pip install -e ".[dev]"  # Install package with dev extras
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
