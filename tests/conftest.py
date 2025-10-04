@@ -425,3 +425,48 @@ def _maybe_block_outbound_session():
             yield
     else:
         yield
+
+
+# Sprint 43 fixtures for Issue #14 (batch/parametrization speedups)
+
+
+@pytest.fixture(scope="session")
+def small_corpus():
+    """Small corpus for fast tests (session-scoped to avoid reloads).
+
+    Returns:
+        list[str]: Small corpus of 4 items
+    """
+    from tests.utils.corpus_cache import load_small_corpus
+
+    return load_small_corpus()
+
+
+@pytest.fixture(scope="session")
+def medium_corpus():
+    """Medium corpus for representative tests (session-scoped to avoid reloads).
+
+    Returns:
+        list[str]: Medium corpus of ~250 items
+    """
+    from tests.utils.corpus_cache import load_medium_corpus
+
+    return load_medium_corpus()
+
+
+# Sprint 43 fixtures for Issue #13 (fixture scope/I-O reduction)
+
+
+@pytest.fixture(scope="session")
+def shared_tmpdir(tmp_path_factory):
+    """Session-scoped temp workspace to avoid re-creating heavy dirs.
+
+    Args:
+        tmp_path_factory: pytest tmp_path_factory fixture
+
+    Returns:
+        Path: Session-wide temporary directory
+    """
+    d = tmp_path_factory.mktemp("shared-workspace")
+    yield d
+    # no cleanup needed; tmp_path_factory handles removal
