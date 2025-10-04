@@ -1,6 +1,6 @@
 {
-  "total_seconds": 0.0,
-  "top25_seconds": 0.0,
-  "generated_at": "TBD",
-  "note": "seed baseline; nightly job should refresh"
+  "total_seconds": 35.94,
+  "top25_seconds": 35.94,
+  "generated_at": "2025-10-04T23:13:05.681410Z",
+  "note": "Pre-Sprint 43 baseline; to be refreshed after first successful nightly with Sprint 42-44 optimizations"
 }
