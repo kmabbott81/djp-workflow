@@ -400,3 +400,28 @@ def clean_graph_env(tmp_path, monkeypatch):
 
     # Cleanup after test
     reset_index()
+
+
+# Sprint 42 fixtures for network blocking (Issue #15)
+
+
+@pytest.fixture(autouse=True, scope="session")
+def _maybe_block_outbound_session():
+    """
+    Block outbound network connections at socket level during tests.
+
+    Only affects test session; not runtime. Allows localhost and 127.0.0.1
+    for Redis, databases, and other local services. Real external API calls
+    are blocked to ensure fast, deterministic tests.
+
+    Respects TEST_OFFLINE environment variable:
+    - CI: Blocks by default (can opt-out with TEST_OFFLINE=false)
+    - Local: Allows by default (can opt-in with TEST_OFFLINE=true)
+    """
+    from tests.utils.netblock import block_outbound, should_block_by_default
+
+    if should_block_by_default():
+        with block_outbound():
+            yield
+    else:
+        yield
