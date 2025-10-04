@@ -1,1 +1,1 @@
-"""Integration connectors for external services."""
+# Connector Framework SDK
