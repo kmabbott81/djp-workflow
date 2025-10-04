@@ -217,6 +217,97 @@ if health["status"] == "down":
 
 ---
 
+## Dashboard & CLI (Sprint 35A)
+
+### Observability Dashboard
+
+The **Connectors** panel in the observability dashboard (`dashboards/observability_tab.py`) displays:
+
+- **Connector Status**: Lists all enabled connectors with health icon (✅/⚠️/🚨/❓)
+- **P95 Latency**: 95th percentile latency over last 60 minutes
+- **Error Rate**: Percentage of failed operations
+- **Calls (60m)**: Total operations in last hour
+- **Circuit State**: Circuit breaker status (🟢 closed / 🔴 open / 🟡 half-open)
+
+**Empty States:**
+- No connectors: Shows registration instructions and link to SDK docs
+- No metrics: Displays "N/A" for metrics until operations recorded
+
+### Health CLI
+
+**Location:** `scripts/connectors_health.py`
+
+#### List Command
+
+Show brief status for all connectors:
+
+```bash
+# Text output (default)
+python scripts/connectors_health.py list
+
+# JSON output
+python scripts/connectors_health.py list --json
+```
+
+**Example Output:**
+```
+Connector                 Health       P95 (ms)   Error %    Calls (60m)  Circuit
+------------------------------------------------------------------------------------------
+outlook                   ✅ healthy   245        0.5        1523         🟢 closed
+slack                     ⚠️ degraded  3200       2.1        842          🟢 closed
+teams                     🚨 down      5100       65.3       234          🔴 open
+```
+
+#### Drill Command
+
+Show detailed status for specific connector:
+
+```bash
+# Text output
+python scripts/connectors_health.py drill outlook
+
+# JSON output
+python scripts/connectors_health.py drill outlook --json
+```
+
+**Example Output:**
+```
+Connector: outlook
+Health: degraded
+Reason: p95 latency 2450ms exceeds 2000ms
+
+Metrics (Last 60 Minutes):
+  Total Calls: 1523
+  Error Rate: 0.5%
+  P50 Latency: 150ms
+  P95 Latency: 2450ms
+  P99 Latency: 4200ms
+
+Circuit State: closed
+
+Recent Failures (Last 5):
+  - 2025-10-04T14:23:15: list_resources - Timeout after 5000ms
+  - 2025-10-04T14:18:42: connect - Authentication failed
+```
+
+#### Exit Codes
+
+| Code | Meaning | Description |
+|------|---------|-------------|
+| `0` | Success | All connectors healthy |
+| `1` | Degraded/Down | One or more connectors degraded or down |
+| `2` | RBAC Denied | Insufficient permissions (requires Operator role) |
+| `3` | Error/Not Found | Connector not found, invalid arguments, or system error |
+
+**RBAC Check:**
+```bash
+# Set USER_ROLE environment variable
+export USER_ROLE=Operator  # Required: Admin, Deployer, or Operator
+python scripts/connectors_health.py list
+```
+
+---
+
 ## See Also
 
 - `docs/CONNECTOR_SDK.md` - Base connector interface

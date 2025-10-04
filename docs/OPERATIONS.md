@@ -3771,8 +3771,92 @@ done
 
 ---
 
+## Connector Operations (Sprint 35A)
+
+### Connector Health Monitoring
+
+**Daily Health Check:**
+
+```bash
+# List all connectors with status
+python scripts/connectors_health.py list
+```
+
+**Drill into specific connector:**
+
+```bash
+# Get detailed metrics and recent failures
+python scripts/connectors_health.py drill <connector_id>
+```
+
+**Dashboard Review:**
+- Navigate to **Observability → Connectors** panel
+- Check for ⚠️ degraded or 🚨 down connectors
+- Monitor circuit breaker states (🟢/🟡/🔴)
+
+### Runbook: Connector Down
+
+**Symptoms:**
+- Error rate > 50%
+- Circuit breaker open (🔴)
+- Health CLI shows 🚨 down
+
+**Procedure:**
+
+1. **Identify Root Cause**
+   ```bash
+   python scripts/connectors_health.py drill <connector_id>
+   tail -n 50 logs/connectors/metrics.jsonl | grep "<connector_id>"
+   ```
+
+2. **Check Circuit Breaker**
+   ```bash
+   cat logs/connectors/circuit_state.jsonl | grep "<connector_id>" | tail -1
+   ```
+   - Wait for cooldown (default: 60s)
+   - Circuit auto-transitions to half-open
+   - Monitor recovery
+
+3. **OAuth Token Check** (if applicable)
+   ```bash
+   cat logs/connectors/tokens.jsonl | grep "<connector_id>" | tail -1
+   ```
+   - Verify token not expired
+   - Trigger refresh if needed
+   - See `docs/CONNECTOR_OBSERVABILITY.md` for details
+
+4. **Retry Tuning** (if transient failures)
+   ```bash
+   export RETRY_MAX_ATTEMPTS=5
+   export RETRY_CAP_MS=120000
+   export RETRY_BASE_MS=1000
+   ```
+
+5. **Manual Circuit Reset** (emergency only)
+   ```bash
+   # Backup state
+   cp logs/connectors/circuit_state.jsonl logs/connectors/circuit_state.jsonl.backup
+
+   # Remove connector entries
+   grep -v "<connector_id>" logs/connectors/circuit_state.jsonl > temp.jsonl
+   mv temp.jsonl logs/connectors/circuit_state.jsonl
+   ```
+
+**Escalation:** If unresolved after 30 minutes, open incident and notify platform team.
+
+### Alerting Thresholds
+
+| Metric | Warning | Critical |
+|--------|---------|----------|
+| P95 Latency | > 2000ms | > 5000ms |
+| Error Rate | > 10% | > 50% |
+| Circuit State | Half-Open | Open |
+| Zero Calls | 15 min | 30 min |
+
 ### See Also
 
+- [CONNECTOR_OBSERVABILITY.md](./CONNECTOR_OBSERVABILITY.md) - Metrics, health, circuit breaker
+- [CONNECTOR_SDK.md](./CONNECTOR_SDK.md) - Connector development guide
 - [COMPLIANCE.md](./COMPLIANCE.md) - Complete compliance documentation
 - [CLASSIFICATION.md](./CLASSIFICATION.md) - Data classification guide
 - [ENCRYPTION.md](./ENCRYPTION.md) - Envelope encryption guide

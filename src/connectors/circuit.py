@@ -16,6 +16,41 @@ def get_circuit_state_path() -> Path:
     return Path(os.environ.get("CIRCUIT_STATE_PATH", "logs/connectors/circuit_state.jsonl"))
 
 
+def get_circuit_state(connector_id: str) -> str:
+    """Get current circuit breaker state without full instantiation.
+
+    Args:
+        connector_id: Connector identifier
+
+    Returns:
+        Circuit state: "closed", "open", "half_open", or "unknown"
+    """
+    state_path = get_circuit_state_path()
+    if not state_path.exists():
+        return "closed"  # Default state
+
+    # Last-wins
+    latest = None
+    try:
+        with open(state_path, encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                try:
+                    entry = json.loads(line.strip())
+                    if entry.get("connector_id") == connector_id:
+                        latest = entry
+                except json.JSONDecodeError:
+                    continue
+    except OSError:
+        return "unknown"
+
+    if latest:
+        return latest.get("state", "closed")
+
+    return "closed"
+
+
 class CircuitBreaker:
     """Circuit breaker for connector operations."""
 

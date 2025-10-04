@@ -34,6 +34,9 @@ def record_call(
     metrics_path = get_metrics_path()
     metrics_path.parent.mkdir(parents=True, exist_ok=True)
 
+    # Clamp negative durations to 0
+    duration_ms = max(0.0, duration_ms)
+
     entry = {
         "connector_id": connector_id,
         "operation": operation,
@@ -72,20 +75,41 @@ def summarize(connector_id: str, window_minutes: int = 60) -> dict:
     errors = 0
     total = 0
 
-    with open(metrics_path, encoding="utf-8") as f:
-        for line in f:
-            entry = json.loads(line.strip())
-            if entry["connector_id"] != connector_id:
-                continue
+    try:
+        with open(metrics_path, encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
 
-            timestamp = datetime.fromisoformat(entry["timestamp"])
-            if timestamp < cutoff:
-                continue
+                try:
+                    entry = json.loads(line.strip())
+                except json.JSONDecodeError:
+                    # Skip corrupt lines
+                    continue
 
-            total += 1
-            durations.append(entry["duration_ms"])
-            if entry["status"] == "error":
-                errors += 1
+                if entry.get("connector_id") != connector_id:
+                    continue
+
+                # Parse timestamp with error handling
+                try:
+                    timestamp = datetime.fromisoformat(entry["timestamp"])
+                except (ValueError, KeyError):
+                    continue
+
+                if timestamp < cutoff:
+                    continue
+
+                total += 1
+
+                # Clamp duration
+                duration = max(0.0, entry.get("duration_ms", 0.0))
+                durations.append(duration)
+
+                if entry.get("status") == "error":
+                    errors += 1
+    except OSError:
+        # File read error
+        pass
 
     if total == 0:
         return {

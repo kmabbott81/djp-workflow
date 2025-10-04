@@ -49,6 +49,11 @@ def render_observability_tab():
     st.markdown("### 🤝 Collaborative Governance")
     _render_governance()
 
+    # Connectors panel (Sprint 35A)
+    st.markdown("---")
+    st.markdown("### 🔌 Connectors")
+    _render_connectors()
+
     # Multi-region observability
     st.markdown("---")
     st.markdown("### 🌍 Multi-Region Status")
@@ -1201,3 +1206,97 @@ def _render_governance():
 
     except Exception as e:
         st.error(f"Error loading governance section: {e}")
+
+
+def _render_connectors():
+    """Render connectors health panel (Sprint 35A)."""
+    try:
+        import sys
+
+        sys.path.insert(0, str(Path(__file__).parent.parent))
+        from src.connectors.circuit import CircuitBreaker
+        from src.connectors.metrics import health_status
+        from src.connectors.registry import list_enabled_connectors
+
+        # Get enabled connectors
+        enabled = list_enabled_connectors()
+
+        if not enabled:
+            st.info(
+                "No connectors enabled yet. Use `src.connectors.registry.register_connector()` "
+                "to register connectors."
+            )
+            st.markdown("📖 [Connector SDK Guide](docs/CONNECTOR_SDK.md)")
+            return
+
+        # Display connector health
+        st.markdown(f"#### Connector Status ({len(enabled)} enabled)")
+
+        # Collect health data
+        connector_data = []
+        for entry in enabled:
+            connector_id = entry["connector_id"]
+
+            # Get health metrics
+            health = health_status(connector_id, window_minutes=60)
+            metrics = health.get("metrics", {})
+
+            # Get circuit state
+            cb = CircuitBreaker(connector_id)
+            circuit_state = cb.state
+
+            # Status icon
+            status_icon = {
+                "healthy": "✅",
+                "degraded": "⚠️",
+                "down": "🚨",
+                "unknown": "❓",
+            }.get(health["status"], "❓")
+
+            # Circuit icon
+            circuit_icon = {
+                "closed": "🟢",
+                "open": "🔴",
+                "half_open": "🟡",
+            }.get(circuit_state, "⚪")
+
+            connector_data.append(
+                {
+                    "Connector": connector_id,
+                    "Health": f"{status_icon} {health['status']}",
+                    "P95 Latency": f"{metrics.get('p95_ms', 0):.0f}ms" if metrics.get("p95_ms") else "N/A",
+                    "Error Rate": f"{metrics.get('error_rate', 0) * 100:.1f}%"
+                    if metrics.get("error_rate") is not None
+                    else "N/A",
+                    "Calls (60m)": metrics.get("total_calls", 0),
+                    "Circuit": f"{circuit_icon} {circuit_state}",
+                }
+            )
+
+        if connector_data:
+            import pandas as pd
+
+            df = pd.DataFrame(connector_data)
+            st.dataframe(df, use_container_width=True, hide_index=True)
+
+            # Highlight unhealthy connectors
+            unhealthy = [c for c in connector_data if c["Health"].startswith(("⚠️", "🚨"))]
+            if unhealthy:
+                st.warning(f"⚠️ {len(unhealthy)} connector(s) degraded or down")
+
+        # Quick links
+        st.markdown("#### Quick Links")
+
+        link_col1, link_col2 = st.columns(2)
+
+        with link_col1:
+            if st.button("🩺 Health CLI"):
+                st.info("Use: `python scripts/connectors_health.py list` for detailed status")
+
+        with link_col2:
+            if st.button("📖 View Documentation"):
+                st.info("See docs/CONNECTOR_OBSERVABILITY.md and docs/CONNECTORS.md")
+
+    except Exception as e:
+        st.error(f"Error loading connectors panel: {e}")
+        st.caption("Make sure connector framework is initialized and accessible")

@@ -2815,7 +2815,41 @@ for d in delegations:
 4. **Team Budget Limits**: Set conservative team budgets to prevent overruns
 5. **Audit All Governance**: Monitor `logs/delegations.jsonl`, `logs/checkpoints.jsonl`
 
+### Connector RBAC (Sprint 35A)
+
+**Health CLI Access Control:**
+
+The `scripts/connectors_health.py` CLI enforces RBAC for operations monitoring:
+
+| Command | Required Role | Description |
+|---------|---------------|-------------|
+| `list` | Operator+ | List all connectors with health status |
+| `drill <ID>` | Operator+ | Detailed metrics and failures for connector |
+
+**Role Check:**
+```bash
+# Set user role
+export USER_ROLE=Operator
+
+# Verify access
+python scripts/connectors_health.py list
+```
+
+**Exit Code 2:** Insufficient permissions (requires Operator, Deployer, or Admin role)
+
+**Environment Variables:**
+- `CONNECTOR_RBAC_ROLE` - Minimum role required (default: `Operator`)
+- `USER_ROLE` - Current user's role
+
+**Role Hierarchy:**
+```
+Viewer < Author < Operator < Deployer < Auditor < Compliance < Admin
+```
+
+**Rationale:** Connector health monitoring is an operational task requiring Operator-level access to prevent unauthorized system introspection.
+
 ### Related Documentation
 
 - [COLLABORATION.md](./COLLABORATION.md) - Complete collaborative governance guide
 - [OPERATIONS.md](./OPERATIONS.md) - Delegation and multi-sign runbooks
+- [CONNECTOR_OBSERVABILITY.md](./CONNECTOR_OBSERVABILITY.md) - Connector health monitoring
