@@ -1,15 +1,17 @@
 """
-Checkpoint Store (Sprint 31)
+Checkpoint Store (Sprint 31 + 34A)
 
 Manages human-in-the-loop checkpoints for DAG execution.
 Records approvals, rejections, and expirations to JSONL.
+
+Sprint 34A: Added multi-sign (M-of-N) approval support.
 """
 
 import json
 import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 
 def get_checkpoints_path() -> Path:
@@ -35,6 +37,8 @@ def create_checkpoint(
     prompt: str,
     required_role: str | None = None,
     inputs: dict | None = None,
+    required_signers: list[str] | None = None,
+    min_signatures: int | None = None,
 ) -> dict[str, Any]:
     """
     Create a new checkpoint awaiting approval.
@@ -45,8 +49,10 @@ def create_checkpoint(
         task_id: Task ID in the DAG
         tenant: Tenant identifier
         prompt: Human-readable approval prompt
-        required_role: RBAC role required to approve
+        required_role: RBAC role required to approve (single-sign)
         inputs: Expected input schema for approval
+        required_signers: List of users/roles required for multi-sign (Sprint 34A)
+        min_signatures: Minimum signatures required (M-of-N) (Sprint 34A)
 
     Returns:
         Checkpoint record
@@ -74,6 +80,10 @@ def create_checkpoint(
         "rejected_at": None,
         "rejection_reason": None,
         "approval_data": None,
+        # Sprint 34A: Multi-sign fields
+        "required_signers": required_signers or [],
+        "min_signatures": min_signatures or 1,
+        "approvals": [],
     }
 
     with open(checkpoints_path, "a", encoding="utf-8") as f:
@@ -316,3 +326,118 @@ def get_resume_token(dag_run_id: str) -> dict[str, Any] | None:
                     token = record
 
     return token
+
+
+def add_signature(checkpoint_id: str, user: str, approval_data: dict | None = None) -> dict[str, Any]:
+    """
+    Add a signature to a multi-sign checkpoint (Sprint 34A).
+
+    Args:
+        checkpoint_id: Checkpoint identifier
+        user: User providing signature
+        approval_data: Optional data provided with signature
+
+    Returns:
+        Updated checkpoint record
+
+    Raises:
+        ValueError: If checkpoint not found or not pending
+
+    Example:
+        >>> add_signature("chk-001", "alice", {"comment": "LGTM"})
+    """
+    checkpoint = get_checkpoint(checkpoint_id)
+
+    if not checkpoint:
+        raise ValueError(f"Checkpoint {checkpoint_id} not found")
+
+    if checkpoint["status"] != "pending":
+        raise ValueError(f"Checkpoint {checkpoint_id} is {checkpoint['status']}, cannot add signature")
+
+    # Check expiration
+    expires_at = datetime.fromisoformat(checkpoint["expires_at"])
+    if datetime.now(UTC) > expires_at:
+        raise ValueError(f"Checkpoint {checkpoint_id} has expired")
+
+    checkpoints_path = get_checkpoints_path()
+
+    # Add signature to approvals list
+    approvals = checkpoint.get("approvals", [])
+
+    # Check if user already signed
+    if any(a.get("user") == user for a in approvals):
+        raise ValueError(f"User {user} has already signed checkpoint {checkpoint_id}")
+
+    approvals.append(
+        {
+            "user": user,
+            "at": datetime.now(UTC).isoformat(),
+            "approval_data": approval_data or {},
+        }
+    )
+
+    updated = checkpoint.copy()
+    updated["event"] = "signature_added"
+    updated["approvals"] = approvals
+
+    # Check if satisfied
+    # Note: we don't automatically mark as approved here
+    # The runner will check is_satisfied and mark as approved when threshold met
+
+    with open(checkpoints_path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(updated) + "\n")
+
+    return updated
+
+
+def is_satisfied(
+    checkpoint: dict[str, Any], effective_role_fn: Callable[[str, str, str], str | None] | None = None
+) -> bool:
+    """
+    Check if multi-sign checkpoint has sufficient signatures (Sprint 34A).
+
+    Args:
+        checkpoint: Checkpoint record
+        effective_role_fn: Function to get effective role for user (scope, scope_id, user)
+                          Defaults to checking against required_signers
+
+    Returns:
+        True if M-of-N signatures satisfied
+
+    Example:
+        >>> checkpoint = {"approvals": [...], "min_signatures": 2, "required_signers": ["alice", "bob", "charlie"]}
+        >>> is_satisfied(checkpoint)
+        True  # If at least 2 of the 3 required signers have approved
+    """
+    min_signatures = checkpoint.get("min_signatures", 1)
+    approvals = checkpoint.get("approvals", [])
+    required_signers = checkpoint.get("required_signers", [])
+
+    # If no multi-sign configured, check if we have at least one approval
+    if not required_signers or min_signatures <= 1:
+        return len(approvals) >= 1
+
+    # Count valid signatures from required signers
+    valid_count = 0
+
+    for approval in approvals:
+        user = approval.get("user")
+        if not user:
+            continue
+
+        # Check if user is in required signers (direct match)
+        if user in required_signers:
+            valid_count += 1
+            continue
+
+        # Check if user's role matches a required role
+        if effective_role_fn:
+            for signer_spec in required_signers:
+                # If signer_spec looks like a role (capitalized), check role match
+                if signer_spec and signer_spec[0].isupper():
+                    # Get effective role for user
+                    # Note: This is simplified - in practice would need scope context
+                    # For now, we just check direct matches
+                    pass
+
+    return valid_count >= min_signatures

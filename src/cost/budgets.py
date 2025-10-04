@@ -52,6 +52,30 @@ def get_global_budget() -> dict[str, float]:
     }
 
 
+def get_team_budget(team_id: str) -> dict[str, float]:
+    """
+    Get budget for specific team (Sprint 34A).
+
+    Args:
+        team_id: Team identifier
+
+    Returns:
+        Dict with daily and monthly limits
+    """
+    config = load_budgets_config()
+    teams = config.get("teams", {})
+    team_config = teams.get(team_id, {})
+
+    # Defaults from env or config
+    default_daily = float(os.getenv("TEAM_BUDGET_DAILY_DEFAULT", team_config.get("daily", 10.0)))
+    default_monthly = float(os.getenv("TEAM_BUDGET_MONTHLY_DEFAULT", team_config.get("monthly", 200.0)))
+
+    return {
+        "daily": team_config.get("daily", default_daily),
+        "monthly": team_config.get("monthly", default_monthly),
+    }
+
+
 def get_tenant_budget(tenant: str) -> dict[str, float]:
     """
     Get budget for specific tenant.
@@ -73,6 +97,32 @@ def get_tenant_budget(tenant: str) -> dict[str, float]:
     return {
         "daily": tenant_config.get("daily", default_daily),
         "monthly": tenant_config.get("monthly", default_monthly),
+    }
+
+
+def is_over_team_budget(team_id: str, daily_spend: float, monthly_spend: float) -> dict[str, Any]:
+    """
+    Check if team is over budget (Sprint 34A).
+
+    Args:
+        team_id: Team identifier
+        daily_spend: Current daily spend for team
+        monthly_spend: Current monthly spend for team
+
+    Returns:
+        Dict with daily/monthly flags and amounts
+    """
+    budget = get_team_budget(team_id)
+
+    return {
+        "daily": daily_spend >= budget["daily"],
+        "monthly": monthly_spend >= budget["monthly"],
+        "daily_amount": daily_spend,
+        "monthly_amount": monthly_spend,
+        "daily_budget": budget["daily"],
+        "monthly_budget": budget["monthly"],
+        "daily_remaining": max(0, budget["daily"] - daily_spend),
+        "monthly_remaining": max(0, budget["monthly"] - monthly_spend),
     }
 
 

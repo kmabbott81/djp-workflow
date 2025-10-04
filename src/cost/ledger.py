@@ -105,13 +105,16 @@ def rollup(events: list[dict[str, Any]], by: tuple[str, ...] = ("tenant",)) -> l
     return result
 
 
-def window_sum(events: list[dict[str, Any]], tenant: str | None = None, days: int = 1) -> float:
+def window_sum(
+    events: list[dict[str, Any]], tenant: str | None = None, team_id: str | None = None, days: int = 1
+) -> float:
     """
     Sum costs in rolling window.
 
     Args:
         events: List of cost events
         tenant: Filter by tenant (None for global)
+        team_id: Filter by team (Sprint 34A)
         days: Window size in days (1=today, 30=last 30 days)
 
     Returns:
@@ -125,6 +128,10 @@ def window_sum(events: list[dict[str, Any]], tenant: str | None = None, days: in
     for event in events:
         timestamp = event.get("timestamp", "")
         if timestamp < cutoff_iso:
+            continue
+
+        # Filter by team if specified (Sprint 34A)
+        if team_id and event.get("team_id") != team_id:
             continue
 
         # Filter by tenant if specified

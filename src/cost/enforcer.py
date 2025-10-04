@@ -11,7 +11,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from .budgets import get_global_budget, get_tenant_budget
+from .budgets import get_global_budget, get_team_budget, get_tenant_budget
 from .ledger import load_cost_events, window_sum
 
 
@@ -42,13 +42,14 @@ def emit_governance_event(event: dict[str, Any]) -> None:
         f.write(json.dumps(event) + "\n")
 
 
-def should_deny(tenant: str, check_global: bool = True) -> tuple[bool, str | None]:
+def should_deny(tenant: str, check_global: bool = True, team_id: str | None = None) -> tuple[bool, str | None]:
     """
     Check if execution should be denied due to budget.
 
     Args:
         tenant: Tenant identifier
         check_global: Also check global budget
+        team_id: Optional team identifier (Sprint 34A)
 
     Returns:
         Tuple of (should_deny, reason)
@@ -57,6 +58,39 @@ def should_deny(tenant: str, check_global: bool = True) -> tuple[bool, str | Non
 
     # Load cost events
     events = load_cost_events()
+
+    # Check team budget first (Sprint 34A)
+    if team_id:
+        team_daily_spend = window_sum(events, team_id=team_id, days=1)
+        team_monthly_spend = window_sum(events, team_id=team_id, days=30)
+
+        team_budget = get_team_budget(team_id)
+
+        if team_daily_spend >= team_budget["daily"] * hard_threshold:
+            emit_governance_event(
+                {
+                    "event": "budget_deny",
+                    "tenant": tenant,
+                    "team_id": team_id,
+                    "reason": "team_daily_budget_exceeded",
+                    "daily_spend": team_daily_spend,
+                    "daily_budget": team_budget["daily"],
+                }
+            )
+            return True, f"Team daily budget exceeded: ${team_daily_spend:.2f} >= ${team_budget['daily']:.2f}"
+
+        if team_monthly_spend >= team_budget["monthly"] * hard_threshold:
+            emit_governance_event(
+                {
+                    "event": "budget_deny",
+                    "tenant": tenant,
+                    "team_id": team_id,
+                    "reason": "team_monthly_budget_exceeded",
+                    "monthly_spend": team_monthly_spend,
+                    "monthly_budget": team_budget["monthly"],
+                }
+            )
+            return True, f"Team monthly budget exceeded: ${team_monthly_spend:.2f} >= ${team_budget['monthly']:.2f}"
 
     # Check tenant budget
     daily_spend = window_sum(events, tenant=tenant, days=1)

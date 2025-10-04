@@ -12,8 +12,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.orchestrator.checkpoints import (  # noqa: E402
+    add_signature,
     approve_checkpoint,
     get_checkpoint,
+    is_satisfied,
     list_checkpoints,
     reject_checkpoint,
 )
@@ -157,6 +159,115 @@ def reject_command(checkpoint_id: str, reason: str) -> int:
         return 1
 
 
+def sign_command(checkpoint_id: str, user: str, kv: dict[str, str] | None = None) -> int:
+    """
+    Add signature to multi-sign checkpoint (Sprint 34A).
+
+    Args:
+        checkpoint_id: Checkpoint identifier
+        user: Username signing
+        kv: Key-value approval data
+
+    Returns:
+        Exit code
+    """
+    checkpoint = get_checkpoint(checkpoint_id)
+
+    if not checkpoint:
+        print(f"Error: Checkpoint {checkpoint_id} not found")
+        return 1
+
+    if checkpoint["status"] != "pending":
+        print(f"Error: Checkpoint {checkpoint_id} is {checkpoint['status']}, cannot sign")
+        return 1
+
+    # Add signature
+    try:
+        updated = add_signature(checkpoint_id, user, approval_data=kv)
+
+        approvals = updated.get("approvals", [])
+        min_signatures = updated.get("min_signatures", 1)
+
+        print(f"✍️ Signature added by {user}")
+        print(f"Task: {updated['task_id']}")
+        print(f"DAG Run: {updated['dag_run_id']}")
+        print(f"Signatures: {len(approvals)}/{min_signatures}")
+
+        # Check if satisfied
+        if is_satisfied(updated):
+            print(f"✅ Checkpoint now has sufficient signatures ({len(approvals)}/{min_signatures})")
+        else:
+            remaining = min_signatures - len(approvals)
+            print(f"⏳ Waiting for {remaining} more signature(s)")
+
+        return 0
+
+    except ValueError as e:
+        print(f"Error: {e}")
+        return 1
+    except Exception as e:
+        print(f"Error adding signature: {e}")
+        return 1
+
+
+def status_command(checkpoint_id: str) -> int:
+    """
+    Check multi-sign checkpoint status (Sprint 34A).
+
+    Args:
+        checkpoint_id: Checkpoint identifier
+
+    Returns:
+        Exit code
+    """
+    checkpoint = get_checkpoint(checkpoint_id)
+
+    if not checkpoint:
+        print(f"Error: Checkpoint {checkpoint_id} not found")
+        return 1
+
+    print(f"Checkpoint: {checkpoint_id}")
+    print(f"Status: {checkpoint['status']}")
+    print(f"Task: {checkpoint['task_id']}")
+    print(f"DAG Run: {checkpoint['dag_run_id']}")
+    print(f"Prompt: {checkpoint['prompt']}")
+    print()
+
+    # Multi-sign info
+    required_signers = checkpoint.get("required_signers", [])
+    min_signatures = checkpoint.get("min_signatures", 1)
+    approvals = checkpoint.get("approvals", [])
+
+    if required_signers and min_signatures > 1:
+        print("Multi-sign checkpoint:")
+        print(f"  Required signers: {', '.join(required_signers)}")
+        print(f"  Minimum signatures: {min_signatures}")
+        print(f"  Current signatures: {len(approvals)}")
+        print()
+
+        if approvals:
+            print("Signatures:")
+            for approval in approvals:
+                user = approval.get("user")
+                at = approval.get("at", "")[:19]
+                data = approval.get("approval_data", {})
+                comment = data.get("comment", "")
+                print(f"  • {user} at {at}" + (f" — {comment}" if comment else ""))
+        else:
+            print("No signatures yet")
+
+        print()
+        if is_satisfied(checkpoint):
+            print("✅ Checkpoint has sufficient signatures")
+        else:
+            remaining = min_signatures - len(approvals)
+            print(f"⏳ Waiting for {remaining} more signature(s)")
+    else:
+        print("Single-sign checkpoint (standard approval)")
+
+    return 0
+
+
 def main() -> int:
     """CLI entrypoint."""
     parser = argparse.ArgumentParser(description="Manage checkpoint approvals")
@@ -180,6 +291,20 @@ def main() -> int:
     reject_parser = subparsers.add_parser("reject", help="Reject a checkpoint")
     reject_parser.add_argument("checkpoint_id", help="Checkpoint ID")
     reject_parser.add_argument("--reason", required=True, help="Rejection reason")
+
+    # Sign command (Sprint 34A)
+    sign_parser = subparsers.add_parser("sign", help="Add signature to multi-sign checkpoint")
+    sign_parser.add_argument("checkpoint_id", help="Checkpoint ID")
+    sign_parser.add_argument("--user", required=True, help="Username signing")
+    sign_parser.add_argument(
+        "--kv",
+        nargs="*",
+        help="Key-value pairs for signature data (e.g., comment='LGTM')",
+    )
+
+    # Status command (Sprint 34A)
+    status_parser = subparsers.add_parser("status", help="Check multi-sign checkpoint status")
+    status_parser.add_argument("checkpoint_id", help="Checkpoint ID")
 
     args = parser.parse_args()
 
@@ -205,6 +330,22 @@ def main() -> int:
 
     elif args.command == "reject":
         return reject_command(args.checkpoint_id, reason=args.reason)
+
+    elif args.command == "sign":
+        # Parse key-value pairs
+        kv_data = {}
+        if args.kv:
+            for item in args.kv:
+                if "=" in item:
+                    key, value = item.split("=", 1)
+                    kv_data[key] = value
+                else:
+                    print(f"Warning: Ignoring invalid key-value pair: {item}")
+
+        return sign_command(args.checkpoint_id, user=args.user, kv=kv_data)
+
+    elif args.command == "status":
+        return status_command(args.checkpoint_id)
 
     return 1
 

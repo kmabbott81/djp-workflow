@@ -45,9 +45,9 @@ Template authoring and deprecation require elevated permissions:
 | Show template | Any role | Read-only operation |
 | Use template in DAG | Any role | Execution with validation |
 
-**Role hierarchy:**
+**Role hierarchy (Sprint 34A updated):**
 ```
-Viewer (0) < Author (1) < Operator (2) < Admin (3)
+Viewer (0) < Author (1) < Operator (2) < Auditor (3) < Compliance (4) < Admin (5)
 ```
 
 **Environment variables:**
@@ -2696,3 +2696,126 @@ If `ENCRYPTION_ENABLED=false`:
 - [ENCRYPTION.md](./ENCRYPTION.md) - Complete encryption guide
 - [CLASSIFICATION.md](./CLASSIFICATION.md) - Classification labels guide
 - [OPERATIONS.md](./OPERATIONS.md) - Key rotation runbook
+
+## Collaborative Governance (Sprint 34A)
+
+Sprint 34A introduces collaborative governance with teams, workspaces, delegations, and multi-sign approvals.
+
+### Effective Role Resolution
+
+User permissions are calculated as the **maximum** of:
+1. Base role (team/workspace membership)
+2. Active delegations (time-bounded grants)
+
+```python
+from src.security.delegation import active_role_for
+
+# Get effective role considering delegations
+role = active_role_for(user="bob", scope="team", scope_id="team-eng")
+# Returns highest role from base + active delegations
+```
+
+### Multi-Sign Checkpoints
+
+M-of-N approval pattern for critical decisions:
+
+```python
+from src.orchestrator.checkpoints import create_checkpoint, add_signature, is_satisfied
+
+# Create checkpoint requiring 2 of 3 signatures
+checkpoint = create_checkpoint(
+    checkpoint_id="chk-deploy-001",
+    dag_run_id="run-456",
+    task_id="deploy_prod",
+    tenant="acme-corp",
+    prompt="Approve production deployment",
+    required_signers=["alice", "bob", "charlie"],
+    min_signatures=2
+)
+
+# Add signatures
+add_signature("chk-deploy-001", "alice", {"comment": "LGTM"})
+add_signature("chk-deploy-001", "bob", {"comment": "Approved"})
+
+# Check if satisfied
+if is_satisfied(checkpoint):
+    print("Ready to proceed")
+```
+
+### Team & Workspace Budgets
+
+Team-level budget enforcement checked **before** tenant budgets:
+
+```python
+from src.cost.budgets import get_team_budget, is_over_team_budget
+from src.cost.ledger import window_sum, load_cost_events
+
+# Get team budget
+budget = get_team_budget("team-eng")
+# {"daily": 10.0, "monthly": 200.0}
+
+# Check team spend
+events = load_cost_events()
+daily_spend = window_sum(events, team_id="team-eng", days=1)
+monthly_spend = window_sum(events, team_id="team-eng", days=30)
+
+status = is_over_team_budget("team-eng", daily_spend, monthly_spend)
+if status["daily"] or status["monthly"]:
+    raise BudgetExceededError("Team budget exceeded")
+```
+
+**Environment variables:**
+```bash
+TEAM_BUDGET_DAILY_DEFAULT=10.0
+TEAM_BUDGET_MONTHLY_DEFAULT=200.0
+TEAM_QPS_LIMIT=10
+```
+
+### Delegation Audit Trail
+
+All delegations logged to `logs/delegations.jsonl`:
+
+```json
+{
+  "delegation_id": "abc-123",
+  "granter": "alice",
+  "grantee": "bob",
+  "scope": "team",
+  "scope_id": "team-eng",
+  "role": "Operator",
+  "starts_at": "2025-10-03T12:00:00Z",
+  "expires_at": "2025-10-04T12:00:00Z",
+  "reason": "On-call coverage"
+}
+```
+
+**Monitoring:**
+```bash
+# Active delegations expiring soon
+python -c "
+from src.security.delegation import list_active_delegations
+from datetime import datetime, timedelta
+
+delegations = list_active_delegations('team', 'team-eng')
+now = datetime.now(datetime.now().astimezone().tzinfo)
+
+for d in delegations:
+    expires_at = datetime.fromisoformat(d['expires_at'].rstrip('Z'))
+    hours = (expires_at - now).total_seconds() / 3600
+    if hours < 24:
+        print(f'ALERT: Delegation {d[\"delegation_id\"]} expires in {hours:.1f}h')
+"
+```
+
+### Security Best Practices
+
+1. **Least Privilege Delegation**: Grant minimum necessary role and duration
+2. **Delegation Review**: Monitor active delegations via dashboard
+3. **Multi-Sign for Critical Ops**: Require 2+ signatures for production changes
+4. **Team Budget Limits**: Set conservative team budgets to prevent overruns
+5. **Audit All Governance**: Monitor `logs/delegations.jsonl`, `logs/checkpoints.jsonl`
+
+### Related Documentation
+
+- [COLLABORATION.md](./COLLABORATION.md) - Complete collaborative governance guide
+- [OPERATIONS.md](./OPERATIONS.md) - Delegation and multi-sign runbooks

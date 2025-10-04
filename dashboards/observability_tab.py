@@ -44,6 +44,11 @@ def render_observability_tab():
     st.markdown("### 🔒 Security & Encryption")
     _render_security_panel()
 
+    # Collaborative governance section (Sprint 34A)
+    st.markdown("---")
+    st.markdown("### 🤝 Collaborative Governance")
+    _render_governance()
+
     # Multi-region observability
     st.markdown("---")
     st.markdown("### 🌍 Multi-Region Status")
@@ -1054,3 +1059,145 @@ def _render_security_panel():
 
     except Exception as e:
         st.error(f"Error loading security panel: {e}")
+
+
+def _render_governance():
+    """Render collaborative governance section (Sprint 34A)."""
+    try:
+        import sys
+
+        sys.path.insert(0, str(Path(__file__).parent.parent))
+
+        from datetime import datetime
+
+        from src.orchestrator.checkpoints import list_checkpoints
+        from src.security.delegation import list_active_delegations
+
+        # Active delegations
+        st.markdown("#### Active Delegations")
+
+        try:
+            # Sample delegations from common teams/workspaces
+            sample_scopes = [
+                ("team", "team-eng"),
+                ("team", "team-ops"),
+                ("workspace", "ws-project-a"),
+            ]
+
+            total_active = 0
+            expiring_soon = 0
+            now = datetime.now(datetime.now().astimezone().tzinfo)
+
+            for scope, scope_id in sample_scopes:
+                try:
+                    delegations = list_active_delegations(scope, scope_id, now)
+                    total_active += len(delegations)
+
+                    # Check expiring soon (within 24 hours)
+                    for d in delegations:
+                        expires_at_str = d.get("expires_at", "")
+                        if expires_at_str:
+                            expires_at = datetime.fromisoformat(expires_at_str.rstrip("Z"))
+                            hours_remaining = (expires_at - now).total_seconds() / 3600
+                            if 0 < hours_remaining < 24:
+                                expiring_soon += 1
+                except Exception:
+                    pass
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.metric("🔑 Active Delegations", total_active)
+
+            with col2:
+                status_icon = "⚠️" if expiring_soon > 0 else "✅"
+                st.metric(f"{status_icon} Expiring Soon (24h)", expiring_soon)
+
+        except Exception as e:
+            st.warning(f"Could not load delegation data: {e}")
+
+        # Multi-sign checkpoints
+        st.markdown("#### Multi-Sign Checkpoints")
+
+        try:
+            pending_checkpoints = list_checkpoints(status="pending")
+
+            multi_sign_pending = []
+            for cp in pending_checkpoints:
+                required_signers = cp.get("required_signers", [])
+                min_signatures = cp.get("min_signatures", 1)
+                if required_signers and min_signatures > 1:
+                    approvals = cp.get("approvals", [])
+                    multi_sign_pending.append(
+                        {
+                            "checkpoint_id": cp["checkpoint_id"],
+                            "signatures": len(approvals),
+                            "required": min_signatures,
+                            "remaining": max(0, min_signatures - len(approvals)),
+                        }
+                    )
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.metric("📝 Pending Multi-Sign", len(multi_sign_pending))
+
+            with col2:
+                total_remaining = sum(cp["remaining"] for cp in multi_sign_pending)
+                st.metric("✍️ Total Signatures Needed", total_remaining)
+
+            if multi_sign_pending:
+                st.markdown("**Details:**")
+                for cp in multi_sign_pending[:5]:  # Show first 5
+                    st.caption(
+                        f"• {cp['checkpoint_id'][:16]}... — {cp['signatures']}/{cp['required']} signatures "
+                        f"({cp['remaining']} needed)"
+                    )
+
+        except Exception as e:
+            st.warning(f"Could not load checkpoint data: {e}")
+
+        # Team budgets
+        st.markdown("#### Team Budgets (Last 24h)")
+
+        try:
+            from src.cost.budgets import get_team_budget
+            from src.cost.ledger import load_cost_events, window_sum
+
+            events = load_cost_events()
+
+            # Sample teams
+            sample_teams = ["team-eng", "team-ops", "team-data"]
+            team_data = []
+
+            for team_id in sample_teams:
+                try:
+                    budget = get_team_budget(team_id)
+                    daily_spend = window_sum(events, team_id=team_id, days=1)
+
+                    utilization = (daily_spend / budget["daily"] * 100) if budget["daily"] > 0 else 0
+
+                    team_data.append(
+                        {
+                            "Team": team_id,
+                            "Spent (24h)": f"${daily_spend:.2f}",
+                            "Budget": f"${budget['daily']:.2f}",
+                            "Utilization": f"{utilization:.1f}%",
+                        }
+                    )
+                except Exception:
+                    pass
+
+            if team_data:
+                import pandas as pd
+
+                df = pd.DataFrame(team_data)
+                st.dataframe(df, use_container_width=True, hide_index=True)
+            else:
+                st.info("No team budget data available")
+
+        except Exception as e:
+            st.warning(f"Could not load team budget data: {e}")
+
+    except Exception as e:
+        st.error(f"Error loading governance section: {e}")
