@@ -1,6 +1,5 @@
 """Tests for hybrid queue router."""
 
-import pytest
 
 from src.queue_strategy import (
     HybridQueueRouter,
@@ -106,7 +105,11 @@ def test_global_router_singleton():
 def test_enqueue_task_convenience():
     """Convenience function for enqueueing works."""
     job_id = enqueue_task(
-        task_id="task4", task_class=TaskClass.REALTIME, function=sample_task_function, 3, 4, tenant_id="tenant1"
+        task_id="task4",
+        task_class=TaskClass.REALTIME,
+        function=sample_task_function,
+        tenant_id="tenant1",
+        args=(3, 4),
     )
 
     assert job_id == "task4"

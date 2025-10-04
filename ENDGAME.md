@@ -1,5 +1,5 @@
 # Endgame — Multi-Agent Platform (Living Document)
-_Last updated: 2025-10-02 23:00 PT_
+_Last updated: 2025-10-03 12:00 PT_
 
 ## Purpose
 This document defines the evolving "end game" for the djp-workflow multi-agent system. It keeps two horizons in view:
@@ -11,11 +11,12 @@ It is revised at the **end of every sprint** (Sprints 23–40) to reflect what w
 ---
 
 ## Current Position
-- Sprints completed: 1–26
-- Next sprint: 27 (advanced workflow chaining)
+- Sprints completed: 1–34A
+- Next sprint: 34B (Connector Framework v1)
 - Guardrails: RBAC, tenant isolation, audit, budgets, env-only config, tests must pass (`pytest -q`)
 - **Milestone achieved:** Near-term endgame (Sprints 24-25) ✅ - End-to-end workflows now functional with real APIs
 - **Milestone achieved:** Data lifecycle & tiered storage (Sprint 26) ✅ - Automated artifact retention with hot/warm/cold tiers
+- **Milestone achieved:** Collaborative governance (Sprint 34A) ✅ - Teams, delegation, multi-sign approvals, team-level budgets/rate-limits
 
 ---
 
@@ -105,7 +106,7 @@ It is revised at the **end of every sprint** (Sprints 23–40) to reflect what w
 
 ---
 
-## What We Learned (Sprints 23-26)
+## What We Learned (Sprints 23-34A)
 
 1. **Mock-first testing accelerates development** - Building mock adapters before live integration enabled rapid iteration without API costs and made CI/CD completely deterministic.
 
@@ -119,10 +120,16 @@ It is revised at the **end of every sprint** (Sprints 23–40) to reflect what w
 
 6. **Tenant isolation must be validated at every API boundary** - Path traversal checks prevent ../ attacks across tenant boundaries; security cannot rely on caller validation alone.
 
+7. **JSONL append-only logs enable auditable governance** - Last-wins semantics with timestamps provide crash-safe state management without database overhead; perfect for teams/delegation/budgets.
+
+8. **Time-bounded delegation reduces security surface** - Expiring authority grants eliminate permanent privilege escalation; automatic filtering at check time requires zero maintenance.
+
+9. **Multi-sign checkpoints force intentionality** - M-of-N approvals prevent unilateral actions on critical operations; threshold satisfaction logic is simpler than approval chains.
+
 ---
 
 ## Next Two Sprints—Commitments
 
-- Sprint 27: Advanced Workflow Chaining - DAG-based workflows with dependencies; conditional branching; parallel execution with fan-out/fan-in; error propagation and retry strategies; visualization dashboard
+- **Sprint 34B: Connector Framework v1** - External system integration SDK with lifecycle hooks; base connector class with auth/rate-limit/retry; initial adapters for Salesforce, Slack, email (SMTP/IMAP), webhooks; template-driven configuration; comprehensive error handling and logging
 
-- Sprint 28: Persistent Queue (Redis/SQS) - Replace in-memory queue with durable backend; job state persistence; cross-region distribution; at-least-once delivery guarantees; dead letter queue
+- **Sprint 34C: Connector Observability & Testing** - Connector health dashboard showing auth status, rate limits, error rates; integration test suite with mock external services; connector versioning and compatibility checks; automated credential rotation; connector performance metrics (latency, throughput, error rates)

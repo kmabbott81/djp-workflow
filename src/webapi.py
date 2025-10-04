@@ -10,7 +10,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from .templates import list_templates, render_template_inputs
+from .templates import list_templates
+from .templates import render_template as render_template_content
 
 app = FastAPI(title="DJP Workflow API", version="1.0.0")
 
@@ -116,7 +117,7 @@ def get_templates():
             for t in templates
         ]
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to list templates: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to list templates: {str(e)}") from e
 
 
 @app.post("/api/render", response_model=RenderResponse)
@@ -139,7 +140,7 @@ def render_template(request: RenderRequest):
             raise HTTPException(status_code=404, detail=f"Template '{request.template_name}' not found")
 
         # Render template
-        rendered = render_template_inputs(template, request.inputs)
+        rendered = render_template_content(template, request.inputs)
 
         # Generate HTML
         html_content = None
@@ -272,7 +273,7 @@ async def triage_content(request: TriageRequest):
         )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Triage failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Triage failed: {str(e)}") from e
 
 
 if __name__ == "__main__":
