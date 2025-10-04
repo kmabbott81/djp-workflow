@@ -21,7 +21,7 @@ All notable changes to the DJP Workflow system will be documented in this file.
 
 ---
 
-## [1.0.1-rc1] - 2025-10-04 - Post-GA DX & Hardening Release Candidate
+## [1.0.1] - 2025-10-04 - 2025-10-04 - Post-GA DX & Hardening Release Candidate
 
 ### Added
 - **CI/CD Improvements**: Nightly workflow for full test suite across Python 3.9-3.12
