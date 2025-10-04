@@ -36,7 +36,6 @@ VERB_PATTERNS = {
     "email": [
         r"\bemail\b",
         r"\bsend\s+(?:an?\s+)?email\b",
-        r"\bsend\s+.*?\s+to\s+.*?(?:@|\bat\b)",
     ],
     "message": [
         r"\bmessage\b",
@@ -48,7 +47,6 @@ VERB_PATTERNS = {
     "forward": [
         r"\bforward\b",
         r"\bshare\s+.*?\s+with\b",
-        r"\bsend\s+.*?\s+to\b",
     ],
     "reply": [
         r"\breply\b",
@@ -158,7 +156,7 @@ def parse_intent(command: str) -> Intent:
     intent.artifacts = _extract_artifacts(command)
 
     # 4. Extract constraints
-    intent.constraints = _extract_constraints(command_lower)
+    intent.constraints = _extract_constraints(command, command_lower)
 
     return intent
 
@@ -173,15 +171,16 @@ def _extract_verb(command_lower: str) -> str:
         Verb name or 'unknown'
     """
     # Priority order: specific verbs first, then general
+    # Note: delete/update/create must come before message to avoid false matches
     verb_priority = [
         "reply",
         "forward",
         "schedule",
-        "email",
-        "message",
         "delete",
         "update",
         "create",
+        "email",
+        "message",
         "find",
         "list",
     ]
@@ -212,17 +211,22 @@ def _extract_targets(command: str) -> list[str]:
     targets.extend(emails)
 
     # Extract names after common patterns
-    # Pattern: "to [Name]", "with [Name]", "from [Name]", "and [Name]"
+    # Pattern: "to [Name]", "with [Name]", "from [Name]", "and [Name]", "message [Name]"
     name_patterns = [
-        r"\bto\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)",
-        r"\bwith\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)",
-        r"\bfrom\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)",
-        r"\band\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)",  # Added "and" pattern
-        r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)'s\s+message",
+        (r"\bto\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)", 0),  # (pattern, flags)
+        (r"\bwith\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)", 0),
+        (r"\bfrom\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)", 0),
+        (r"\band\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)", 0),
+        # "message Alice" - stop at prepositions like "about"
+        (r"(?i)\b(?:message|email|ping)\s+([A-Z][a-z]+)(?:\s+(?:about|to|with|from|in|on|at)\b|\s*$)", re.IGNORECASE),
+        (r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)'s\s+message", 0),
     ]
 
-    for pattern in name_patterns:
-        matches = re.findall(pattern, command)
+    for pattern, flags in name_patterns:
+        if flags:
+            matches = re.findall(pattern, command, flags)
+        else:
+            matches = re.findall(pattern, command)
         targets.extend(matches)
 
     # Extract team names
@@ -284,12 +288,20 @@ def _extract_artifacts(command: str) -> list[str]:
             if len(match) < 50:
                 artifacts.append(match)
 
-    # Extract phrases like "about [topic]"
+    # Extract phrases like "about [topic]" or "for [topic]"
     about_pattern = r"\babout\s+([a-zA-Z0-9\s]+?)(?:\s+(?:to|with|from|in)\b|$)"
     about_matches = re.findall(about_pattern, command)
     for match in about_matches:
         match = match.strip()
         if len(match) < 50:
+            artifacts.append(match)
+
+    # Extract phrases like "for [topic]"
+    for_pattern = r"\bfor\s+([a-zA-Z0-9\s]+?)(?:\s*$)"
+    for_matches = re.findall(for_pattern, command)
+    for match in for_matches:
+        match = match.strip()
+        if len(match) < 50 and not match.lower().startswith(("a ", "an ", "the ")):
             artifacts.append(match)
 
     # Deduplicate while preserving order
@@ -304,7 +316,7 @@ def _extract_artifacts(command: str) -> list[str]:
     return unique_artifacts
 
 
-def _extract_constraints(command_lower: str) -> dict:
+def _extract_constraints(command: str, command_lower: str) -> dict:
     """Extract constraints (source, time, labels) from command.
 
     Args:
@@ -339,9 +351,9 @@ def _extract_constraints(command_lower: str) -> dict:
     if label_match:
         constraints["label"] = label_match.group(1)
 
-    # Extract folder
+    # Extract folder (preserve case)
     folder_pattern = r"\bin\s+(?:the\s+)?([A-Za-z0-9\s]+?)\s+folder"
-    folder_match = re.search(folder_pattern, command_lower)
+    folder_match = re.search(folder_pattern, command, re.IGNORECASE)
     if folder_match:
         constraints["folder"] = folder_match.group(1).strip()
 

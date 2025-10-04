@@ -684,3 +684,141 @@
 {"connector_id": "notion-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T11:32:40.618326"}
 {"connector_id": "notion-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T11:32:40.664682"}
 {"connector_id": "notion-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T11:32:40.711512"}
+{"connector_id": "gmail-metrics-test", "operation": "users/me/messages", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:04.547586"}
+{"connector_id": "test-gmail", "operation": "users/me/messages", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:13.529215"}
+{"connector_id": "test-gmail", "operation": "users/me/messages", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:13.601989"}
+{"connector_id": "test-gmail", "operation": "users/me/threads", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:13.675164"}
+{"connector_id": "test-gmail", "operation": "users/me/labels", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:13.741228"}
+{"connector_id": "test-gmail", "operation": "users/me/messages/18c8f123456789ab", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:13.805949"}
+{"connector_id": "test-gmail", "operation": "users/me/messages/18c8f123456789ab", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:13.894251"}
+{"connector_id": "test-gmail", "operation": "users/me/threads/18c8f123456789ab", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:13.976211"}
+{"connector_id": "test-gmail", "operation": "users/me/labels/INBOX", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:14.050804"}
+{"connector_id": "test-gmail", "operation": "users/me/messages/send", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:14.119441"}
+{"connector_id": "test-gmail", "operation": "users/me/labels", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:14.264493"}
+{"connector_id": "test-gmail", "operation": "users/me/messages/18c8f123456789ab/modify", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:14.331833"}
+{"connector_id": "test-gmail", "operation": "users/me/labels/Label_1", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:14.392988"}
+{"connector_id": "test-gmail", "operation": "users/me/messages/18c8f123456789ab", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:14.455883"}
+{"connector_id": "test-gmail", "operation": "users/me/labels/Label_1", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:14.519724"}
+{"connector_id": "test-gmail", "operation": "users/me/messages", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:14.626229"}
+{"connector_id": "gmail-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:04:14.684582"}
+{"connector_id": "gmail-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:04:14.736226"}
+{"connector_id": "gmail-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:04:14.789373"}
+{"connector_id": "gmail-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:04:14.843571"}
+{"connector_id": "gmail-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:04:14.902554"}
+{"connector_id": "test-notion", "operation": "search", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:48.038938"}
+{"connector_id": "test-notion", "operation": "search", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:48.100693"}
+{"connector_id": "test-notion", "operation": "search", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:48.158392"}
+{"connector_id": "test-notion", "operation": "blocks/page-123/children", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:48.216200"}
+{"connector_id": "test-notion", "operation": "pages/page-123", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:48.339027"}
+{"connector_id": "test-notion", "operation": "databases/db-123", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:48.402816"}
+{"connector_id": "test-notion", "operation": "blocks/block-123", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:48.464902"}
+{"connector_id": "test-notion", "operation": "pages", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:48.523051"}
+{"connector_id": "test-notion", "operation": "blocks/page-123/children", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:48.579073"}
+{"connector_id": "test-notion", "operation": "pages/page-123", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:48.685548"}
+{"connector_id": "test-notion", "operation": "databases/db-123", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:48.748922"}
+{"connector_id": "test-notion", "operation": "blocks/block-123", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:48.818638"}
+{"connector_id": "test-notion", "operation": "pages/page-123", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:48.883349"}
+{"connector_id": "test-notion", "operation": "databases/db-123", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:48.948222"}
+{"connector_id": "test-notion", "operation": "blocks/block-123", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:49.015195"}
+{"connector_id": "test-notion", "operation": "search", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:04:49.445015"}
+{"connector_id": "notion-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:04:49.509235"}
+{"connector_id": "notion-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:04:49.564057"}
+{"connector_id": "notion-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:04:49.618893"}
+{"connector_id": "notion-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:04:49.674621"}
+{"connector_id": "notion-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:04:49.728821"}
+{"connector_id": "test-slack", "operation": "conversations.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:05:10.405236"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:05:10.526916"}
+{"connector_id": "test-slack", "operation": "users.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:05:10.641767"}
+{"connector_id": "test-slack", "operation": "conversations.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:05:10.700658"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:05:10.763805"}
+{"connector_id": "test-slack", "operation": "users.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:05:10.835663"}
+{"connector_id": "test-slack", "operation": "chat.postMessage", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:05:10.904935"}
+{"connector_id": "test-slack", "operation": "chat.update", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:05:11.037985"}
+{"connector_id": "test-slack", "operation": "chat.delete", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:05:11.100441"}
+{"connector_id": "test-slack-resilience-1857244110048", "operation": "conversations.list", "status": "error", "duration_ms": 0.029802322387695312, "error": "rate_limited: 429", "timestamp": "2025-10-04T12:05:11.243271"}
+{"connector_id": "test-slack-resilience-1857244110048", "operation": "conversations.list", "status": "success", "duration_ms": 0.06318092346191406, "error": null, "timestamp": "2025-10-04T12:05:12.244791"}
+{"connector_id": "test-slack-resilience-1857244109984", "operation": "conversations.list", "status": "error", "duration_ms": 0.015497207641601562, "error": "server_error: 503", "timestamp": "2025-10-04T12:05:12.298515"}
+{"connector_id": "test-slack-resilience-1857244109984", "operation": "conversations.list", "status": "error", "duration_ms": 0.04553794860839844, "error": "server_error: 503", "timestamp": "2025-10-04T12:05:12.708919"}
+{"connector_id": "test-slack-resilience-1857244109984", "operation": "conversations.list", "status": "success", "duration_ms": 0.05793571472167969, "error": null, "timestamp": "2025-10-04T12:05:13.602650"}
+{"connector_id": "test-slack-resilience-1857244109952", "operation": "conversations.list", "status": "error", "duration_ms": 0.019550323486328125, "error": "server_error: 503", "timestamp": "2025-10-04T12:05:13.662869"}
+{"connector_id": "test-slack-resilience-1857244109952", "operation": "conversations.list", "status": "error", "duration_ms": 0.06771087646484375, "error": "server_error: 503", "timestamp": "2025-10-04T12:05:13.993661"}
+{"connector_id": "test-slack-resilience-1857244109952", "operation": "conversations.list", "status": "error", "duration_ms": 0.055789947509765625, "error": "server_error: 503", "timestamp": "2025-10-04T12:05:14.731642"}
+{"connector_id": "test-slack-resilience-1857244109952", "operation": "conversations.info", "status": "error", "duration_ms": 0.030279159545898438, "error": "Slack API error: channel_not_found", "timestamp": "2025-10-04T12:05:14.790702"}
+{"connector_id": "test-slack-resilience-1857244109952", "operation": "conversations.list", "status": "success", "duration_ms": 0.019788742065429688, "error": null, "timestamp": "2025-10-04T12:05:14.910121"}
+{"connector_id": "test-slack-resilience-1857244110128", "operation": "conversations.list", "status": "error", "duration_ms": 0.01621246337890625, "error": "Client error: 400", "timestamp": "2025-10-04T12:05:14.970903"}
+{"connector_id": "test-slack-resilience-1857244110160", "operation": "users.list", "status": "error", "duration_ms": 0.044345855712890625, "error": "server_error: 502", "timestamp": "2025-10-04T12:05:15.034262"}
+{"connector_id": "test-slack-resilience-1857244110160", "operation": "users.list", "status": "success", "duration_ms": 0.05316734313964844, "error": null, "timestamp": "2025-10-04T12:05:15.454219"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:05:16.029782"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:05:16.207030"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:05:16.274338"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:05:16.330538"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:05:16.385899"}
+{"connector_id": "gmail-metrics-test", "operation": "users/me/messages", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:07.705419"}
+{"connector_id": "test-gmail", "operation": "users/me/messages", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:16.236074"}
+{"connector_id": "test-gmail", "operation": "users/me/messages", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:16.285754"}
+{"connector_id": "test-gmail", "operation": "users/me/threads", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:16.338744"}
+{"connector_id": "test-gmail", "operation": "users/me/labels", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:16.388230"}
+{"connector_id": "test-gmail", "operation": "users/me/messages/18c8f123456789ab", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:16.436750"}
+{"connector_id": "test-gmail", "operation": "users/me/messages/18c8f123456789ab", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:16.486596"}
+{"connector_id": "test-gmail", "operation": "users/me/threads/18c8f123456789ab", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:16.547868"}
+{"connector_id": "test-gmail", "operation": "users/me/labels/INBOX", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:16.605923"}
+{"connector_id": "test-gmail", "operation": "users/me/messages/send", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:16.662019"}
+{"connector_id": "test-gmail", "operation": "users/me/labels", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:16.784961"}
+{"connector_id": "test-gmail", "operation": "users/me/messages/18c8f123456789ab/modify", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:16.845894"}
+{"connector_id": "test-gmail", "operation": "users/me/labels/Label_1", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:16.901272"}
+{"connector_id": "test-gmail", "operation": "users/me/messages/18c8f123456789ab", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:16.955973"}
+{"connector_id": "test-gmail", "operation": "users/me/labels/Label_1", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:17.015238"}
+{"connector_id": "test-gmail", "operation": "users/me/messages", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:17.146261"}
+{"connector_id": "gmail-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:06:17.211448"}
+{"connector_id": "gmail-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:06:17.261912"}
+{"connector_id": "gmail-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:06:17.310201"}
+{"connector_id": "gmail-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:06:17.363436"}
+{"connector_id": "gmail-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:06:17.418860"}
+{"connector_id": "test-notion", "operation": "search", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:49.878165"}
+{"connector_id": "test-notion", "operation": "search", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:49.930441"}
+{"connector_id": "test-notion", "operation": "search", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:49.982852"}
+{"connector_id": "test-notion", "operation": "blocks/page-123/children", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:50.034565"}
+{"connector_id": "test-notion", "operation": "pages/page-123", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:50.137044"}
+{"connector_id": "test-notion", "operation": "databases/db-123", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:50.189236"}
+{"connector_id": "test-notion", "operation": "blocks/block-123", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:50.246801"}
+{"connector_id": "test-notion", "operation": "pages", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:50.313134"}
+{"connector_id": "test-notion", "operation": "blocks/page-123/children", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:50.366115"}
+{"connector_id": "test-notion", "operation": "pages/page-123", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:50.472239"}
+{"connector_id": "test-notion", "operation": "databases/db-123", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:50.526853"}
+{"connector_id": "test-notion", "operation": "blocks/block-123", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:50.577455"}
+{"connector_id": "test-notion", "operation": "pages/page-123", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:50.628304"}
+{"connector_id": "test-notion", "operation": "databases/db-123", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:50.681720"}
+{"connector_id": "test-notion", "operation": "blocks/block-123", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:50.733641"}
+{"connector_id": "test-notion", "operation": "search", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:06:50.998608"}
+{"connector_id": "notion-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:06:51.054152"}
+{"connector_id": "notion-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:06:51.099774"}
+{"connector_id": "notion-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:06:51.146726"}
+{"connector_id": "notion-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:06:51.194593"}
+{"connector_id": "notion-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:06:51.244696"}
+{"connector_id": "test-slack", "operation": "conversations.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:07:12.929537"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:07:13.009386"}
+{"connector_id": "test-slack", "operation": "users.list", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:07:13.146556"}
+{"connector_id": "test-slack", "operation": "conversations.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:07:13.214880"}
+{"connector_id": "test-slack", "operation": "conversations.history", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:07:13.277057"}
+{"connector_id": "test-slack", "operation": "users.info", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:07:13.339358"}
+{"connector_id": "test-slack", "operation": "chat.postMessage", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:07:13.495744"}
+{"connector_id": "test-slack", "operation": "chat.update", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:07:13.616442"}
+{"connector_id": "test-slack", "operation": "chat.delete", "status": "success", "duration_ms": 10.0, "error": null, "timestamp": "2025-10-04T12:07:13.668306"}
+{"connector_id": "test-slack-resilience-2427738119232", "operation": "conversations.list", "status": "error", "duration_ms": 0.0324249267578125, "error": "rate_limited: 429", "timestamp": "2025-10-04T12:07:13.782181"}
+{"connector_id": "test-slack-resilience-2427738119232", "operation": "conversations.list", "status": "success", "duration_ms": 0.07486343383789062, "error": null, "timestamp": "2025-10-04T12:07:14.785391"}
+{"connector_id": "test-slack-resilience-2427738119296", "operation": "conversations.list", "status": "error", "duration_ms": 0.02574920654296875, "error": "server_error: 503", "timestamp": "2025-10-04T12:07:14.858549"}
+{"connector_id": "test-slack-resilience-2427738119296", "operation": "conversations.list", "status": "error", "duration_ms": 0.0591278076171875, "error": "server_error: 503", "timestamp": "2025-10-04T12:07:15.300369"}
+{"connector_id": "test-slack-resilience-2427738119296", "operation": "conversations.list", "status": "success", "duration_ms": 0.05650520324707031, "error": null, "timestamp": "2025-10-04T12:07:16.072850"}
+{"connector_id": "test-slack-resilience-2427738119408", "operation": "conversations.list", "status": "error", "duration_ms": 0.017404556274414062, "error": "server_error: 503", "timestamp": "2025-10-04T12:07:16.136050"}
+{"connector_id": "test-slack-resilience-2427738119408", "operation": "conversations.list", "status": "error", "duration_ms": 0.05817413330078125, "error": "server_error: 503", "timestamp": "2025-10-04T12:07:16.461059"}
+{"connector_id": "test-slack-resilience-2427738119408", "operation": "conversations.list", "status": "error", "duration_ms": 0.05030632019042969, "error": "server_error: 503", "timestamp": "2025-10-04T12:07:17.405328"}
+{"connector_id": "test-slack-resilience-2427738119408", "operation": "conversations.info", "status": "error", "duration_ms": 0.04839897155761719, "error": "Slack API error: channel_not_found", "timestamp": "2025-10-04T12:07:17.480904"}
+{"connector_id": "test-slack-resilience-2427738119408", "operation": "conversations.list", "status": "success", "duration_ms": 0.025272369384765625, "error": null, "timestamp": "2025-10-04T12:07:17.607696"}
+{"connector_id": "test-slack-resilience-2427738119360", "operation": "conversations.list", "status": "error", "duration_ms": 0.020503997802734375, "error": "Client error: 400", "timestamp": "2025-10-04T12:07:17.673541"}
+{"connector_id": "test-slack-resilience-2427738119408", "operation": "users.list", "status": "error", "duration_ms": 0.041961669921875, "error": "server_error: 502", "timestamp": "2025-10-04T12:07:17.737975"}
+{"connector_id": "test-slack-resilience-2427738119408", "operation": "users.list", "status": "success", "duration_ms": 0.07557868957519531, "error": null, "timestamp": "2025-10-04T12:07:18.108148"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:07:18.775882"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:07:18.837936"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:07:18.905768"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:07:19.088621"}
+{"connector_id": "slack-webhook", "operation": "ingest", "status": "success", "duration_ms": 5.0, "error": null, "timestamp": "2025-10-04T12:07:19.153298"}

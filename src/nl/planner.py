@@ -157,6 +157,7 @@ def _plan_email(plan: Plan, tenant: str, user_id: str):
                 "source": contact.source,
             },
             payload={
+                "to": [contact.email],  # Add 'to' field for risk assessment
                 "subject": subject,
                 "body": body,
             },
@@ -504,7 +505,6 @@ def _assess_risk(plan: Plan, tenant: str):
         plan: Plan to assess
         tenant: Tenant ID
     """
-    high_risk_actions = _get_high_risk_actions()
     tenant_domains = _get_tenant_domains(tenant)
 
     risk_score = 0
