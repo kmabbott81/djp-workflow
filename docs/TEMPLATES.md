@@ -781,6 +781,100 @@ for result in results:
     print(f"Row {result['row_id']}: {result['status']}")
 ```
 
+## Using the Registry in DAGs (Sprint 32)
+
+Templates can now be referenced in DAGs using the template registry system, which provides versioning, validation, and defaults.
+
+### Template-Based DAG
+
+```yaml
+name: weekly_ops_with_templates
+tenant_id: local-dev
+
+tasks:
+  - id: sweep
+    type: workflow
+    workflow_ref: template
+    params:
+      template_name: inbox_sweep
+      template_version: "1.0"
+      inbox_items: "Email list..."
+      drive_files: "Files..."
+    depends_on: []
+
+  - id: report
+    type: workflow
+    workflow_ref: template
+    params:
+      template_name: weekly_report
+      template_version: "1.0"
+      start_date: "2025-10-01"
+      end_date: "2025-10-07"
+    depends_on:
+      - sweep
+```
+
+### Benefits
+
+1. **Version Control**: Pin to specific template versions
+2. **Validation**: Parameters validated against schema before execution
+3. **Defaults**: Missing optional params use template defaults
+4. **Deprecation**: Warnings if using deprecated template version
+
+### Registry Commands
+
+```bash
+# List available templates
+python scripts/templates.py list
+
+# Show template details (including schema)
+python scripts/templates.py show --name inbox_sweep
+
+# Register new template
+python scripts/templates.py register \
+  --name my_template \
+  --version 1.0.0 \
+  --file templates/registry/my_template_1.0.yaml \
+  --schema templates/schemas/my_template_1.0.schema.json
+```
+
+### Schema Validation Example
+
+**Schema defines:**
+```json
+{
+  "fields": {
+    "start_date": {
+      "type": "string",
+      "required": true
+    },
+    "context": {
+      "type": "string",
+      "required": false,
+      "default": "Weekly activities"
+    }
+  }
+}
+```
+
+**DAG provides:**
+```yaml
+params:
+  template_name: weekly_report
+  template_version: "1.0"
+  start_date: "2025-10-01"
+  # context will use default "Weekly activities"
+```
+
+**Validation fails if:**
+- Missing required param (`start_date`)
+- Wrong type (e.g., `start_date: 123`)
+- Unknown param not in schema
+- Value outside bounds (for int/float with min/max)
+- Enum value not in allowed list
+
+See [TEMPLATE_REGISTRY.md](TEMPLATE_REGISTRY.md) for complete registry documentation.
+
 ## Next Steps
 
 1. Explore built-in templates in the Templates tab
@@ -789,9 +883,11 @@ for result in results:
 4. Enable approval workflow for critical outputs
 5. Monitor usage and costs in Observability tab
 6. Share successful templates with your team
+7. **NEW:** Register templates to registry for version control
 
 ## Resources
 
+- [Template Registry Guide](TEMPLATE_REGISTRY.md) - Sprint 32 versioning system
 - [Template Schema Reference](schemas/template.json)
 - [Jinja2 Documentation](https://jinja.palletsprojects.com/)
 - [Batch Processing Guide](OPERATIONS.md#batch-processing)

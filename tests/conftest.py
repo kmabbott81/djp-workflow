@@ -350,10 +350,14 @@ def mock_workflow_map(monkeypatch):
     def mock_meeting_transcript_brief(params):
         return {"brief": f"Meeting: {params.get('meeting_title', 'Untitled')}", "action_items": []}
 
+    # Sprint 32: Import template adapter to include in mock map
+    from src.workflows.adapter import template_adapter
+
     mock_map = {
         "inbox_drive_sweep": mock_inbox_drive_sweep,
         "weekly_report": mock_weekly_report,
         "meeting_transcript_brief": mock_meeting_transcript_brief,
+        "template": template_adapter,  # Sprint 32: Template-based execution
     }
 
     # Patch WORKFLOW_MAP

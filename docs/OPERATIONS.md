@@ -3003,8 +3003,111 @@ For checkpoint approval issues requiring escalation:
 - **Expired checkpoints**: Re-run DAG or contact workflow owner
 - **System issues**: Check scheduler health and logs
 
+## Template Version Rollback (Sprint 32)
+
+### When to Rollback
+
+Rollback to a prior template version when:
+- New version has validation bugs
+- Schema changes break existing DAGs
+- Performance regression detected
+- Incorrect workflow logic introduced
+
+### Rollback Procedure
+
+**Scenario:** Template `weekly_report` v2.0.0 has issues, need to rollback to v1.0.0
+
+#### Step 1: Verify Prior Version Exists
+
+```bash
+# Show all versions
+python scripts/templates.py list | grep weekly_report
+
+# Expected output:
+# weekly_report        2.0.0      active       Author      ...
+# weekly_report        1.0.0      deprecated   Author      ...
+```
+
+#### Step 2: Deprecate Bad Version
+
+```bash
+python scripts/templates.py deprecate \
+  --name weekly_report \
+  --version 2.0.0 \
+  --reason "Validation bug in schema - rolling back to 1.0.0"
+```
+
+This marks v2.0.0 as deprecated but keeps it in registry for audit trail.
+
+#### Step 3: Re-activate Prior Version
+
+The registry doesn't have an "activate" command, but you can update DAGs to explicitly use v1.0.0:
+
+**Option A:** Update DAGs to pin to v1.0.0
+
+```yaml
+# Before (used latest active = 2.0.0)
+params:
+  template_name: weekly_report
+  # No version specified = latest active
+
+# After (explicit version)
+params:
+  template_name: weekly_report
+  template_version: "1.0.0"
+```
+
+**Option B:** Register v1.0.0 as v2.0.1 (recommended)
+
+```bash
+# Copy v1.0.0 files to v2.0.1
+cp templates/registry/weekly_report_1.0.yaml templates/registry/weekly_report_2.0.1.yaml
+cp templates/schemas/weekly_report_1.0.schema.json templates/schemas/weekly_report_2.0.1.schema.json
+
+# Register as new version
+python scripts/templates.py register \
+  --name weekly_report \
+  --version 2.0.1 \
+  --file templates/registry/weekly_report_2.0.1.yaml \
+  --schema templates/schemas/weekly_report_2.0.1.schema.json \
+  --tags "professional,stable"
+```
+
+Now v2.0.1 (which is v1.0.0 logic) becomes latest active.
+
+#### Step 4: Verify Rollback
+
+```bash
+# Check latest active version
+python scripts/templates.py show --name weekly_report
+
+# Should show v2.0.1 (or v1.0.0 if using Option A)
+
+# Test with DAG
+python scripts/run_dag_min.py --dag configs/dags/weekly_ops_chain.templates.yaml --dry-run
+```
+
+#### Step 5: Notify Users
+
+If templates are shared across team:
+
+```bash
+# Email or Slack notification
+Subject: Template Rollback - weekly_report v2.0.0 → v2.0.1
+
+We've rolled back weekly_report to v2.0.1 due to a validation bug in v2.0.0.
+
+Action Required:
+- DAGs using explicit "template_version: 2.0.0" should update to "2.0.1"
+- DAGs without version specified will automatically use v2.0.1
+
+Issue: Schema validation was rejecting valid start_date values
+Fixed: v2.0.1 restores v1.0.0 schema (known good)
+```
+
 ### See Also
 
+- [TEMPLATE_REGISTRY.md](./TEMPLATE_REGISTRY.md) - Template registry documentation
 - [ORCHESTRATION.md](./ORCHESTRATION.md) - Complete checkpoint documentation
 - [SECURITY.md](./SECURITY.md) - RBAC role hierarchy and permissions
 - [STORAGE.md](./STORAGE.md) - Comprehensive storage documentation

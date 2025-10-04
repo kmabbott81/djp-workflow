@@ -33,6 +33,31 @@ User preferences (favorites, layout, theme) follow special RBAC rules:
 
 Preferences are stored in the `user_prefs` table with primary key `(user_id, tenant_id, key)`.
 
+### Template Registry (Sprint 32)
+
+Template authoring and deprecation require elevated permissions:
+
+| Operation | Required Role | Notes |
+|-----------|---------------|-------|
+| Register template | Author or Admin | Creates new versioned template |
+| Deprecate template | Author or Admin | Marks version as deprecated |
+| List templates | Any role | Read-only operation |
+| Show template | Any role | Read-only operation |
+| Use template in DAG | Any role | Execution with validation |
+
+**Role hierarchy:**
+```
+Viewer (0) < Author (1) < Operator (2) < Admin (3)
+```
+
+**Environment variables:**
+```bash
+TEMPLATE_RBAC_ROLE=Author  # Required role for write ops (default: Author)
+USER_RBAC_ROLE=Author      # User's current role
+```
+
+**Audit trail:** All template operations are logged to `templates/registry/templates.jsonl` with timestamp, owner, and operation type.
+
 ## Multi-Tenancy
 
 ### Tenant Isolation

@@ -1,0 +1,26 @@
+workflow_ref: meeting_transcript_brief
+description: Summarize meeting transcripts with action items
+
+prompt_template: |
+  You are an academic meeting facilitator. Analyze this meeting transcript.
+
+  **Meeting Title:** {meeting_title}
+  **Date:** {meeting_date}
+  **Attendees:** {attendees}
+  **Transcript:** {transcript}
+
+  **Required Sections:**
+  1. Meeting Overview
+  2. Key Discussion Points
+  3. Decisions Made
+  4. Action Items (table format)
+  5. Follow-up Questions
+
+parameters:
+  max_tokens: 1500
+  temperature: 0.3
+  model: gpt-4o-mini
+
+metadata:
+  category: academic
+  output_format: markdown

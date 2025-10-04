@@ -1,0 +1,25 @@
+{
+  "fields": {
+    "meeting_title": {
+      "type": "string",
+      "required": true,
+      "description": "Meeting name or title"
+    },
+    "meeting_date": {
+      "type": "string",
+      "required": true,
+      "description": "Date of meeting (YYYY-MM-DD)"
+    },
+    "attendees": {
+      "type": "string",
+      "required": true,
+      "description": "Comma-separated attendee names"
+    },
+    "transcript": {
+      "type": "string",
+      "required": false,
+      "default": "No transcript provided",
+      "description": "Full meeting transcript text"
+    }
+  }
+}

@@ -1,0 +1,24 @@
+workflow_ref: weekly_report_pack
+description: Generate professional weekly status report
+
+prompt_template: |
+  You are a professional business analyst. Generate a comprehensive weekly status report.
+
+  **Report Period:** {start_date} to {end_date}
+  **Context:** {context}
+
+  **Required Sections:**
+  1. Executive Summary
+  2. Key Accomplishments
+  3. Metrics & KPIs
+  4. Challenges & Blockers
+  5. Next Week Priorities
+
+parameters:
+  max_tokens: 2000
+  temperature: 0.5
+  model: gpt-4o
+
+metadata:
+  category: professional
+  output_format: markdown

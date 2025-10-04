@@ -1,0 +1,27 @@
+{
+  "fields": {
+    "inbox_items": {
+      "type": "string",
+      "required": true,
+      "description": "List of email subjects and snippets"
+    },
+    "drive_files": {
+      "type": "string",
+      "required": false,
+      "default": "",
+      "description": "List of recent file names"
+    },
+    "user_priorities": {
+      "type": "string",
+      "required": false,
+      "default": "General tasks",
+      "description": "Current focus areas"
+    },
+    "upcoming_deadlines": {
+      "type": "string",
+      "required": false,
+      "default": "None",
+      "description": "Key deadlines to consider"
+    }
+  }
+}

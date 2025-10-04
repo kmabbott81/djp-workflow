@@ -1,0 +1,45 @@
+name: weekly_ops_chain_templates
+tenant_id: local-dev
+
+# Sprint 32: DAG using template references instead of raw params
+# Templates provide versioning, validation, and defaults
+
+tasks:
+  - id: sweep
+    type: workflow
+    workflow_ref: template
+    params:
+      template_name: inbox_sweep
+      template_version: "1.0"
+      # User params validated against template schema
+      inbox_items: "Email list..."
+      drive_files: "Recent files..."
+      user_priorities: "Sprint 32"
+    retries: 1
+    depends_on: []
+
+  - id: report
+    type: workflow
+    workflow_ref: template
+    params:
+      template_name: weekly_report
+      template_version: "1.0"
+      start_date: "2025-10-01"
+      end_date: "2025-10-07"
+      context: "Sprint 32 progress"
+    retries: 1
+    depends_on:
+      - sweep
+
+  - id: brief
+    type: workflow
+    workflow_ref: template
+    params:
+      template_name: meeting_brief
+      template_version: "1.0"
+      meeting_title: "Sprint Review"
+      meeting_date: "2025-10-03"
+      attendees: "Team"
+    retries: 1
+    depends_on:
+      - report
