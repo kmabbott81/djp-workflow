@@ -2,7 +2,7 @@
 # Runs: Dashboard + APIs + Health Server
 # Ports: 8501 (Streamlit), 8080 (Health Check)
 
-FROM python:3.11-slim AS builder
+FROM python:3.13-slim AS builder
 
 WORKDIR /build
 
@@ -19,7 +19,7 @@ RUN pip install --no-cache-dir --user -r requirements.txt && \
     pip install --no-cache-dir --user redis>=5.0.0
 
 # Production stage
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 # Metadata labels
 LABEL maintainer="DJP Workflow Platform"
