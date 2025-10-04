@@ -149,7 +149,7 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 minversion = "7.0"
 addopts = "-ra -q --strict-markers"
-testpaths = ["tests"]
+testpaths = ["tests", "tests_e2e"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
@@ -157,4 +157,5 @@ markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
     "live: marks tests requiring live API credentials (skip unless LIVE=true)",
+    "e2e: marks tests as end-to-end smoke tests (offline, CI-ready)",
 ]

@@ -4341,6 +4341,804 @@ systemctl restart djp-webhooks
 | Circuit State | Half-Open | Open |
 | Zero Calls | 15 min | 30 min |
 
+## Backup & Restore
+
+### Backup Strategy
+
+Implement a comprehensive backup strategy covering all critical data:
+
+#### 1. JSONL Logs
+
+**What to back up:**
+- `logs/orchestrator_events.jsonl` - DAG execution history
+- `logs/cost_events.jsonl` - Cost tracking
+- `logs/checkpoints.jsonl` - Approval checkpoints
+- `logs/governance_events.jsonl` - Governance decisions
+- `logs/lifecycle_events.jsonl` - Storage lifecycle
+- `logs/delegations.jsonl` - Time-bounded delegations
+- `logs/teams.jsonl` - Team memberships
+- `logs/workspaces.jsonl` - Workspace memberships
+- `logs/keyring.jsonl` - Encryption keys (CRITICAL)
+
+**Backup frequency:**
+- **Daily**: All JSONL logs (automated)
+- **Hourly**: Critical logs (orchestrator_events, cost_events)
+- **Real-time**: Encryption keyring (on every rotation)
+
+**Backup commands:**
+
+```bash
+# Daily backup script
+#!/bin/bash
+DATE=$(date +%Y%m%d)
+BACKUP_DIR=backups/daily/$DATE
+
+mkdir -p $BACKUP_DIR
+
+# Backup all JSONL logs
+tar -czf $BACKUP_DIR/logs-$DATE.tar.gz logs/*.jsonl
+
+# Backup encryption keyring (CRITICAL)
+cp logs/keyring.jsonl $BACKUP_DIR/keyring-$DATE.jsonl
+
+# Verify backup integrity
+tar -tzf $BACKUP_DIR/logs-$DATE.tar.gz | wc -l
+
+echo "Backup completed: $BACKUP_DIR"
+```
+
+**Schedule with cron:**
+```bash
+# Run daily at 2 AM
+0 2 * * * /path/to/backup_logs.sh
+
+# Run hourly for critical logs
+0 * * * * tar -czf backups/hourly/$(date +%Y%m%d-%H%M)-critical.tar.gz logs/orchestrator_events.jsonl logs/cost_events.jsonl
+```
+
+#### 2. Artifacts
+
+**What to back up:**
+- `artifacts/hot/` - Recent workflow outputs (7 days)
+- `artifacts/warm/` - Intermediate artifacts (7-30 days)
+- `artifacts/cold/` - Archived artifacts (30-90 days)
+
+**Backup frequency:**
+- **Hot tier**: Daily incremental, weekly full
+- **Warm tier**: Weekly incremental, monthly full
+- **Cold tier**: Monthly full
+
+**Backup commands:**
+
+```bash
+# Incremental backup (hot tier only)
+rsync -avz --progress artifacts/hot/ backups/artifacts/hot-$(date +%Y%m%d)/
+
+# Full backup (all tiers)
+tar -czf backups/artifacts-full-$(date +%Y%m%d).tar.gz artifacts/
+
+# Differential backup (changes since last full)
+tar -czf backups/artifacts-diff-$(date +%Y%m%d).tar.gz \
+  $(find artifacts/ -mtime -7 -type f)
+```
+
+**Cloud storage sync:**
+
+```bash
+# AWS S3
+aws s3 sync artifacts/ s3://djp-workflow-artifacts/$(date +%Y/%m/%d)/ \
+  --storage-class STANDARD_IA
+
+# Google Cloud Storage
+gsutil -m rsync -r artifacts/ gs://djp-workflow-artifacts/$(date +%Y/%m/%d)/
+
+# Azure Blob Storage
+az storage blob upload-batch \
+  --destination djp-workflow-artifacts \
+  --source artifacts/ \
+  --pattern "*"
+```
+
+#### 3. Audit Logs
+
+**What to back up:**
+- `audit/audit-*.jsonl` - Daily audit logs
+- Retention: 90 days minimum (compliance requirement)
+
+**Backup frequency:**
+- **Daily**: Current day's audit log
+- **Monthly**: Archive all audit logs older than 30 days
+
+**Backup commands:**
+
+```bash
+# Backup current audit log
+DATE=$(date +%Y-%m-%d)
+cp audit/audit-$DATE.jsonl backups/audit/audit-$DATE.jsonl
+
+# Archive old audit logs
+find audit/ -name "audit-*.jsonl" -mtime +30 -print0 | \
+  xargs -0 tar -czf backups/audit-archive-$(date +%Y%m).tar.gz
+
+# Upload to immutable storage (S3 Glacier, etc.)
+aws s3 cp backups/audit-archive-$(date +%Y%m).tar.gz \
+  s3://djp-audit-archives/ \
+  --storage-class GLACIER
+```
+
+#### 4. Configuration
+
+**What to back up:**
+- `.env.local` - Environment configuration
+- `config/` - Configuration files
+- `policies/` - Policy definitions
+- `schemas/` - JSON schemas
+
+**Backup frequency:**
+- **On change**: Immediate backup after modification
+- **Daily**: Full configuration snapshot
+
+**Backup commands:**
+
+```bash
+# Backup configuration
+tar -czf backups/config-$(date +%Y%m%d).tar.gz \
+  .env.local \
+  config/ \
+  policies/ \
+  schemas/
+
+# Version control (recommended)
+git add config/ policies/ schemas/
+git commit -m "Config snapshot $(date +%Y-%m-%d)"
+git push origin main
+```
+
+### Restore Procedures
+
+#### Restore from Backup
+
+**1. Stop services:**
+```bash
+pkill -f "streamlit|health_server|worker"
+```
+
+**2. Restore JSONL logs:**
+```bash
+# Extract backup
+tar -xzf backups/daily/20251004/logs-20251004.tar.gz
+
+# Restore to logs directory
+rm -rf logs/
+cp -r logs/ /path/to/logs/
+
+# Restore encryption keyring (CRITICAL)
+cp backups/daily/20251004/keyring-20251004.jsonl logs/keyring.jsonl
+```
+
+**3. Restore artifacts:**
+```bash
+# Full restore
+tar -xzf backups/artifacts-full-20251004.tar.gz
+
+# Or incremental restore (rsync)
+rsync -avz backups/artifacts/hot-20251004/ artifacts/hot/
+```
+
+**4. Restore audit logs:**
+```bash
+# Restore specific date
+cp backups/audit/audit-2025-10-04.jsonl audit/
+
+# Restore from archive
+tar -xzf backups/audit-archive-202510.tar.gz -C audit/
+```
+
+**5. Restore configuration:**
+```bash
+tar -xzf backups/config-20251004.tar.gz
+
+# Verify .env.local restored
+ls -la .env.local
+```
+
+**6. Verify restore:**
+```bash
+# Check file counts
+ls -la logs/*.jsonl | wc -l
+ls -la artifacts/hot/ | wc -l
+ls -la audit/ | wc -l
+
+# Validate JSONL integrity
+python -c "
+import json
+with open('logs/orchestrator_events.jsonl') as f:
+    for i, line in enumerate(f):
+        try:
+            json.loads(line)
+        except json.JSONDecodeError:
+            print(f'Invalid JSON on line {i+1}')
+"
+```
+
+**7. Restart services:**
+```bash
+redis-server &
+python src/health_server.py &
+streamlit run dashboards/app.py &
+```
+
+#### Point-in-Time Recovery
+
+**Scenario:** Recover to a specific timestamp (e.g., before data corruption)
+
+```bash
+# Find backup closest to target time
+TARGET_TIME="2025-10-04 14:30:00"
+BACKUP_FILE=$(ls -1t backups/hourly/ | grep -E "$(date -d "$TARGET_TIME" +%Y%m%d-%H)" | head -1)
+
+# Restore from that backup
+tar -xzf backups/hourly/$BACKUP_FILE -C /tmp/restore/
+
+# Copy only files older than target time
+find /tmp/restore/logs/ -type f -newermt "$TARGET_TIME" -delete
+rsync -avz /tmp/restore/logs/ logs/
+```
+
+### Retention Policies
+
+**JSONL Logs:**
+- Hot backups: 30 days
+- Cold backups: 90 days minimum (compliance)
+- Archive: 2 years (governance events)
+
+**Artifacts:**
+- Hot tier backups: 7 days
+- Warm tier backups: 30 days
+- Cold tier backups: 90 days
+
+**Audit Logs:**
+- Hot backups: 90 days
+- Archive: 7 years (compliance requirement)
+
+**Cleanup script:**
+```bash
+#!/bin/bash
+# Remove backups older than retention period
+
+# Remove hot backups >30 days
+find backups/daily/ -type f -mtime +30 -delete
+
+# Remove artifact backups >90 days
+find backups/artifacts/ -type f -mtime +90 -delete
+
+# Archive audit logs >90 days (do not delete)
+find backups/audit/ -type f -mtime +90 -exec tar -czf backups/audit-archive-{}.tar.gz {} \;
+
+echo "Cleanup completed"
+```
+
+### Backup Verification
+
+**Monthly verification:**
+```bash
+# Test restore in isolated environment
+mkdir /tmp/restore-test
+tar -xzf backups/daily/latest.tar.gz -C /tmp/restore-test
+
+# Verify file integrity
+cd /tmp/restore-test
+python -m src.config.validate
+
+# Verify JSONL format
+for file in logs/*.jsonl; do
+  jq -e . "$file" > /dev/null && echo "✓ $file" || echo "✗ $file"
+done
+
+# Cleanup
+rm -rf /tmp/restore-test
+```
+
+### Backup Monitoring
+
+**Monitor backup health:**
+```bash
+# Check backup age
+LAST_BACKUP=$(ls -1t backups/daily/ | head -1)
+BACKUP_AGE=$(( ($(date +%s) - $(date -r backups/daily/$LAST_BACKUP +%s)) / 3600 ))
+
+if [ $BACKUP_AGE -gt 24 ]; then
+  echo "ALERT: Last backup is $BACKUP_AGE hours old"
+fi
+
+# Check backup size
+BACKUP_SIZE=$(du -sh backups/daily/ | cut -f1)
+echo "Backup size: $BACKUP_SIZE"
+
+# Verify backup integrity
+tar -tzf backups/daily/$LAST_BACKUP > /dev/null && echo "✓ Backup intact" || echo "✗ Backup corrupted"
+```
+
+## Rotate Keys
+
+### Encryption Key Rotation
+
+Rotate encryption keys regularly to maintain security:
+
+**Rotation frequency:**
+- Production: Every 90 days
+- Staging: Every 180 days
+- Development: No strict requirement
+
+**Rotation procedure:**
+
+```bash
+# 1. Backup current keyring (CRITICAL)
+cp logs/keyring.jsonl backups/keyring-pre-rotation-$(date +%Y%m%d).jsonl
+
+# 2. Rotate encryption key
+python scripts/keyring.py rotate
+
+# 3. Verify new key active
+python scripts/keyring.py active
+# Expected: New key with recent created_at timestamp
+
+# 4. Test encryption with new key
+python -c "
+from src.storage.secure_io import write_encrypted, read_encrypted
+from pathlib import Path
+
+# Write test artifact
+write_encrypted(Path('/tmp/test.enc'), b'Test data', label='Internal', tenant='test')
+
+# Read back
+data = read_encrypted(Path('/tmp/test.enc'), user_clearance='Internal')
+assert data == b'Test data'
+print('✓ Encryption test passed')
+"
+
+# 5. Verify old artifacts still readable
+python scripts/compliance.py export --tenant test-tenant --out /tmp/export-test
+# Should succeed without errors
+
+# 6. Document rotation in audit log
+echo "{\"timestamp\": \"$(date -Iseconds)\", \"event\": \"key_rotation\", \"reason\": \"Scheduled 90-day rotation\"}" >> logs/governance_events.jsonl
+```
+
+**Automated rotation:**
+```bash
+# Add to crontab (run every 90 days)
+0 2 1 */3 * /path/to/rotate_keys.sh && /path/to/verify_rotation.sh
+```
+
+**Emergency rotation (key compromise):**
+```bash
+# 1. Immediately rotate key
+python scripts/keyring.py rotate --reason "Key compromise detected"
+
+# 2. Audit all recent access
+grep "artifact_accessed" logs/lifecycle_events.jsonl | tail -100
+
+# 3. Identify compromised artifacts
+# (Manual review based on access patterns)
+
+# 4. Re-encrypt critical artifacts (if needed)
+python scripts/reencrypt_artifacts.py --tenant affected-tenant --key-id old-key-id
+
+# 5. Notify security team
+echo "ALERT: Encryption key rotated due to compromise" | mail -s "Security Alert" security@company.com
+```
+
+### API Key Rotation
+
+Rotate external service API keys:
+
+**OpenAI API Key:**
+```bash
+# 1. Generate new key at https://platform.openai.com/api-keys
+
+# 2. Update .env.local
+OLD_KEY=$(grep OPENAI_API_KEY .env.local | cut -d= -f2)
+NEW_KEY="sk-proj-NEW-KEY-HERE"
+
+# Backup old config
+cp .env.local .env.local.backup-$(date +%Y%m%d)
+
+# Update key
+sed -i "s/$OLD_KEY/$NEW_KEY/" .env.local
+
+# 3. Test new key
+python -c "
+import os
+from dotenv import load_dotenv
+load_dotenv('.env.local')
+print('API key updated:', os.getenv('OPENAI_API_KEY')[:10])
+"
+
+# 4. Restart services
+pkill -f streamlit && streamlit run dashboards/app.py &
+
+# 5. Test workflow with new key
+python -m src.run_workflow --task "Test API key rotation" --dry-run
+
+# 6. Revoke old key at https://platform.openai.com/api-keys
+```
+
+**Connector OAuth Tokens:**
+```bash
+# Slack token rotation
+python scripts/connectors_auth.py revoke --connector slack --tenant default
+python scripts/connectors_auth.py authorize --connector slack --tenant default
+
+# Gmail token rotation
+python scripts/connectors_auth.py revoke --connector gmail --tenant default
+python scripts/connectors_auth.py authorize --connector gmail --tenant default
+
+# Microsoft tokens (Teams, Outlook)
+python scripts/connectors_auth.py revoke --connector teams --tenant default
+python scripts/connectors_auth.py authorize --connector teams --tenant default
+```
+
+### Database Credentials Rotation
+
+For future database integrations:
+
+```bash
+# 1. Create new database user
+psql -U postgres -c "CREATE USER djp_workflow_new WITH PASSWORD 'NEW_PASSWORD';"
+psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE djp_db TO djp_workflow_new;"
+
+# 2. Update .env.local
+OLD_URL=$(grep DATABASE_URL .env.local | cut -d= -f2)
+NEW_URL="postgresql://djp_workflow_new:NEW_PASSWORD@localhost:5432/djp_db"
+sed -i "s|$OLD_URL|$NEW_URL|" .env.local
+
+# 3. Test connection
+python -c "
+import psycopg2
+conn = psycopg2.connect(os.getenv('DATABASE_URL'))
+print('✓ Database connection successful')
+conn.close()
+"
+
+# 4. Revoke old user
+psql -U postgres -c "DROP USER djp_workflow_old;"
+```
+
+### Key Rotation Monitoring
+
+**Track rotation schedule:**
+```bash
+# Check key age
+python scripts/keyring.py active | jq -r '.created_at'
+
+# Calculate days since last rotation
+LAST_ROTATION=$(python scripts/keyring.py active | jq -r '.created_at')
+DAYS_OLD=$(( ($(date +%s) - $(date -d "$LAST_ROTATION" +%s)) / 86400 ))
+echo "Encryption key age: $DAYS_OLD days"
+
+# Alert if >80 days
+if [ $DAYS_OLD -gt 80 ]; then
+  echo "ALERT: Encryption key rotation due soon ($DAYS_OLD days old)"
+fi
+```
+
+**Audit key rotation history:**
+```bash
+# View all rotations
+grep "key_rotation\|status.*retired" logs/keyring.jsonl
+
+# Count rotations per year
+grep "key_rotation" logs/keyring.jsonl | grep $(date +%Y) | wc -l
+```
+
+## Disaster Drill Checklist
+
+### Purpose
+
+Disaster drills validate recovery procedures and ensure operational readiness during outages, data loss, or system failures.
+
+**Frequency:** Quarterly (every 3 months)
+
+### Pre-Drill Preparation
+
+**1. Schedule drill:**
+- Notify team 1 week in advance
+- Block 2-hour time window
+- Prepare isolated test environment
+
+**2. Review documentation:**
+- Backup procedures
+- Restore procedures
+- Incident response plan
+
+**3. Verify backups exist:**
+```bash
+# Check latest backups
+ls -lh backups/daily/
+ls -lh backups/artifacts/
+ls -lh backups/audit/
+
+# Verify backup integrity
+tar -tzf backups/daily/$(ls -1t backups/daily/ | head -1) | wc -l
+```
+
+### Disaster Scenarios
+
+#### Scenario 1: Complete Data Loss
+
+**Simulate:** All local data destroyed
+
+**Objective:** Restore from backups to operational state in <2 hours
+
+**Drill steps:**
+```bash
+# 1. Simulate data loss (in test environment)
+mv logs/ logs.backup
+mv artifacts/ artifacts.backup
+mv audit/ audit.backup
+
+# 2. Start timer
+START_TIME=$(date +%s)
+
+# 3. Restore from latest backup
+tar -xzf backups/daily/latest.tar.gz
+tar -xzf backups/artifacts/latest.tar.gz
+cp backups/audit/latest/*.jsonl audit/
+
+# 4. Validate restore
+python -m src.config.validate
+pytest -m e2e
+
+# 5. Restart services
+redis-server &
+python src/health_server.py &
+streamlit run dashboards/app.py &
+
+# 6. Test workflow execution
+python -m src.run_workflow --task "Disaster recovery test"
+
+# 7. Calculate recovery time
+END_TIME=$(date +%s)
+RECOVERY_TIME=$(( ($END_TIME - $START_TIME) / 60 ))
+echo "Recovery completed in $RECOVERY_TIME minutes"
+
+# 8. Restore original data
+rm -rf logs artifacts audit
+mv logs.backup logs
+mv artifacts.backup artifacts
+mv audit.backup audit
+```
+
+**Success criteria:**
+- ✓ All data restored
+- ✓ Services operational
+- ✓ Workflow executes successfully
+- ✓ Recovery time <120 minutes
+
+#### Scenario 2: Encryption Key Loss
+
+**Simulate:** Keyring file corrupted or deleted
+
+**Objective:** Restore encryption key from backup, verify artifact access
+
+**Drill steps:**
+```bash
+# 1. Backup current keyring
+cp logs/keyring.jsonl logs/keyring.jsonl.drill-backup
+
+# 2. Simulate key loss
+rm logs/keyring.jsonl
+
+# 3. Attempt to read encrypted artifact (should fail)
+python -c "
+from src.storage.secure_io import read_encrypted
+from pathlib import Path
+try:
+    data = read_encrypted(Path('artifacts/hot/test/artifact.md.enc'), user_clearance='Internal')
+    print('✗ Unexpected success - key should be missing')
+except Exception as e:
+    print(f'✓ Expected error: {type(e).__name__}')
+"
+
+# 4. Restore keyring from backup
+cp backups/keyring-latest.jsonl logs/keyring.jsonl
+
+# 5. Verify artifact access restored
+python -c "
+from src.storage.secure_io import read_encrypted
+from pathlib import Path
+data = read_encrypted(Path('artifacts/hot/test/artifact.md.enc'), user_clearance='Internal')
+print('✓ Artifact access restored')
+"
+
+# 6. Restore original keyring
+cp logs/keyring.jsonl.drill-backup logs/keyring.jsonl
+```
+
+**Success criteria:**
+- ✓ Key loss detected
+- ✓ Key restored from backup
+- ✓ Encrypted artifacts accessible
+- ✓ No data loss
+
+#### Scenario 3: Redis Outage
+
+**Simulate:** Queue backend unavailable
+
+**Objective:** Handle graceful degradation, restore queue service
+
+**Drill steps:**
+```bash
+# 1. Stop Redis
+redis-cli shutdown
+
+# 2. Attempt workflow execution (should handle gracefully)
+python -m src.run_workflow --task "Test during Redis outage" --dry-run
+# Expected: Warning about queue unavailable, but dry-run succeeds
+
+# 3. Check health endpoint
+curl http://localhost:8080/ready
+# Expected: {"status": "not_ready", "redis": "disconnected"}
+
+# 4. Restart Redis
+redis-server &
+
+# 5. Verify reconnection
+sleep 5
+curl http://localhost:8080/ready
+# Expected: {"status": "ready", "redis": "connected"}
+
+# 6. Test workflow execution
+python -m src.run_workflow --task "Test after Redis recovery"
+```
+
+**Success criteria:**
+- ✓ Graceful degradation during outage
+- ✓ Health checks accurate
+- ✓ Automatic reconnection
+- ✓ No data loss
+
+#### Scenario 4: Configuration Corruption
+
+**Simulate:** .env.local file corrupted or deleted
+
+**Objective:** Restore configuration, restart services
+
+**Drill steps:**
+```bash
+# 1. Backup current config
+cp .env.local .env.local.drill-backup
+
+# 2. Corrupt config
+echo "INVALID CONFIG" > .env.local
+
+# 3. Attempt service start (should fail)
+python -m src.config.validate
+# Expected: Validation errors
+
+# 4. Restore from backup
+cp backups/config-latest/.env.local .env.local
+
+# 5. Validate config
+python -m src.config.validate
+# Expected: All checks pass
+
+# 6. Restart services
+pkill -f streamlit
+streamlit run dashboards/app.py &
+
+# 7. Restore original config
+cp .env.local.drill-backup .env.local
+```
+
+**Success criteria:**
+- ✓ Configuration validation detects corruption
+- ✓ Configuration restored from backup
+- ✓ Services restart successfully
+- ✓ No downtime >5 minutes
+
+### Post-Drill Review
+
+**1. Document results:**
+```markdown
+## Disaster Drill Report - 2025-10-04
+
+**Scenarios Tested:**
+- [x] Complete data loss
+- [x] Encryption key loss
+- [x] Redis outage
+- [x] Configuration corruption
+
+**Results:**
+- Scenario 1: PASS (95 minutes recovery)
+- Scenario 2: PASS (key restored successfully)
+- Scenario 3: PASS (graceful degradation)
+- Scenario 4: PASS (config restored in 3 minutes)
+
+**Issues Identified:**
+- Backup verification script failed on Windows paths
+- Documentation outdated for keyring restore
+- Redis reconnection took longer than expected (5 sec timeout too short)
+
+**Action Items:**
+- [ ] Update backup script for cross-platform compatibility
+- [ ] Update keyring restore documentation
+- [ ] Increase Redis reconnection timeout to 10 seconds
+- [ ] Schedule next drill for 2025-01-04
+```
+
+**2. Update procedures:**
+- Fix issues identified during drill
+- Update documentation with lessons learned
+- Improve automation where manual steps failed
+
+**3. Share results:**
+- Brief team on drill outcomes
+- Document action items in issue tracker
+- Schedule next drill
+
+### Drill Checklist Template
+
+```markdown
+## Disaster Drill Checklist
+
+**Date:** ___________
+**Participants:** ___________
+**Environment:** [Production/Staging/Test]
+
+### Pre-Drill
+- [ ] Backups verified
+- [ ] Test environment prepared
+- [ ] Team notified
+- [ ] Documentation reviewed
+- [ ] Timer ready
+
+### Scenario 1: Data Loss
+- [ ] Data simulated as lost
+- [ ] Restore initiated
+- [ ] Services restarted
+- [ ] Validation completed
+- [ ] Recovery time: _____ minutes
+
+### Scenario 2: Key Loss
+- [ ] Keyring deleted
+- [ ] Access failure confirmed
+- [ ] Key restored
+- [ ] Access verified
+- [ ] Recovery time: _____ minutes
+
+### Scenario 3: Redis Outage
+- [ ] Redis stopped
+- [ ] Graceful degradation verified
+- [ ] Health checks validated
+- [ ] Redis restarted
+- [ ] Reconnection confirmed
+- [ ] Recovery time: _____ minutes
+
+### Scenario 4: Config Corruption
+- [ ] Config corrupted
+- [ ] Validation detected issue
+- [ ] Config restored
+- [ ] Services restarted
+- [ ] Recovery time: _____ minutes
+
+### Post-Drill
+- [ ] Results documented
+- [ ] Issues logged
+- [ ] Action items created
+- [ ] Team briefed
+- [ ] Next drill scheduled
+
+### Overall Assessment
+- [ ] All scenarios passed
+- [ ] RTO met (<2 hours)
+- [ ] No data loss
+- [ ] Team prepared for real incident
+
+**Notes:** ___________
+```
+
 ### See Also
 
 - [CONNECTOR_OBSERVABILITY.md](./CONNECTOR_OBSERVABILITY.md) - Metrics, health, circuit breaker

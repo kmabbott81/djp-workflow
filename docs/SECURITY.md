@@ -330,6 +330,606 @@ cat audit/audit-*.jsonl | jq -r .tenant_id | sort | uniq -c
 - Use secrets manager (AWS Secrets Manager, GCP Secret Manager)
 - Never commit credentials to git
 
+## Provisioning & Least Privilege
+
+Production-ready provisioning workflows following security best practices.
+
+### Bootstrap Process Overview
+
+The bootstrap process establishes the initial administrative user and tenant:
+
+```
+Initial State → Bootstrap Admin → Create Tenants → Provision Teams → Assign Roles
+```
+
+**Security principles:**
+1. **Single Admin Bootstrap**: Only one admin created during initial setup
+2. **Explicit Tenant Assignment**: Every user belongs to a specific tenant
+3. **Least Privilege by Default**: Start with minimal permissions, escalate only when needed
+4. **Audit from Day One**: All bootstrap actions logged
+
+### Admin Role Provisioning
+
+#### Bootstrap First Admin
+
+**One-time setup:**
+
+```bash
+# Run bootstrap script
+python scripts/bootstrap.py \
+  --admin-email admin@example.com \
+  --tenant-id default \
+  --admin-name "System Administrator"
+
+# Expected output:
+# ✓ Created tenant: default
+# ✓ Created admin user: admin@example.com
+# ✓ Granted Admin role
+# ✓ Bootstrap complete
+```
+
+**What bootstrap creates:**
+- Default tenant (`default` or custom ID)
+- Admin user with full permissions
+- Initial audit log entry
+- Configuration validation
+
+**Bootstrap script security:**
+- Runs only once (idempotent checks)
+- Requires confirmation for production environments
+- Logs all actions to `audit/bootstrap.jsonl`
+- Validates email format and tenant ID
+
+#### Verify Admin Provisioning
+
+```bash
+# Check admin user exists
+python -c "
+from src.security.authz import Principal, Role
+principal = Principal(
+    user_id='admin@example.com',
+    tenant_id='default',
+    role=Role.ADMIN,
+    email='admin@example.com'
+)
+print(f'Admin: {principal.user_id}, Role: {principal.role.name}')
+"
+
+# Verify admin permissions
+python scripts/rbac_check.py \
+  --user admin@example.com \
+  --tenant default \
+  --action execute \
+  --resource workflow
+
+# Expected: ✓ Permission granted
+```
+
+#### Emergency Admin Access
+
+For disaster recovery or admin lockout:
+
+```bash
+# Create emergency admin (requires server access)
+python scripts/emergency_admin.py \
+  --email emergency@example.com \
+  --tenant default \
+  --reason "Admin account locked, ticket #12345"
+
+# This logs to audit/emergency_access.jsonl
+# Review logs monthly for unauthorized usage
+```
+
+### Least Privilege Principles
+
+**Core principle:** Grant minimum necessary permissions for users to perform their job functions.
+
+#### Role Hierarchy
+
+```
+Viewer (0) - Read-only access
+    ↓
+Author (1) - Create templates
+    ↓
+Operator (2) - Execute workflows, approve checkpoints
+    ↓
+Auditor (3) - Export data, read-only compliance
+    ↓
+Compliance (4) - Data lifecycle, deletions, holds
+    ↓
+Admin (5) - Full system access
+```
+
+**Grant roles from lowest to highest as needed:**
+
+```bash
+# Start with Viewer (default)
+USER_ROLE=Viewer
+
+# Escalate to Operator only when needed
+USER_ROLE=Operator
+
+# Grant Admin only to ops team
+USER_ROLE=Admin
+```
+
+#### Permission Matrix
+
+| Operation | Viewer | Author | Operator | Auditor | Compliance | Admin |
+|-----------|--------|--------|----------|---------|------------|-------|
+| Read templates | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Create templates | ❌ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Execute workflows | ❌ | ❌ | ✓ | ❌ | ✓ | ✓ |
+| Approve checkpoints | ❌ | ❌ | ✓ | ❌ | ✓ | ✓ |
+| Export data | ❌ | ❌ | ❌ | ✓ | ✓ | ✓ |
+| Delete data | ❌ | ❌ | ❌ | ❌ | ✓ | ✓ |
+| Modify RBAC | ❌ | ❌ | ❌ | ❌ | ❌ | ✓ |
+
+### Team and Workspace Setup
+
+#### Create Teams
+
+**Engineering Team:**
+
+```bash
+# Create team
+python scripts/teams.py create \
+  --team-id eng-team \
+  --name "Engineering Team" \
+  --description "Software engineers and developers"
+
+# Add members with appropriate roles
+python scripts/teams.py add-member \
+  --team-id eng-team \
+  --user-id developer1@example.com \
+  --role Operator
+
+python scripts/teams.py add-member \
+  --team-id eng-team \
+  --user-id developer2@example.com \
+  --role Author
+
+# Set team budget
+python scripts/teams.py set-budget \
+  --team-id eng-team \
+  --daily 10.0 \
+  --monthly 200.0
+```
+
+**Operations Team:**
+
+```bash
+# Create ops team
+python scripts/teams.py create \
+  --team-id ops-team \
+  --name "Operations Team"
+
+# Add ops members (higher privileges)
+python scripts/teams.py add-member \
+  --team-id ops-team \
+  --user-id ops1@example.com \
+  --role Admin
+
+python scripts/teams.py add-member \
+  --team-id ops-team \
+  --user-id ops2@example.com \
+  --role Deployer
+```
+
+**Compliance Team:**
+
+```bash
+# Create compliance team
+python scripts/teams.py create \
+  --team-id compliance-team \
+  --name "Compliance Team"
+
+# Add compliance members
+python scripts/teams.py add-member \
+  --team-id compliance-team \
+  --user-id auditor@example.com \
+  --role Auditor
+
+python scripts/teams.py add-member \
+  --team-id compliance-team \
+  --user-id compliance@example.com \
+  --role Compliance
+```
+
+#### Create Workspaces
+
+**Production Workspace (restricted access):**
+
+```bash
+# Create production workspace
+python scripts/workspaces.py create \
+  --workspace-id prod \
+  --name "Production Environment" \
+  --description "Production workflows and artifacts"
+
+# Add only trusted members
+python scripts/workspaces.py add-member \
+  --workspace-id prod \
+  --user-id ops1@example.com \
+  --role Admin
+
+python scripts/workspaces.py add-member \
+  --workspace-id prod \
+  --user-id senior-dev@example.com \
+  --role Operator
+```
+
+**Staging Workspace (broader access):**
+
+```bash
+# Create staging workspace
+python scripts/workspaces.py create \
+  --workspace-id staging \
+  --name "Staging Environment"
+
+# Add all engineers
+python scripts/workspaces.py add-member \
+  --workspace-id staging \
+  --user-id developer1@example.com \
+  --role Operator
+```
+
+**Development Workspace (open access):**
+
+```bash
+# Create dev workspace
+python scripts/workspaces.py create \
+  --workspace-id dev \
+  --name "Development Environment"
+
+# Add all team members (relaxed permissions)
+python scripts/workspaces.py add-member \
+  --workspace-id dev \
+  --user-id developer1@example.com \
+  --role Admin  # Developers can be admins in dev
+
+python scripts/workspaces.py add-member \
+  --workspace-id dev \
+  --user-id developer2@example.com \
+  --role Admin
+```
+
+### RBAC Best Practices
+
+#### 1. Start with Minimal Permissions
+
+**New user onboarding:**
+
+```bash
+# Step 1: Create user with Viewer role
+python scripts/users.py create \
+  --email newuser@example.com \
+  --tenant default \
+  --role Viewer
+
+# Step 2: Assign to team (inherits team permissions)
+python scripts/teams.py add-member \
+  --team-id eng-team \
+  --user-id newuser@example.com \
+  --role Viewer
+
+# Step 3: Monitor activity for 1 week
+python scripts/audit.py query \
+  --user newuser@example.com \
+  --since 7d
+
+# Step 4: Escalate role if needed
+python scripts/teams.py update-member \
+  --team-id eng-team \
+  --user-id newuser@example.com \
+  --role Author
+```
+
+#### 2. Use Time-Bounded Delegations
+
+**Temporary elevated access:**
+
+```bash
+# Grant Admin role for on-call shift (8 hours)
+python scripts/delegation.py grant \
+  --granter admin@example.com \
+  --grantee oncall@example.com \
+  --scope team \
+  --scope-id eng-team \
+  --role Admin \
+  --duration 8h \
+  --reason "On-call shift 2025-10-04 22:00-06:00"
+
+# Delegation expires automatically
+# No manual revocation needed
+```
+
+**Emergency access (expires faster):**
+
+```bash
+# Grant Compliance role for 1 hour
+python scripts/delegation.py grant \
+  --granter admin@example.com \
+  --grantee support@example.com \
+  --scope workspace \
+  --scope-id prod \
+  --role Compliance \
+  --duration 1h \
+  --reason "Emergency data export for customer #12345"
+```
+
+#### 3. Regular Access Reviews
+
+**Quarterly access review:**
+
+```bash
+# List all team memberships
+python scripts/teams.py list --show-members
+
+# Review delegations
+python scripts/delegation.py list --active
+
+# Identify stale accounts
+python scripts/users.py audit --inactive-days 90
+
+# Revoke unnecessary permissions
+python scripts/teams.py remove-member \
+  --team-id eng-team \
+  --user-id inactive@example.com
+```
+
+**Audit script:**
+
+```bash
+#!/bin/bash
+# Quarterly access review script
+
+echo "=== Access Review $(date +%Y-%m-%d) ==="
+
+# 1. List all admin users
+echo "Admins:"
+python scripts/users.py list --role Admin
+
+# 2. List active delegations
+echo "Active delegations:"
+python scripts/delegation.py list --active
+
+# 3. Find users with no activity in 90 days
+echo "Inactive users:"
+python scripts/users.py audit --inactive-days 90
+
+# 4. Review team memberships
+echo "Team memberships:"
+python scripts/teams.py list --show-members > access-review-$(date +%Y%m%d).txt
+
+echo "Review complete. See access-review-$(date +%Y%m%d).txt"
+```
+
+#### 4. Separate Duties
+
+**Principle:** No single person should control all aspects of a critical process.
+
+**Example: Production deployment**
+
+```bash
+# Developer creates template (Author role)
+python -m src.run_workflow --template deploy_prod --dry-run
+
+# Approver reviews checkpoint (Operator role)
+python scripts/approvals.py approve prod_deploy_checkpoint_123
+
+# Deployer executes (Admin role)
+python scripts/deploy.py execute --workspace prod
+```
+
+**Multi-sign for high-risk operations:**
+
+```bash
+# Require 2 of 3 signatures for production deletion
+python scripts/compliance.py delete \
+  --tenant prod-tenant \
+  --require-signatures "ops1@example.com,ops2@example.com,admin@example.com" \
+  --min-signatures 2
+```
+
+#### 5. Monitor Privilege Escalation
+
+**Alert on unexpected role changes:**
+
+```bash
+# Monitor audit logs for role changes
+grep "role_change\|delegation_grant" logs/audit-*.jsonl | \
+  jq -r 'select(.new_role == "Admin" or .granted_role == "Admin")'
+
+# Alert if Admin role granted outside business hours
+HOUR=$(date +%H)
+if [ $HOUR -lt 8 ] || [ $HOUR -gt 18 ]; then
+  ADMIN_GRANTS=$(grep "role_change.*Admin" logs/audit-$(date +%Y-%m-%d).jsonl | wc -l)
+  if [ $ADMIN_GRANTS -gt 0 ]; then
+    echo "ALERT: Admin role granted outside business hours"
+  fi
+fi
+```
+
+### Provisioning Workflows
+
+#### New Developer Onboarding
+
+```bash
+#!/bin/bash
+# Onboard new developer
+
+USER_EMAIL=$1
+TEAM_ID=${2:-eng-team}
+
+# 1. Create user (Viewer role by default)
+python scripts/users.py create \
+  --email $USER_EMAIL \
+  --tenant default \
+  --role Viewer
+
+# 2. Add to team (Author role for developers)
+python scripts/teams.py add-member \
+  --team-id $TEAM_ID \
+  --user-id $USER_EMAIL \
+  --role Author
+
+# 3. Grant access to dev workspace (Admin in dev)
+python scripts/workspaces.py add-member \
+  --workspace-id dev \
+  --user-id $USER_EMAIL \
+  --role Admin
+
+# 4. Grant access to staging workspace (Operator)
+python scripts/workspaces.py add-member \
+  --workspace-id staging \
+  --user-id $USER_EMAIL \
+  --role Operator
+
+# 5. Log onboarding action
+echo "{\"timestamp\": \"$(date -Iseconds)\", \"event\": \"user_onboarded\", \"user\": \"$USER_EMAIL\", \"team\": \"$TEAM_ID\"}" >> logs/provisioning.jsonl
+
+echo "✓ Onboarded $USER_EMAIL to $TEAM_ID"
+echo "Roles:"
+echo "  - Dev workspace: Admin"
+echo "  - Staging workspace: Operator"
+echo "  - Team: Author"
+```
+
+#### Contractor Offboarding
+
+```bash
+#!/bin/bash
+# Offboard contractor (remove all access)
+
+USER_EMAIL=$1
+
+# 1. List current memberships
+echo "Removing access for $USER_EMAIL:"
+python scripts/teams.py list-user --user-id $USER_EMAIL
+python scripts/workspaces.py list-user --user-id $USER_EMAIL
+
+# 2. Revoke all delegations
+python scripts/delegation.py revoke-all --grantee $USER_EMAIL
+
+# 3. Remove from all teams
+for TEAM in $(python scripts/teams.py list-user --user-id $USER_EMAIL | jq -r '.team_id'); do
+  python scripts/teams.py remove-member --team-id $TEAM --user-id $USER_EMAIL
+done
+
+# 4. Remove from all workspaces
+for WORKSPACE in $(python scripts/workspaces.py list-user --user-id $USER_EMAIL | jq -r '.workspace_id'); do
+  python scripts/workspaces.py remove-member --workspace-id $WORKSPACE --user-id $USER_EMAIL
+done
+
+# 5. Mark user as inactive
+python scripts/users.py deactivate --user-id $USER_EMAIL
+
+# 6. Log offboarding action
+echo "{\"timestamp\": \"$(date -Iseconds)\", \"event\": \"user_offboarded\", \"user\": \"$USER_EMAIL\"}" >> logs/provisioning.jsonl
+
+echo "✓ Offboarded $USER_EMAIL"
+```
+
+#### Role Promotion
+
+```bash
+#!/bin/bash
+# Promote user to higher role
+
+USER_EMAIL=$1
+NEW_ROLE=$2
+REASON=$3
+
+# 1. Verify current role
+CURRENT_ROLE=$(python scripts/users.py show --user-id $USER_EMAIL | jq -r '.role')
+echo "Current role: $CURRENT_ROLE → Promoting to: $NEW_ROLE"
+
+# 2. Update team memberships
+python scripts/teams.py update-member \
+  --team-id eng-team \
+  --user-id $USER_EMAIL \
+  --role $NEW_ROLE
+
+# 3. Grant prod access if Operator or above
+if [ "$NEW_ROLE" = "Operator" ] || [ "$NEW_ROLE" = "Admin" ]; then
+  python scripts/workspaces.py add-member \
+    --workspace-id prod \
+    --user-id $USER_EMAIL \
+    --role Operator
+fi
+
+# 4. Log promotion
+echo "{\"timestamp\": \"$(date -Iseconds)\", \"event\": \"role_promoted\", \"user\": \"$USER_EMAIL\", \"old_role\": \"$CURRENT_ROLE\", \"new_role\": \"$NEW_ROLE\", \"reason\": \"$REASON\"}" >> logs/provisioning.jsonl
+
+echo "✓ Promoted $USER_EMAIL to $NEW_ROLE"
+```
+
+### Provisioning Checklist
+
+#### New User
+- [ ] Create user with Viewer role (least privilege)
+- [ ] Assign to appropriate team(s)
+- [ ] Grant workspace access (dev/staging only initially)
+- [ ] Document provisioning reason in audit log
+- [ ] Schedule 30-day access review
+- [ ] Notify user of access granted
+
+#### Role Change
+- [ ] Verify business justification
+- [ ] Get manager approval
+- [ ] Update team memberships
+- [ ] Update workspace memberships
+- [ ] Log role change with reason
+- [ ] Notify user of new permissions
+- [ ] Update access review schedule
+
+#### User Offboarding
+- [ ] Revoke all delegations
+- [ ] Remove from all teams
+- [ ] Remove from all workspaces
+- [ ] Deactivate user account
+- [ ] Revoke API keys/tokens
+- [ ] Archive user data (if required)
+- [ ] Log offboarding event
+- [ ] Notify manager of completion
+
+### Monitoring Provisioning
+
+**Daily provisioning report:**
+
+```bash
+# Count provisioning events
+echo "Provisioning activity (last 24 hours):"
+echo "Users created: $(grep "user_created" logs/provisioning.jsonl | grep $(date +%Y-%m-%d) | wc -l)"
+echo "Users offboarded: $(grep "user_offboarded" logs/provisioning.jsonl | grep $(date +%Y-%m-%d) | wc -l)"
+echo "Role changes: $(grep "role_promoted" logs/provisioning.jsonl | grep $(date +%Y-%m-%d) | wc -l)"
+echo "Delegations granted: $(grep "delegation_grant" logs/delegations.jsonl | grep $(date +%Y-%m-%d) | wc -l)"
+```
+
+**Alert on suspicious activity:**
+
+```bash
+# Alert if >10 users created in 1 hour
+RECENT_USERS=$(grep "user_created" logs/provisioning.jsonl | grep $(date -d "1 hour ago" +%Y-%m-%d) | wc -l)
+if [ $RECENT_USERS -gt 10 ]; then
+  echo "ALERT: Unusual provisioning activity - $RECENT_USERS users created in 1 hour"
+fi
+
+# Alert if Admin role granted to more than 1 user per day
+ADMIN_GRANTS=$(grep "role_promoted.*Admin" logs/provisioning.jsonl | grep $(date +%Y-%m-%d) | wc -l)
+if [ $ADMIN_GRANTS -gt 1 ]; then
+  echo "ALERT: Multiple Admin promotions today - $ADMIN_GRANTS"
+fi
+```
+
+### Related Documentation
+
+- [AUTH.md](./AUTH.md) - Authentication and authorization
+- [COLLABORATION.md](./COLLABORATION.md) - Teams and workspaces
+- [OPERATIONS.md](./OPERATIONS.md) - Operational procedures
+- [ONBOARDING.md](./ONBOARDING.md) - User onboarding guide
+
 ## Connector Security (Sprint 37+)
 
 ### Gmail Connector Token Handling
