@@ -293,6 +293,53 @@ pre-commit run --all-files
 - No unresolved comments
 - Maintainers will merge approved PRs
 
+## Flaky Tests Policy
+
+### Philosophy
+
+We prioritize **fixing root causes** over masking symptoms. Flaky tests indicate real issues (race conditions, timing assumptions, non-deterministic behavior) that should be addressed.
+
+### Guidelines
+
+1. **Never skip flaky tests** without investigation and documentation
+2. **Investigate first**: Reproduce locally, add debugging, identify root cause
+3. **Fix the test or the code**: Make tests deterministic and robust
+4. **Document**: If skipping temporarily, create an issue and link it in test skip reason
+
+### Nightly Guardrails
+
+- **Nightly workflow** may retry slow tests once (`pytest-rerunfailures` if available)
+- **PR workflow** does NOT retry; all tests must pass first time
+- Retries are for catching transient infrastructure issues (network, CI), not code flakiness
+
+### When Retries Are Acceptable
+
+✅ **Acceptable**:
+- External API rate limits (in live/integration tests marked `@pytest.mark.live`)
+- CI infrastructure hiccups (rare timeout, OOM)
+- Third-party service availability (Slack, GitHub API)
+
+❌ **Not Acceptable**:
+- Race conditions in application code
+- Timing assumptions in unit tests
+- Non-deterministic test data generation
+- State leakage between tests
+
+### Reporting Flaky Tests
+
+If you encounter a flaky test:
+
+1. Create an issue with:
+   - Test name and module
+   - Reproduction steps or CI logs
+   - Frequency (1%, 10%, 50%?)
+   - Environment (local, CI, specific Python version)
+2. Add `@pytest.mark.xfail(strict=False, reason="Flaky: see issue #XXX")`
+3. Link the issue in the marker
+4. Fix within 2 sprints or remove the test
+
+**Note**: As of Sprint 42, `pytest-rerunfailures` is not installed. Nightly tests run without retries.
+
 ## Release Process
 
 Releases are managed by maintainers following semantic versioning (SemVer).
