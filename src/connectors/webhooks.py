@@ -29,6 +29,8 @@ def ingest_event(connector_type: str, payload: dict) -> dict:
         return _normalize_slack_event(payload)
     elif connector_type == "gmail":
         return _normalize_gmail_event(payload)
+    elif connector_type == "notion":
+        return _normalize_notion_event(payload)
     else:
         raise ValueError(f"Unknown connector type: {connector_type}")
 
@@ -219,5 +221,83 @@ def _normalize_gmail_event(payload: dict) -> dict:
             "messageId": message_id,
             "subscription": payload.get("subscription", ""),
         },
+        "raw_payload": payload,
+    }
+
+
+def _normalize_notion_event(payload: dict) -> dict:
+    """Normalize Notion webhook event.
+
+    Args:
+        payload: Notion webhook payload
+
+    Returns:
+        Normalized event
+
+    Note:
+        Notion webhook structure:
+        {
+            "type": "page.updated",
+            "page": {
+                "object": "page",
+                "id": "page-123",
+                "created_time": "...",
+                "last_edited_time": "...",
+                "properties": {...}
+            },
+            "timestamp": "2023-01-02T15:30:00.000Z"
+        }
+
+        Or for database events:
+        {
+            "type": "database.updated",
+            "database": {
+                "object": "database",
+                "id": "database-123",
+                ...
+            },
+            "timestamp": "..."
+        }
+    """
+    # Extract event type
+    event_type = payload.get("type", "unknown")
+
+    # Determine resource type and extract resource data
+    resource_type = "unknown"
+    resource_id = ""
+    resource_data = {}
+
+    if "page" in payload:
+        resource_type = "page"
+        resource_data = payload.get("page", {})
+        resource_id = resource_data.get("id", "")
+    elif "database" in payload:
+        resource_type = "database"
+        resource_data = payload.get("database", {})
+        resource_id = resource_data.get("id", "")
+    elif "block" in payload:
+        resource_type = "block"
+        resource_data = payload.get("block", {})
+        resource_id = resource_data.get("id", "")
+    else:
+        # Try to extract from event_type (e.g., "page.updated" -> "page")
+        if "." in event_type:
+            resource_type = event_type.split(".")[0]
+
+        # Try to find resource_id in payload data
+        if "data" in payload:
+            resource_data = payload.get("data", {})
+            resource_id = resource_data.get("id", "")
+
+    # Get timestamp
+    timestamp = payload.get("timestamp", datetime.now().isoformat())
+
+    return {
+        "connector_type": "notion",
+        "event_type": event_type,
+        "resource_type": resource_type,
+        "resource_id": resource_id,
+        "timestamp": timestamp,
+        "data": resource_data,
         "raw_payload": payload,
     }

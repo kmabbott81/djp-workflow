@@ -113,6 +113,42 @@ class SchemaAdapter:
                 },
             }
 
+        elif service == "notion":
+            # Notion pages/documents - extract title from properties
+            properties = message.get("properties", {})
+            title = ""
+
+            # Try to get title from title property
+            for prop_data in properties.values():
+                if prop_data.get("type") == "title":
+                    title_array = prop_data.get("title", [])
+                    if title_array:
+                        title = title_array[0].get("plain_text", "")
+                    break
+
+            # If still no title, try Name property
+            if not title and "Name" in properties:
+                name_data = properties["Name"]
+                if "title" in name_data:
+                    title_array = name_data.get("title", [])
+                    if title_array:
+                        title = title_array[0].get("plain_text", "")
+
+            return {
+                "id": message.get("id", ""),
+                "subject": title,
+                "body": "",  # Notion pages don't have a body in list view
+                "from": message.get("created_by", {}).get("id", ""),
+                "timestamp": message.get("last_edited_time", ""),
+                "metadata": {
+                    "object": message.get("object", ""),
+                    "created_time": message.get("created_time", ""),
+                    "last_edited_time": message.get("last_edited_time", ""),
+                    "archived": message.get("archived", False),
+                    "parent": message.get("parent", {}),
+                },
+            }
+
         else:
             raise ValueError(f"Unsupported service: {service}")
 
@@ -341,6 +377,28 @@ ENDPOINT_REGISTRY: dict[tuple[str, str], EndpointMap] = {
         create_url="users/me/labels",
         update_url="users/me/labels/{resource_id}",
         delete_url="users/me/labels/{resource_id}",
+    ),
+    # Notion
+    ("notion", "pages"): EndpointMap(
+        list_url="search",  # POST with filter for pages
+        get_url="pages/{resource_id}",
+        create_url="pages",
+        update_url="pages/{resource_id}",
+        delete_url="pages/{resource_id}",  # PATCH with archived: true
+    ),
+    ("notion", "databases"): EndpointMap(
+        list_url="search",  # POST with filter for databases
+        get_url="databases/{resource_id}",
+        create_url="databases",
+        update_url="databases/{resource_id}",
+        delete_url="databases/{resource_id}",  # PATCH with archived: true
+    ),
+    ("notion", "blocks"): EndpointMap(
+        list_url="blocks/{parent_id}/children",
+        get_url="blocks/{resource_id}",
+        create_url="blocks/{parent_id}/children",  # PATCH to append
+        update_url="blocks/{resource_id}",
+        delete_url="blocks/{resource_id}",
     ),
 }
 

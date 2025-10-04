@@ -7,6 +7,7 @@ Fetches resources from connectors, normalizes via CP-CAL, and indexes in URG.
 from ..graph.index import get_index
 from .cp_cal import SchemaAdapter
 from .gmail import GmailConnector
+from .notion import NotionConnector
 from .outlook_api import OutlookConnector
 from .slack import SlackConnector
 from .teams import TeamsConnector
@@ -48,6 +49,7 @@ def ingest_connector_snapshot(
         "outlook": "outlook",
         "slack": "slack",
         "gmail": "gmail",
+        "notion": "notion",
         "microsoftteams": "teams",
         "microsoftoutlook": "outlook",
     }
@@ -127,6 +129,8 @@ def _get_connector(source: str, tenant: str, user_id: str):
         return SlackConnector(connector_id, tenant, user_id)
     elif source == "gmail":
         return GmailConnector(connector_id, tenant, user_id)
+    elif source == "notion":
+        return NotionConnector(connector_id, tenant, user_id)
     else:
         return None
 
@@ -162,6 +166,60 @@ def _normalize_resource(source: str, resource_type: str, resource: dict) -> dict
             "channel_id": normalized.get("metadata", {}).get("channel") or "",
             "labels": [],
             "metadata": normalized.get("metadata", {}),
+        }
+
+    elif resource_type == "pages":
+        # Notion pages - normalize as documents
+        normalized = adapter.normalize_message(source, resource)
+
+        # Map to URG schema (pages → documents)
+        return {
+            "id": normalized["id"],
+            "type": "document",
+            "title": normalized.get("subject", ""),
+            "snippet": _truncate(normalized.get("body", ""), 200),
+            "timestamp": normalized.get("timestamp", ""),
+            "participants": [normalized.get("from", "")],
+            "thread_id": "",
+            "channel_id": "",
+            "labels": ["notion", "page"],
+            "metadata": normalized.get("metadata", {}),
+        }
+
+    elif resource_type == "databases":
+        # Notion databases - normalize as collections
+        return {
+            "id": resource.get("id", ""),
+            "type": "collection",
+            "title": resource.get("title", [{}])[0].get("plain_text", "") if resource.get("title") else "",
+            "snippet": "Notion database",
+            "timestamp": resource.get("last_edited_time", ""),
+            "participants": [],
+            "thread_id": "",
+            "channel_id": "",
+            "labels": ["notion", "database"],
+            "metadata": {
+                "created_time": resource.get("created_time", ""),
+                "archived": resource.get("archived", False),
+            },
+        }
+
+    elif resource_type == "blocks":
+        # Notion blocks - normalize as content fragments
+        return {
+            "id": resource.get("id", ""),
+            "type": "content",
+            "title": f"Block: {resource.get('type', 'unknown')}",
+            "snippet": "",
+            "timestamp": resource.get("last_edited_time", ""),
+            "participants": [],
+            "thread_id": "",
+            "channel_id": "",
+            "labels": ["notion", "block"],
+            "metadata": {
+                "block_type": resource.get("type", ""),
+                "has_children": resource.get("has_children", False),
+            },
         }
 
     elif resource_type == "contacts":
@@ -348,5 +406,23 @@ def ingest_all_connectors(
         results["gmail-messages"] = result
     except Exception as e:
         results["gmail-messages"] = {"count": 0, "errors": 1, "error": str(e)}
+
+    # Notion: pages and databases
+    for resource_type in ["pages", "databases"]:
+        try:
+            result = ingest_connector_snapshot(
+                "notion",
+                resource_type,
+                tenant=tenant,
+                user_id=user_id,
+                limit=limit,
+            )
+            results[f"notion-{resource_type}"] = result
+        except Exception as e:
+            results[f"notion-{resource_type}"] = {
+                "count": 0,
+                "errors": 1,
+                "error": str(e),
+            }
 
     return results
