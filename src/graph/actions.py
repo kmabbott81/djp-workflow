@@ -3,11 +3,11 @@
 Routes cross-connector actions with RBAC enforcement and audit logging.
 """
 
+import copy
 import os
-from datetime import datetime
 from typing import Callable, Optional
 
-from ..security.audit import AuditAction, AuditEvent, AuditLogger, AuditResult
+from ..security.audit import AuditAction, AuditLogger, AuditResult
 from ..security.teams import get_team_role
 from .index import get_index
 
@@ -73,6 +73,9 @@ def execute_action(
         RBACDenied: If user lacks permission
         ValueError: If resource not found or action invalid
     """
+    # Deep copy payload to prevent mutation
+    payload = copy.deepcopy(payload)
+
     # Get audit logger
     audit_logger = AuditLogger(os.getenv("AUDIT_DIR", "audit"))
 
@@ -88,18 +91,16 @@ def execute_action(
 
     if not resource:
         # Log failure
-        audit_event = AuditEvent(
-            timestamp=datetime.now().isoformat(),
+        audit_logger.log(
             tenant_id=tenant,
             user_id=user_id,
-            action=AuditAction.RUN_WORKFLOW,  # Generic action
+            action=AuditAction.RUN_WORKFLOW,
             resource_type=resource_type,
             resource_id=graph_id,
             result=AuditResult.FAILURE,
             reason=f"Resource not found: {graph_id}",
             metadata={"action": action},
         )
-        audit_logger.log(audit_event)
 
         raise ValueError(f"Resource not found: {graph_id}")
 
@@ -111,8 +112,7 @@ def execute_action(
     user_role = get_team_role(user_id, tenant)
     if not user_role or user_role != "Admin":
         # Log denied
-        audit_event = AuditEvent(
-            timestamp=datetime.now().isoformat(),
+        audit_logger.log(
             tenant_id=tenant,
             user_id=user_id,
             action=AuditAction.RUN_WORKFLOW,
@@ -122,7 +122,6 @@ def execute_action(
             reason=f"User role '{user_role}' lacks permission for action: {action}",
             metadata={"action": action, "required_role": "Admin"},
         )
-        audit_logger.log(audit_event)
 
         raise RBACDenied(f"Admin role required for action: {action}")
 
@@ -142,8 +141,7 @@ def execute_action(
         result = handler(resource, payload, user_id=user_id, tenant=tenant)
 
         # Log success
-        audit_event = AuditEvent(
-            timestamp=datetime.now().isoformat(),
+        audit_logger.log(
             tenant_id=tenant,
             user_id=user_id,
             action=AuditAction.RUN_WORKFLOW,
@@ -152,7 +150,6 @@ def execute_action(
             result=AuditResult.SUCCESS,
             metadata={"action": action, "payload": payload},
         )
-        audit_logger.log(audit_event)
 
         return {
             "status": "success",
@@ -163,8 +160,7 @@ def execute_action(
 
     except Exception as e:
         # Log error
-        audit_event = AuditEvent(
-            timestamp=datetime.now().isoformat(),
+        audit_logger.log(
             tenant_id=tenant,
             user_id=user_id,
             action=AuditAction.RUN_WORKFLOW,
@@ -174,7 +170,6 @@ def execute_action(
             reason=str(e),
             metadata={"action": action, "payload": payload},
         )
-        audit_logger.log(audit_event)
 
         raise ActionError(f"Action failed: {e}") from e
 

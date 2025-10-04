@@ -367,6 +367,18 @@ class URGIndex:
 
 # Global singleton instance
 _index: Optional[URGIndex] = None
+_index_lock = threading.Lock()
+
+
+def reset_index():
+    """Reset global index (for testing).
+
+    Clears the global index singleton, forcing a new instance
+    to be created on next get_index() call.
+    """
+    global _index
+    with _index_lock:
+        _index = None
 
 
 def get_index() -> URGIndex:
@@ -376,6 +388,24 @@ def get_index() -> URGIndex:
         URGIndex instance
     """
     global _index
-    if _index is None:
-        _index = URGIndex()
-    return _index
+    with _index_lock:
+        if _index is None:
+            store_path = os.getenv("URG_STORE_PATH", "logs/graph")
+            _index = URGIndex(store_path)
+        return _index
+
+
+def load_index(path: str) -> URGIndex:
+    """Load index from specific path (for testing).
+
+    Args:
+        path: Path to store directory
+
+    Returns:
+        URGIndex instance loaded from path
+    """
+    reset_index()
+    global _index
+    with _index_lock:
+        _index = URGIndex(path)
+        return _index

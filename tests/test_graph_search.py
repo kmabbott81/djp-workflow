@@ -1,24 +1,16 @@
 """Tests for Unified Resource Graph Search."""
 
-import tempfile
-
 import pytest
 
-from src.graph.index import URGIndex
+from src.graph.index import get_index
 from src.graph.search import search, search_by_source, search_by_type
 
 
 @pytest.fixture
-def temp_store():
-    """Create temporary store directory."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        yield tmpdir
-
-
-@pytest.fixture
-def index(temp_store):
-    """Create URG index with sample data."""
-    idx = URGIndex(store_path=temp_store)
+def index():
+    """Populate URG index with sample data."""
+    # Use global singleton (isolated by clean_graph_env autouse fixture)
+    idx = get_index()
 
     # Add sample messages
     idx.upsert(

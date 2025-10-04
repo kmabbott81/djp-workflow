@@ -364,3 +364,39 @@ def mock_workflow_map(monkeypatch):
     import src.workflows.adapter
 
     monkeypatch.setattr(src.workflows.adapter, "WORKFLOW_MAP", mock_map)
+
+
+# Sprint 38B fixtures for URG (Unified Resource Graph) isolation
+
+
+@pytest.fixture(autouse=True)
+def clean_graph_env(tmp_path, monkeypatch):
+    """
+    Reset URG environment for each test.
+
+    Provides complete isolation for graph index tests by:
+    - Resetting the global index singleton
+    - Isolating storage paths to tmp_path
+    - Setting URG environment variables
+
+    This fixture uses autouse=True so it applies to all tests automatically,
+    ensuring no state bleeding between tests.
+    """
+    # Reset global index before each test
+    from src.graph.index import reset_index
+
+    reset_index()
+
+    # Isolate storage path to tmp_path
+    urg_path = tmp_path / "graph"
+    urg_path.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("URG_STORE_PATH", str(urg_path))
+
+    # Set URG configuration
+    monkeypatch.setenv("URG_MAX_RESULTS", "200")
+    monkeypatch.setenv("GRAPH_DEFAULT_TENANT", "test-tenant")
+
+    yield
+
+    # Cleanup after test
+    reset_index()

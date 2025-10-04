@@ -1,6 +1,5 @@
 """Tests for Unified Resource Graph Action Router."""
 
-import tempfile
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -13,20 +12,13 @@ from src.graph.actions import (
     list_actions,
     register_action,
 )
-from src.graph.index import URGIndex
+from src.graph.index import get_index
 
 
 @pytest.fixture
-def temp_store():
-    """Create temporary store directory."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        yield tmpdir
-
-
-@pytest.fixture
-def index(temp_store):
-    """Create URG index with sample data."""
-    idx = URGIndex(store_path=temp_store)
+def index():
+    """Populate URG index with sample data (isolated by clean_graph_env)."""
+    idx = get_index()
 
     # Add sample message
     idx.upsert(
@@ -288,7 +280,8 @@ def test_action_routing_to_correct_connector(index):
     graph_id = "urn:teams:message:msg-123"
 
     with patch("src.graph.actions.get_team_role", return_value="Admin"):
-        with patch("src.graph.actions.TeamsConnector") as mock_teams:
+        # Patch TeamsConnector where it's imported (in the connectors module)
+        with patch("src.connectors.teams.TeamsConnector") as mock_teams:
             mock_connector = MagicMock()
             mock_connector.create_resource.return_value = MagicMock(status="success")
             mock_teams.return_value = mock_connector
@@ -333,15 +326,17 @@ def test_list_actions_unknown_type():
 
 
 def test_action_error_on_missing_original_id(index):
-    """Test action fails if original_id missing from metadata."""
-    # Add resource without original_id
-    idx = URGIndex(store_path=index.store_path)
-    idx.upsert(
+    """Test action fails if original_id missing from metadata.
+
+    Note: URGIndex.upsert() automatically adds original_id to metadata,
+    so we manually modify the resource after upserting to remove it.
+    """
+    # Add resource normally
+    index.upsert(
         {
             "id": "msg-no-original",
             "type": "message",
             "title": "No Original ID",
-            "metadata": {},
         },
         source="teams",
         tenant="test-tenant",
@@ -349,15 +344,25 @@ def test_action_error_on_missing_original_id(index):
 
     graph_id = "urn:teams:message:msg-no-original"
 
+    # Manually remove original_id from metadata to test the error case
+    if graph_id in index.resources:
+        index.resources[graph_id]["metadata"] = {}
+
     with patch("src.graph.actions.get_team_role", return_value="Admin"):
-        with pytest.raises(ActionError, match="original_id not found"):
-            execute_action(
-                "message.reply",
-                graph_id,
-                {"body": "Test"},
-                user_id="admin",
-                tenant="test-tenant",
-            )
+        # Mock TeamsConnector so it doesn't fail with RBAC before we get to the original_id check
+        with patch("src.connectors.teams.TeamsConnector") as mock_teams:
+            mock_connector = MagicMock()
+            mock_teams.return_value = mock_connector
+
+            # The action handler should raise ActionError for missing original_id
+            with pytest.raises(ActionError, match="original_id not found"):
+                execute_action(
+                    "message.reply",
+                    graph_id,
+                    {"body": "Test"},
+                    user_id="admin",
+                    tenant="test-tenant",
+                )
 
 
 def test_get_connector_for_each_source():

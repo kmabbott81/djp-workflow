@@ -6,20 +6,20 @@ from pathlib import Path
 
 import pytest
 
-from src.graph.index import URGIndex
+from src.graph.index import URGIndex, get_index, load_index
+
+
+@pytest.fixture
+def index():
+    """Get URG index (isolated by clean_graph_env autouse fixture)."""
+    return get_index()
 
 
 @pytest.fixture
 def temp_store():
-    """Create temporary store directory."""
+    """Create temporary store directory for persistence tests."""
     with tempfile.TemporaryDirectory() as tmpdir:
         yield tmpdir
-
-
-@pytest.fixture
-def index(temp_store):
-    """Create URG index with temp store."""
-    return URGIndex(store_path=temp_store)
 
 
 def test_upsert_creates_entry(index):
@@ -203,9 +203,11 @@ def test_inverted_index_building(index):
     assert graph_id in index.inverted_index["example"]
 
 
-def test_shard_persistence(temp_store):
+def test_shard_persistence(temp_store, monkeypatch):
     """Test resources persisted to JSONL shards."""
-    index = URGIndex(store_path=temp_store)
+    # Use a separate path for this test
+    monkeypatch.setenv("URG_STORE_PATH", temp_store)
+    index = load_index(temp_store)
 
     resource = {
         "id": "msg-persist",
@@ -231,8 +233,11 @@ def test_shard_persistence(temp_store):
         assert first_line["id"] == graph_id
 
 
-def test_shard_loading_on_init(temp_store):
+def test_shard_loading_on_init(temp_store, monkeypatch):
     """Test shards loaded on initialization."""
+    # Use separate path for this test
+    monkeypatch.setenv("URG_STORE_PATH", temp_store)
+
     # Create index and add resources
     index1 = URGIndex(store_path=temp_store)
 
@@ -260,8 +265,9 @@ def test_shard_loading_on_init(temp_store):
     assert index2.resources[id2]["title"] == "Second"
 
 
-def test_rebuild_index(temp_store):
+def test_rebuild_index(temp_store, monkeypatch):
     """Test rebuilding index from shards."""
+    monkeypatch.setenv("URG_STORE_PATH", temp_store)
     index = URGIndex(store_path=temp_store)
 
     resource = {

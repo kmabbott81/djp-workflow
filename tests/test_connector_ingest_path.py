@@ -1,6 +1,5 @@
 """Tests for connector ingestion into URG."""
 
-import tempfile
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -10,14 +9,7 @@ from src.connectors.ingest import (
     ingest_all_connectors,
     ingest_connector_snapshot,
 )
-from src.graph.index import URGIndex
-
-
-@pytest.fixture
-def temp_store():
-    """Create temporary store directory."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        yield tmpdir
+from src.graph.index import get_index
 
 
 @pytest.fixture
@@ -108,7 +100,7 @@ def mock_gmail_connector():
     return connector
 
 
-def test_ingest_teams_messages(temp_store, mock_teams_connector):
+def test_ingest_teams_messages(mock_teams_connector):
     """Test ingesting messages from Teams."""
     with patch("src.connectors.ingest.TeamsConnector", return_value=mock_teams_connector):
         result = ingest_connector_snapshot(
@@ -125,12 +117,12 @@ def test_ingest_teams_messages(temp_store, mock_teams_connector):
         assert result["resource_type"] == "messages"
 
         # Verify resource in index
-        index = URGIndex(store_path=temp_store)
+        index = get_index()
         stats = index.get_stats(tenant="test-tenant")
         assert stats["total"] >= 1
 
 
-def test_ingest_outlook_messages(temp_store, mock_outlook_connector):
+def test_ingest_outlook_messages(mock_outlook_connector):
     """Test ingesting messages from Outlook."""
     with patch("src.connectors.ingest.OutlookConnector", return_value=mock_outlook_connector):
         result = ingest_connector_snapshot(
@@ -146,7 +138,7 @@ def test_ingest_outlook_messages(temp_store, mock_outlook_connector):
         assert result["source"] == "outlook"
 
 
-def test_ingest_slack_messages(temp_store, mock_slack_connector):
+def test_ingest_slack_messages(mock_slack_connector):
     """Test ingesting messages from Slack."""
     with patch("src.connectors.ingest.SlackConnector", return_value=mock_slack_connector):
         result = ingest_connector_snapshot(
@@ -162,7 +154,7 @@ def test_ingest_slack_messages(temp_store, mock_slack_connector):
         assert result["source"] == "slack"
 
 
-def test_ingest_gmail_messages(temp_store, mock_gmail_connector):
+def test_ingest_gmail_messages(mock_gmail_connector):
     """Test ingesting messages from Gmail."""
     with patch("src.connectors.ingest.GmailConnector", return_value=mock_gmail_connector):
         result = ingest_connector_snapshot(
@@ -178,7 +170,7 @@ def test_ingest_gmail_messages(temp_store, mock_gmail_connector):
         assert result["source"] == "gmail"
 
 
-def test_ingest_applies_cp_cal_normalization(temp_store, mock_teams_connector):
+def test_ingest_applies_cp_cal_normalization(mock_teams_connector):
     """Test ingestion applies CP-CAL normalization."""
     with patch("src.connectors.ingest.TeamsConnector", return_value=mock_teams_connector):
         ingest_connector_snapshot(
@@ -190,7 +182,7 @@ def test_ingest_applies_cp_cal_normalization(temp_store, mock_teams_connector):
         )
 
         # Check normalized fields in index
-        index = URGIndex(store_path=temp_store)
+        index = get_index()
         resources = index.list_by_tenant("test-tenant")
 
         assert len(resources) >= 1
@@ -207,7 +199,7 @@ def test_ingest_applies_cp_cal_normalization(temp_store, mock_teams_connector):
         assert resource["source"] == "teams"
 
 
-def test_ingest_creates_urg_entries(temp_store, mock_outlook_connector):
+def test_ingest_creates_urg_entries(mock_outlook_connector):
     """Test ingestion creates URG index entries."""
     with patch("src.connectors.ingest.OutlookConnector", return_value=mock_outlook_connector):
         ingest_connector_snapshot(
@@ -218,7 +210,7 @@ def test_ingest_creates_urg_entries(temp_store, mock_outlook_connector):
             limit=10,
         )
 
-        index = URGIndex(store_path=temp_store)
+        index = get_index()
 
         # Verify entry exists with correct graph ID format
         resources = index.list_by_tenant("test-tenant")
@@ -228,7 +220,7 @@ def test_ingest_creates_urg_entries(temp_store, mock_outlook_connector):
         assert resource["id"].startswith("urn:outlook:message:")
 
 
-def test_ingest_dry_run_mode(temp_store, mock_teams_connector):
+def test_ingest_dry_run_mode(mock_teams_connector):
     """Test ingestion works in DRY_RUN mode."""
     # DRY_RUN is default, connector should use mocks
     with patch("src.connectors.ingest.TeamsConnector", return_value=mock_teams_connector):
@@ -244,9 +236,32 @@ def test_ingest_dry_run_mode(temp_store, mock_teams_connector):
         assert result["count"] >= 0
 
 
-def test_ingest_tenant_isolation(temp_store, mock_teams_connector):
+def test_ingest_tenant_isolation():
     """Test ingestion respects tenant isolation."""
-    with patch("src.connectors.ingest.TeamsConnector", return_value=mock_teams_connector):
+    # Create a fresh mock for each call with different IDs
+    call_count = [0]  # Use list to modify in nested function
+
+    def make_mock(*args, **kwargs):
+        call_count[0] += 1
+        connector = MagicMock()
+        connector.connect.return_value = ConnectorResult(status="success")
+        connector.disconnect.return_value = ConnectorResult(status="success")
+        # Use different message IDs for each call to avoid overwriting
+        connector.list_resources.return_value = ConnectorResult(
+            status="success",
+            data=[
+                {
+                    "id": f"teams-msg-{call_count[0]}",
+                    "subject": f"Teams Meeting {call_count[0]}",
+                    "body": {"content": "Let's meet to discuss"},
+                    "from": {"user": {"displayName": "Alice"}},
+                    "createdDateTime": "2025-01-15T10:00:00Z",
+                }
+            ],
+        )
+        return connector
+
+    with patch("src.connectors.ingest.TeamsConnector", side_effect=make_mock):
         # Ingest for tenant-a
         ingest_connector_snapshot(
             "teams",
@@ -265,7 +280,7 @@ def test_ingest_tenant_isolation(temp_store, mock_teams_connector):
             limit=10,
         )
 
-        index = URGIndex(store_path=temp_store)
+        index = get_index()
 
         # Each tenant should only see their own resources
         tenant_a_resources = index.list_by_tenant("tenant-a")
@@ -282,7 +297,7 @@ def test_ingest_tenant_isolation(temp_store, mock_teams_connector):
             assert resource["tenant"] == "tenant-b"
 
 
-def test_ingest_handles_connector_errors(temp_store):
+def test_ingest_handles_connector_errors():
     """Test ingestion handles connector errors gracefully."""
     mock_connector = MagicMock()
     mock_connector.connect.return_value = ConnectorResult(status="error", message="Connection failed")
@@ -298,7 +313,7 @@ def test_ingest_handles_connector_errors(temp_store):
             )
 
 
-def test_ingest_handles_malformed_resources(temp_store):
+def test_ingest_handles_malformed_resources():
     """Test ingestion handles malformed resources."""
     mock_connector = MagicMock()
     mock_connector.connect.return_value = ConnectorResult(status="success")
@@ -333,7 +348,7 @@ def test_ingest_handles_malformed_resources(temp_store):
         assert result["errors"] == 1
 
 
-def test_ingest_unknown_connector(temp_store):
+def test_ingest_unknown_connector():
     """Test ingestion with unknown connector."""
     with pytest.raises(ValueError, match="Unknown connector"):
         ingest_connector_snapshot(
@@ -345,7 +360,7 @@ def test_ingest_unknown_connector(temp_store):
         )
 
 
-def test_ingest_with_limit(temp_store):
+def test_ingest_with_limit():
     """Test ingestion respects limit parameter."""
     mock_connector = MagicMock()
     mock_connector.connect.return_value = ConnectorResult(status="success")
@@ -366,7 +381,7 @@ def test_ingest_with_limit(temp_store):
         assert call_args[1]["filters"]["limit"] == 50
 
 
-def test_ingest_outlook_contacts(temp_store):
+def test_ingest_outlook_contacts():
     """Test ingesting contacts from Outlook."""
     mock_connector = MagicMock()
     mock_connector.connect.return_value = ConnectorResult(status="success")
@@ -396,13 +411,13 @@ def test_ingest_outlook_contacts(temp_store):
         assert result["resource_type"] == "contacts"
 
         # Verify contact in index
-        index = URGIndex(store_path=temp_store)
+        index = get_index()
         resources = index.list_by_tenant("test-tenant")
         assert len(resources) >= 1
         assert resources[0]["type"] == "contact"
 
 
-def test_ingest_all_connectors(temp_store):
+def test_ingest_all_connectors():
     """Test ingesting from all connectors."""
     # Mock all connectors
     mock_teams = MagicMock()

@@ -5,9 +5,29 @@ Provides fast search and filter functionality across all indexed resources.
 
 import os
 import re
+from datetime import datetime
 from typing import Optional
 
 from .index import get_index
+
+
+def _parse_timestamp(ts: str) -> float:
+    """Parse ISO timestamp to epoch seconds for sorting.
+
+    Args:
+        ts: ISO format timestamp string
+
+    Returns:
+        Unix timestamp (epoch seconds), or 0.0 if parsing fails
+    """
+    if not ts:
+        return 0.0
+    try:
+        # Handle ISO format with Z suffix
+        dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        return dt.timestamp()
+    except (ValueError, AttributeError):
+        return 0.0
 
 
 def tokenize_query(query: str) -> list[str]:
@@ -79,8 +99,10 @@ def search(
             if graph_id in index.resources:
                 results.append(index.resources[graph_id])
 
-        # Sort by timestamp descending
-        results.sort(key=lambda r: r.get("timestamp", ""), reverse=True)
+        # Sort deterministically: timestamp DESC, id ASC
+        results.sort(
+            key=lambda r: (-_parse_timestamp(r.get("timestamp", "")), r.get("id", "")),
+        )
         return results[:limit]
 
     # Tokenize query
@@ -93,7 +115,9 @@ def search(
             if graph_id in index.resources:
                 results.append(index.resources[graph_id])
 
-        results.sort(key=lambda r: r.get("timestamp", ""), reverse=True)
+        results.sort(
+            key=lambda r: (-_parse_timestamp(r.get("timestamp", "")), r.get("id", "")),
+        )
         return results[:limit]
 
     # Score each candidate resource
@@ -109,10 +133,16 @@ def search(
         if score > 0:
             scored_results.append((score, resource))
 
-    # Sort by score descending, then timestamp descending
-    scored_results.sort(key=lambda x: (x[0], x[1].get("timestamp", "")), reverse=True)
+    # Sort deterministically: score DESC, timestamp DESC, id ASC
+    scored_results.sort(
+        key=lambda x: (
+            -x[0],  # Higher score first
+            -_parse_timestamp(x[1].get("timestamp", "")),  # Newer first
+            x[1].get("id", ""),  # Alphabetically by ID as tiebreaker
+        ),
+    )
 
-    # Extract resources
+    # Extract resources and apply limit
     results = [resource for _, resource in scored_results[:limit]]
 
     return results
