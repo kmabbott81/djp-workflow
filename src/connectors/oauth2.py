@@ -15,11 +15,12 @@ def get_token_path() -> Path:
     return Path(os.environ.get("OAUTH_TOKEN_PATH", "logs/connectors/tokens.jsonl"))
 
 
-def load_token(connector_id: str) -> Optional[dict]:
+def load_token(connector_id: str, service_id: str = "default") -> Optional[dict]:
     """Load OAuth token for connector.
 
     Args:
         connector_id: Connector identifier
+        service_id: Service identifier for multi-tenant support (default: "default")
 
     Returns:
         Token dict or None if not found
@@ -28,12 +29,19 @@ def load_token(connector_id: str) -> Optional[dict]:
     if not token_path.exists():
         return None
 
-    # Last-wins: find latest token for connector
+    # Token key format: "{connector_id}:{service_id}"
+    token_key = f"{connector_id}:{service_id}"
+
+    # Last-wins: find latest token for connector+service
     latest = None
     with open(token_path, encoding="utf-8") as f:
         for line in f:
             entry = json.loads(line.strip())
-            if entry["connector_id"] == connector_id:
+            # Support both old format (connector_id only) and new format (token_key)
+            entry_key = entry.get("token_key", entry.get("connector_id", ""))
+            if entry_key == token_key or (
+                service_id == "default" and entry.get("connector_id") == connector_id and "token_key" not in entry
+            ):
                 latest = entry
 
     return latest
@@ -44,6 +52,7 @@ def save_token(
     access_token: str,
     refresh_token: Optional[str] = None,
     expires_at: Optional[str] = None,
+    service_id: str = "default",
 ) -> None:
     """Save OAuth token for connector.
 
@@ -52,12 +61,18 @@ def save_token(
         access_token: Access token
         refresh_token: Refresh token (optional)
         expires_at: Expiry timestamp ISO format (optional)
+        service_id: Service identifier for multi-tenant support (default: "default")
     """
     token_path = get_token_path()
     token_path.parent.mkdir(parents=True, exist_ok=True)
 
+    # Token key format: "{connector_id}:{service_id}"
+    token_key = f"{connector_id}:{service_id}"
+
     entry = {
         "connector_id": connector_id,
+        "token_key": token_key,
+        "service_id": service_id,
         "access_token": access_token,
         "refresh_token": refresh_token,
         "expires_at": expires_at,
