@@ -5371,3 +5371,54 @@ echo "Dry-run complete. To actually restore, use: ./scripts/restore.sh $RESTORE_
 - **URG shards**: Daily incremental, weekly full
 - **Connector state**: Hourly snapshots, daily retention
 - **Config/secrets**: On every change, version controlled
+
+---
+
+## Telemetry (Stub)
+
+### Overview
+
+As of v1.0.2-dev, the platform includes a **telemetry toggle** for future observability integration. Currently, this is a **no-op stub** with zero runtime overhead when disabled (default).
+
+### Configuration
+
+```bash
+# Enable telemetry (logs startup message only, no backend yet)
+TELEMETRY_ENABLED=true  # Default: false
+```
+
+### Current Behavior
+
+- **When disabled (default)**: Zero overhead, no logging, no function calls
+- **When enabled**: Logs a single INFO message at startup: `"telemetry initialized (noop)"`
+- **No backends implemented yet**: Future versions will support OpenTelemetry, Prometheus, etc.
+
+### Future Roadmap
+
+Planned telemetry features (not yet implemented):
+- Distributed tracing with OpenTelemetry
+- Metrics export to Prometheus/Grafana
+- Custom event tracking
+- Performance profiling hooks
+
+### Usage
+
+To test the telemetry toggle:
+
+```bash
+# Set environment variable
+export TELEMETRY_ENABLED=true
+
+# Start dashboard or worker
+streamlit run dashboards/app.py
+# or
+python -m src.queue.worker
+
+# Check logs for: "telemetry initialized (noop)"
+```
+
+### Operations Notes
+
+- **Default is disabled**: No action required for existing deployments
+- **Zero overhead**: Safe to leave code in place; no performance impact
+- **Future-ready**: Provides stable integration point for future backends

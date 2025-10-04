@@ -32,6 +32,7 @@ from src.queue.backoff import compute_delay  # noqa: E402
 from src.queue.dlq import append_to_dlq  # noqa: E402
 from src.queue.persistent_queue import Job, JobStatus, PersistentQueue  # noqa: E402
 from src.queue.ratelimit import get_rate_limiter  # noqa: E402
+from src.telemetry.noop import init_noop_if_enabled  # noqa: E402
 
 
 def get_queue_backend() -> PersistentQueue:
@@ -271,6 +272,9 @@ def execute_job(job: Job, queue: PersistentQueue, events_path: str, worker_id: s
 
 def main():
     """CLI entrypoint for worker."""
+    # Initialize telemetry noop (if enabled)
+    init_noop_if_enabled()
+
     parser = argparse.ArgumentParser(description="Queue Worker - consume jobs from persistent queue")
 
     parser.add_argument(
