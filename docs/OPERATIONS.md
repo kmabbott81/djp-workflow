@@ -3105,8 +3105,677 @@ Issue: Schema validation was rejecting valid start_date values
 Fixed: v2.0.1 restores v1.0.0 schema (known good)
 ```
 
+## Compliance Operations (Sprint 33A)
+
+Sprint 33A introduces GDPR-style compliance operations for tenant data lifecycle management.
+
+### Runbook: Export Tenant Data
+
+**Purpose**: Create complete export bundle of tenant data for audit, backup, or regulatory request
+
+**Prerequisites**:
+- User role: Auditor, Compliance, or Admin
+- Tenant ID
+- Output directory with write permissions
+
+**Procedure**:
+
+1. **Set environment**:
+   ```bash
+   export USER_RBAC_ROLE=Auditor  # Or Compliance/Admin
+   ```
+
+2. **Create export directory**:
+   ```bash
+   mkdir -p exports
+   ```
+
+3. **Run export**:
+   ```bash
+   python scripts/compliance.py export \
+     --tenant acme-corp \
+     --out ./exports
+   ```
+
+4. **Verify export bundle**:
+   ```bash
+   cd exports/acme-corp-export-2025-10-03
+   cat manifest.json
+   ls -lh
+   ```
+
+**Expected output**:
+```
+acme-corp-export-2025-10-03/
+├── manifest.json              # Export summary with counts
+├── artifacts.json             # Artifact references
+├── orchestrator_events.jsonl  # DAG execution logs
+├── queue_events.jsonl         # Queue activity
+├── cost_events.jsonl          # Cost tracking
+├── approval_events.jsonl      # Approvals/checkpoints
+└── governance_events.jsonl    # Governance audit
+```
+
+**Troubleshooting**:
+- **RBAC denied**: Check `USER_RBAC_ROLE` is Auditor+
+- **Empty counts**: Verify tenant ID is correct
+- **Missing files**: Check data paths in environment variables
+
+**Retention**: Store export bundles securely for 2+ years (compliance)
+
+---
+
+### Runbook: Delete Tenant Data
+
+**Purpose**: Permanently remove all tenant-scoped data for GDPR right-to-erasure or tenant offboarding
+
+**Prerequisites**:
+- User role: Compliance or Admin (NOT Auditor)
+- Tenant ID
+- **CRITICAL**: Export tenant data FIRST (backup)
+- Verify no active legal hold
+
+**Procedure**:
+
+1. **Check for legal hold**:
+   ```bash
+   python scripts/compliance.py holds --list | jq -r '.holds[] | select(.tenant == "acme-corp")'
+   ```
+   - If hold exists, release first or contact legal team
+
+2. **Export data (REQUIRED)**:
+   ```bash
+   python scripts/compliance.py export --tenant acme-corp --out ./exports
+   ```
+
+3. **Dry-run deletion** (verify scope):
+   ```bash
+   export USER_RBAC_ROLE=Compliance
+   python scripts/compliance.py delete --tenant acme-corp --dry-run
+   ```
+
+4. **Review dry-run output**:
+   ```json
+   {
+     "tenant": "acme-corp",
+     "dry_run": true,
+     "counts": {
+       "artifacts": 45,
+       "orch_events": 120,
+       "queue_events": 80,
+       "cost_events": 100,
+       "approval_events": 15,
+       "gov_events": 25
+     },
+     "total_items": 385
+   }
+   ```
+
+5. **Confirm counts** match expected tenant footprint
+
+6. **Execute deletion**:
+   ```bash
+   python scripts/compliance.py delete --tenant acme-corp
+   ```
+
+7. **Verify deletion**:
+   ```bash
+   # Check artifact directories
+   ls artifacts/hot/ | grep acme-corp  # Should be empty
+
+   # Check event logs
+   grep "acme-corp" logs/orchestrator_events.jsonl | tail -1
+   # Should show deletion timestamp
+   ```
+
+**Exit codes**:
+- `0` - Success
+- `2` - RBAC denied
+- `3` - Legal hold active (must release first)
+- `1` - Other error
+
+**Troubleshooting**:
+- **Exit code 3 (legal hold)**: Release hold first with `python scripts/compliance.py release --tenant acme-corp`
+- **RBAC denied**: Requires Compliance or Admin role (Auditor cannot delete)
+- **Partial deletion**: Re-run deletion command (idempotent)
+
+**Post-deletion**:
+1. Archive export bundle to secure storage
+2. Document deletion in governance log
+3. Notify stakeholders if required
+
+---
+
+### Runbook: Apply Legal Hold
+
+**Purpose**: Prevent deletion of tenant data for litigation, audit, or regulatory investigation
+
+**Prerequisites**:
+- User role: Compliance or Admin
+- Tenant ID
+- Hold reason (case number, requestor, purpose)
+
+**Procedure**:
+
+1. **Set environment**:
+   ```bash
+   export USER_RBAC_ROLE=Compliance
+   ```
+
+2. **Apply hold with detailed reason**:
+   ```bash
+   python scripts/compliance.py hold \
+     --tenant acme-corp \
+     --reason "Litigation hold - Case #2025-1234, Filed 2025-10-03, Requestor: Legal Dept"
+   ```
+
+3. **Verify hold active**:
+   ```bash
+   python scripts/compliance.py holds --list
+   ```
+
+4. **Document hold in tracking system**:
+   - Case management system
+   - Legal hold register
+   - Compliance database
+
+5. **Notify relevant teams**:
+   - Operations team (no deletions allowed)
+   - Backup team (retain all backups)
+   - Data team (freeze data modifications)
+
+**Hold audit log**:
+```json
+{
+  "timestamp": "2025-10-03T22:40:00Z",
+  "event": "hold_applied",
+  "tenant": "acme-corp",
+  "reason": "Litigation hold - Case #2025-1234"
+}
+```
+
+**Monitoring**:
+```bash
+# Active holds
+tail -f logs/legal_holds.jsonl
+
+# Deletion attempts while on hold
+grep "legal hold" logs/governance_events.jsonl
+```
+
+---
+
+### Runbook: Release Legal Hold
+
+**Purpose**: Remove legal hold after case closure, investigation complete, or retention period expired
+
+**Prerequisites**:
+- User role: Compliance or Admin
+- Tenant ID
+- Authorization from legal/compliance team
+- Hold release documentation
+
+**Procedure**:
+
+1. **Verify hold exists**:
+   ```bash
+   python scripts/compliance.py holds --list | jq -r '.holds[] | select(.tenant == "acme-corp")'
+   ```
+
+2. **Obtain release authorization**:
+   - Legal counsel approval
+   - Case closure documentation
+   - Retention period verification
+
+3. **Release hold**:
+   ```bash
+   export USER_RBAC_ROLE=Compliance
+   python scripts/compliance.py release --tenant acme-corp
+   ```
+
+4. **Verify hold released**:
+   ```bash
+   python scripts/compliance.py holds --list | jq -r '.holds[] | select(.tenant == "acme-corp")'
+   # Should return nothing
+   ```
+
+5. **Document release**:
+   - Update case management system
+   - Note in legal hold register
+   - File release authorization
+
+**Hold release audit log**:
+```json
+{
+  "timestamp": "2025-11-15T14:00:00Z",
+  "event": "hold_released",
+  "tenant": "acme-corp"
+}
+```
+
+**Post-release actions**:
+- Resume normal retention policies
+- Allow deletion if needed
+- Archive hold documentation
+
+---
+
+### Runbook: Retention Enforcement
+
+**Purpose**: Automated pruning of old data per retention policies
+
+**Schedule**: Daily at 2 AM (recommended)
+
+**Prerequisites**:
+- User role: Compliance or Admin
+- Configured retention policies (env vars)
+
+**Procedure (Manual)**:
+
+1. **Set environment**:
+   ```bash
+   export USER_RBAC_ROLE=Compliance
+   ```
+
+2. **Run retention enforcement**:
+   ```bash
+   python scripts/compliance.py retention
+   ```
+
+3. **Review output**:
+   ```json
+   {
+     "enforced_at": "2025-10-03T22:45:00Z",
+     "counts": {
+       "RETAIN_ORCH_EVENTS_DAYS": 15,
+       "RETAIN_QUEUE_EVENTS_DAYS": 8,
+       "RETAIN_COST_EVENTS_DAYS": 3,
+       "RETAIN_GOV_EVENTS_DAYS": 0,
+       "RETAIN_CHECKPOINTS_DAYS": 2
+     },
+     "total_purged": 28
+   }
+   ```
+
+4. **Verify purge**:
+   ```bash
+   # Check event log sizes
+   wc -l logs/*.jsonl
+
+   # Verify oldest remaining events
+   head -1 logs/orchestrator_events.jsonl | jq -r '.timestamp'
+   ```
+
+**Automated Schedule (Cron)**:
+
+```bash
+# Add to crontab
+crontab -e
+
+# Daily at 2 AM
+0 2 * * * cd /path/to/repo && USER_RBAC_ROLE=Compliance python scripts/compliance.py retention >> logs/retention.log 2>&1
+```
+
+**Automated Schedule (Windows Task Scheduler)**:
+
+```powershell
+$action = New-ScheduledTaskAction -Execute "python" -Argument "scripts\compliance.py retention" -WorkingDirectory "C:\path\to\repo"
+$trigger = New-ScheduledTaskTrigger -Daily -At 2am
+$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable
+Register-ScheduledTask -TaskName "ComplianceRetention" -Action $action -Trigger $trigger -Settings $settings
+```
+
+**Retention policy configuration**:
+
+```bash
+# In .env or environment
+RETAIN_ORCH_EVENTS_DAYS=90      # Orchestrator events
+RETAIN_QUEUE_EVENTS_DAYS=60     # Queue activity
+RETAIN_DLQ_DAYS=30              # Dead letter queue
+RETAIN_CHECKPOINTS_DAYS=90      # Approvals/checkpoints
+RETAIN_COST_EVENTS_DAYS=180     # Cost tracking (6 months)
+RETAIN_GOV_EVENTS_DAYS=365      # Governance (1 year)
+```
+
+**Monitoring retention**:
+
+```bash
+# Retention run history
+grep "retention_enforced" logs/governance_events.jsonl | tail -10
+
+# Alert on large purges (potential issue)
+PURGED=$(python scripts/compliance.py retention | jq -r '.total_purged')
+if [ "$PURGED" -gt 1000 ]; then
+  echo "ALERT: Large retention purge - $PURGED items"
+fi
+```
+
+**Troubleshooting**:
+- **No items purged**: Retention windows may be too long
+- **RBAC denied**: Requires Compliance or Admin role
+- **File errors**: Check write permissions on log files
+
+---
+
+### Compliance Checklist
+
+**Weekly**:
+- [ ] Review active legal holds
+- [ ] Monitor export requests
+- [ ] Check deletion operations
+- [ ] Review retention runs
+
+**Monthly**:
+- [ ] Audit compliance role assignments
+- [ ] Review retention policies
+- [ ] Archive old export bundles
+- [ ] Test disaster recovery procedures
+
+**Quarterly**:
+- [ ] Legal hold audit
+- [ ] Compliance report generation
+- [ ] Policy review and updates
+- [ ] Staff training on procedures
+
+**Annually**:
+- [ ] Full compliance audit
+- [ ] Policy recertification
+- [ ] Archive review and cleanup
+- [ ] Disaster recovery test
+
+---
+
+## Encryption & Classification Operations (Sprint 33B)
+
+### 6. Rotate Encryption Key
+
+**When to run**:
+- Every 90 days (per `KEY_ROTATION_DAYS` policy)
+- Immediately after suspected key compromise
+- Before major audit or compliance review
+
+**Prerequisites**:
+- Backup current keyring: `cp logs/keyring.jsonl logs/keyring.jsonl.bak`
+- Verify backup exists and is valid
+
+**Procedure**:
+
+```bash
+# 1. Check current key status
+python scripts/keyring.py active
+
+# 2. Note current key_id and age
+KEY_AGE=$(python -c "from datetime import datetime; import json; k=json.loads(open('logs/keyring.jsonl').readlines()[-1]); print((datetime.now()-datetime.fromisoformat(k['created_at'].rstrip('Z'))).days)")
+echo "Current key age: $KEY_AGE days"
+
+# 3. Rotate key
+python scripts/compliance.py rotate-key > rotation_result.json
+
+# 4. Verify new key is active
+python scripts/keyring.py list | grep active
+
+# 5. Test encryption with new key
+echo "test content" > /tmp/test_artifact.md
+python -c "from pathlib import Path; from src.storage.secure_io import write_encrypted, read_encrypted; write_encrypted(Path('/tmp/test.md'), b'test', 'Internal', 'test-tenant'); print(read_encrypted(Path('/tmp/test.md'), 'Internal'))"
+
+# 6. Verify old key can still decrypt
+# (Read artifacts encrypted with previous key)
+
+# 7. Update monitoring/alerts for new key rotation date
+```
+
+**Expected Output**:
+
+```json
+{
+  "event": "key_rotated",
+  "new_key": {
+    "key_id": "key-002",
+    "alg": "AES256-GCM",
+    "status": "active",
+    "created_at": "2025-10-03T12:00:00Z"
+  }
+}
+```
+
+**Troubleshooting**:
+
+- **Rotation fails**: Check keyring file permissions, verify JSONL format
+- **Old key still active**: Keyring append failed, check disk space
+- **Cannot decrypt old artifacts**: Key retired incorrectly, restore from backup
+
+**Post-rotation**:
+- Monitor governance events for key usage
+- Verify dashboard shows new key_id
+- Schedule next rotation: `date -d "+90 days"`
+
+### 7. Label Classification for Artifact
+
+**When to run**:
+- Before exporting tenant data with `REQUIRE_LABELS_FOR_EXPORT=true`
+- When artifact sensitivity changes
+- During compliance audit preparation
+
+**Prerequisites**:
+- Artifact exists in storage
+- Appropriate clearance for labeling operation
+
+**Procedure**:
+
+```bash
+# 1. View current label (if any)
+python scripts/classification.py show \
+  --path artifacts/hot/tenant-a/report.md
+
+# 2. Determine appropriate label
+# Review artifact content and sensitivity
+# Consult classification guide (CLASSIFICATION.md)
+
+# 3. Set label
+python scripts/classification.py set-label \
+  --path artifacts/hot/tenant-a/report.md \
+  --label Confidential
+
+# 4. Verify label applied
+python scripts/classification.py show \
+  --path artifacts/hot/tenant-a/report.md | jq .label
+```
+
+**Expected Output**:
+
+```json
+{
+  "artifact": "artifacts/hot/tenant-a/report.md",
+  "label": "Confidential",
+  "sidecar": "artifacts/hot/tenant-a/report.md.json"
+}
+```
+
+**Bulk Labeling**:
+
+```bash
+# Label all artifacts in a directory
+for artifact in artifacts/hot/tenant-a/*.md; do
+  python scripts/classification.py set-label \
+    --path "$artifact" \
+    --label Internal
+done
+```
+
+### 8. Export with Classification Policies
+
+**When to run**:
+- GDPR data subject access request
+- Compliance audit requiring tenant data
+- Tenant offboarding
+
+**Prerequisites**:
+- Set appropriate `USER_CLEARANCE` for requester
+- Configure `REQUIRE_LABELS_FOR_EXPORT` policy
+- Configure `EXPORT_POLICY` (deny or redact)
+
+**Procedure**:
+
+```bash
+# 1. Configure export policy
+export USER_CLEARANCE=Confidential
+export REQUIRE_LABELS_FOR_EXPORT=true
+export EXPORT_POLICY=deny  # or redact
+
+# 2. Check for legal hold (same as before)
+python scripts/compliance.py holds --list | jq -r '.holds[] | select(.tenant == "acme-corp")'
+
+# 3. Export tenant data
+export USER_RBAC_ROLE=Auditor
+python scripts/compliance.py export \
+  --tenant acme-corp \
+  --out ./exports \
+  > export_result.json
+
+# 4. Review export summary
+cat export_result.json | jq .
+
+# 5. Check governance log for denials
+grep "export_denied" logs/governance_events.jsonl | \
+  jq -r 'select(.tenant == "acme-corp")'
+
+# 6. If denials occurred, review and escalate clearance if needed
+```
+
+**Expected Output**:
+
+```json
+{
+  "tenant": "acme-corp",
+  "export_date": "2025-10-03T12:00:00Z",
+  "counts": {
+    "artifacts": 42,
+    "artifacts_denied": 3,
+    "orch_events": 150,
+    ...
+  }
+}
+```
+
+**Handling Denials**:
+
+```bash
+# Option 1: Increase clearance (requires authorization)
+export USER_CLEARANCE=Restricted
+
+# Option 2: Use redact policy (includes metadata)
+export EXPORT_POLICY=redact
+
+# Option 3: Review denied artifacts individually
+grep "export_denied" logs/governance_events.jsonl | \
+  jq -r 'select(.tenant == "acme-corp") | .artifact'
+```
+
+### 9. Recover from Lost Keyring
+
+**When to run**:
+- Keyring file corrupted or deleted
+- Disaster recovery scenario
+- Migration to new environment
+
+**Prerequisites**:
+- Recent backup of `logs/keyring.jsonl`
+- List of encrypted artifacts requiring recovery
+
+**Procedure**:
+
+```bash
+# 1. Verify keyring is missing or corrupted
+cat logs/keyring.jsonl | jq . || echo "Keyring corrupted"
+
+# 2. Restore from backup
+cp backups/keyring.jsonl.$(date +%Y%m%d) logs/keyring.jsonl
+
+# 3. Validate restored keyring
+python scripts/keyring.py list | jq .
+
+# 4. Test decryption with each key
+for key_id in $(python scripts/keyring.py list | jq -r '.keys[].key_id'); do
+  echo "Testing $key_id..."
+  # Find artifacts encrypted with this key
+  grep -r "\"key_id\": \"$key_id\"" artifacts/ | head -1
+done
+
+# 5. Verify current active key
+python scripts/keyring.py active
+
+# 6. If no backup available:
+#    - Plaintext artifacts remain accessible
+#    - Encrypted artifacts are unrecoverable
+#    - Create new keyring and re-encrypt going forward
+python scripts/keyring.py rotate  # Creates new keyring if missing
+```
+
+**Data Loss Prevention**:
+
+- **Automated backups**: `crontab -e`
+  ```cron
+  0 0 * * * cp /path/to/logs/keyring.jsonl /path/to/backups/keyring.jsonl.$(date +\%Y\%m\%d)
+  ```
+- **Off-site backup**: Sync backups to S3, GCS, or Azure Blob
+- **Monitoring**: Alert on keyring file changes or deletions
+
+### 10. Re-encrypt Backlog (Optional)
+
+**When to run**:
+- After key compromise (rotate then re-encrypt)
+- Migrating from plaintext to encrypted storage
+- Upgrading encryption algorithm
+
+**Note**: Bulk re-encryption tool not implemented in Sprint 33B (future enhancement).
+
+**Manual Re-encryption**:
+
+```bash
+# For critical artifacts only
+for artifact in artifacts/hot/tenant-a/*.md; do
+  # Read with old key
+  data=$(python -c "from pathlib import Path; from src.storage.secure_io import read_encrypted; print(read_encrypted(Path('$artifact'), 'Admin').decode())")
+
+  # Write with new key (post-rotation)
+  python -c "from pathlib import Path; from src.storage.secure_io import write_encrypted; write_encrypted(Path('$artifact'), b'$data', 'Confidential', 'tenant-a')"
+done
+```
+
+---
+
+### Encryption & Classification Checklist
+
+**Weekly**:
+- [ ] Review security dashboard for key rotation status
+- [ ] Check governance log for unexpected export denials
+- [ ] Verify keyring backups are current
+
+**Monthly**:
+- [ ] Audit artifact labeling completeness
+- [ ] Review clearance assignments
+- [ ] Test key rotation procedure (non-prod)
+- [ ] Verify encryption enabled for new artifacts
+
+**Quarterly**:
+- [ ] Rotate encryption key (if policy requires)
+- [ ] Review classification policy effectiveness
+- [ ] Audit export denials and escalations
+- [ ] Test keyring recovery from backup
+
+**Annually**:
+- [ ] Full encryption audit
+- [ ] Review and update classification labels
+- [ ] Test disaster recovery (key loss scenario)
+- [ ] Recertify clearance levels for all users
+
+---
+
 ### See Also
 
+- [COMPLIANCE.md](./COMPLIANCE.md) - Complete compliance documentation
+- [CLASSIFICATION.md](./CLASSIFICATION.md) - Data classification guide
+- [ENCRYPTION.md](./ENCRYPTION.md) - Envelope encryption guide
 - [TEMPLATE_REGISTRY.md](./TEMPLATE_REGISTRY.md) - Template registry documentation
 - [ORCHESTRATION.md](./ORCHESTRATION.md) - Complete checkpoint documentation
 - [SECURITY.md](./SECURITY.md) - RBAC role hierarchy and permissions

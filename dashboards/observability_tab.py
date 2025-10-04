@@ -39,6 +39,11 @@ def render_observability_tab():
     st.markdown("### 💾 Storage Lifecycle")
     _render_storage_lifecycle()
 
+    # Security panel (Sprint 33B)
+    st.markdown("---")
+    st.markdown("### 🔒 Security & Encryption")
+    _render_security_panel()
+
     # Multi-region observability
     st.markdown("---")
     st.markdown("### 🌍 Multi-Region Status")
@@ -910,3 +915,142 @@ def _render_orchestrator():
     except Exception as e:
         st.error(f"Error loading orchestrator data: {e}")
         st.caption("Make sure orchestrator is initialized and logs are accessible")
+
+
+def _render_security_panel():
+    """Render security panel with encryption and classification status (Sprint 33B)."""
+    show_security = os.getenv("SHOW_SECURITY_PANEL", "true").lower() in ("true", "1", "yes")
+
+    if not show_security:
+        st.info("Security panel disabled. Set SHOW_SECURITY_PANEL=true to enable.")
+        return
+
+    try:
+        import sys
+
+        sys.path.insert(0, str(Path(__file__).parent.parent))
+
+        # Encryption status
+        encryption_enabled = os.getenv("ENCRYPTION_ENABLED", "false").lower() in ("true", "1", "yes")
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            status_icon = "🔒" if encryption_enabled else "🔓"
+            status_text = "Enabled" if encryption_enabled else "Disabled"
+            st.metric("Encryption", status_text, delta=None)
+            st.caption(f"{status_icon} AES-256-GCM envelope encryption")
+
+        # Keyring info
+        try:
+            from src.crypto.keyring import active_key, list_keys
+
+            keys = list_keys()
+            active = active_key()
+
+            with col2:
+                st.metric("Active Key", active["key_id"])
+                st.caption(f"Algorithm: {active['alg']}")
+
+            with col3:
+                st.metric("Total Keys", len(keys))
+                retired_count = sum(1 for k in keys if k.get("status") == "retired")
+                st.caption(f"Retired: {retired_count}")
+
+        except Exception:
+            with col2:
+                st.metric("Active Key", "N/A")
+                st.caption("Keyring not initialized")
+
+            with col3:
+                st.metric("Total Keys", "0")
+                st.caption("No keys found")
+
+        # Classification labels
+        st.markdown("#### Classification Labels")
+
+        labels_str = os.getenv("CLASS_LABELS", "Public,Internal,Confidential,Restricted")
+        default_label = os.getenv("DEFAULT_LABEL", "Internal")
+        user_clearance = os.getenv("USER_CLEARANCE", "Operator")
+
+        label_col1, label_col2 = st.columns(2)
+
+        with label_col1:
+            st.caption(f"**Labels:** {labels_str}")
+            st.caption(f"**Default:** {default_label}")
+
+        with label_col2:
+            st.caption(f"**User Clearance:** {user_clearance}")
+            require_labels = os.getenv("REQUIRE_LABELS_FOR_EXPORT", "false").lower() in ("true", "1", "yes")
+            st.caption(f"**Require Labels:** {'Yes' if require_labels else 'No'}")
+
+        # Recent labeled artifacts (sample scan)
+        st.markdown("#### Labeled Artifacts (Sample)")
+
+        storage_base = Path(os.getenv("STORAGE_BASE_PATH", "artifacts"))
+        labeled_count = {"Public": 0, "Internal": 0, "Confidential": 0, "Restricted": 0}
+
+        if storage_base.exists():
+            # Quick scan of recent artifacts
+            sample_count = 0
+            for tier in ["hot", "warm"]:
+                tier_path = storage_base / tier
+                if tier_path.exists():
+                    for artifact in tier_path.rglob("*.json"):
+                        if sample_count >= 50:  # Limit scan to avoid performance issues
+                            break
+                        try:
+                            import json
+
+                            meta = json.loads(artifact.read_text(encoding="utf-8"))
+                            label = meta.get("label")
+                            if label in labeled_count:
+                                labeled_count[label] += 1
+                            sample_count += 1
+                        except (json.JSONDecodeError, OSError):
+                            continue
+
+        # Display counts
+        sample_col1, sample_col2, sample_col3, sample_col4 = st.columns(4)
+
+        with sample_col1:
+            st.metric("Public", labeled_count["Public"])
+
+        with sample_col2:
+            st.metric("Internal", labeled_count["Internal"])
+
+        with sample_col3:
+            st.metric("Confidential", labeled_count["Confidential"])
+
+        with sample_col4:
+            st.metric("Restricted", labeled_count["Restricted"])
+
+        # Key rotation info
+        if encryption_enabled:
+            try:
+                rotation_days = int(os.getenv("KEY_ROTATION_DAYS", "90"))
+                created_at = active.get("created_at", "")
+                if created_at:
+                    from datetime import datetime
+
+                    created = datetime.fromisoformat(created_at.rstrip("Z"))
+                    age_days = (datetime.utcnow() - created).days
+
+                    st.markdown("#### Key Rotation")
+                    rot_col1, rot_col2 = st.columns(2)
+
+                    with rot_col1:
+                        st.caption(f"**Rotation Policy:** {rotation_days} days")
+
+                    with rot_col2:
+                        st.caption(f"**Current Key Age:** {age_days} days")
+
+                    if age_days > rotation_days:
+                        st.warning(f"⚠️ Active key is {age_days - rotation_days} days overdue for rotation")
+                    elif age_days > rotation_days * 0.8:
+                        st.info(f"ℹ️ Key rotation recommended in {rotation_days - age_days} days")
+            except Exception:
+                pass
+
+    except Exception as e:
+        st.error(f"Error loading security panel: {e}")

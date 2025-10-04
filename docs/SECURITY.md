@@ -2351,3 +2351,348 @@ grep "checkpoint_approved" logs/checkpoints.jsonl | \
 19. Configure checkpoint expiration policies (default: 72h)
 20. Monitor checkpoint audit logs for suspicious patterns
 21. Test RBAC enforcement for checkpoint approvals
+
+## Compliance Roles (Sprint 33A)
+
+Sprint 33A introduces dedicated compliance roles for data lifecycle management operations including export, deletion, legal holds, and retention enforcement.
+
+### Compliance Role Hierarchy
+
+Extended role hierarchy with compliance operations:
+
+| Role | Level | Export | Delete | Legal Hold | Retention |
+|------|-------|--------|--------|------------|-----------|
+| Viewer | 0 | ❌ | ❌ | ❌ | ❌ |
+| Author | 1 | ❌ | ❌ | ❌ | ❌ |
+| Operator | 2 | ❌ | ❌ | ❌ | ❌ |
+| Auditor | 3 | ✅ | ❌ | ❌ (read-only) | ❌ |
+| Compliance | 4 | ✅ | ✅ | ✅ | ✅ |
+| Admin | 5 | ✅ | ✅ | ✅ | ✅ |
+
+**Key principles:**
+- **Auditor role**: Read-only access for compliance monitoring
+- **Compliance role**: Full access to data lifecycle operations
+- **Admin role**: Inherits all compliance permissions
+- **Separation of duties**: Auditor can export but not delete
+
+### Environment Variables
+
+```bash
+# Compliance RBAC
+COMPLIANCE_RBAC_ROLE=Compliance  # Required role for mutating operations
+USER_RBAC_ROLE=Auditor           # Current user's role
+
+# Compliance paths
+LOGS_LEGAL_HOLDS_PATH=logs/legal_holds.jsonl
+EXPORT_ROOT=exports
+
+# Retention policies (days)
+RETAIN_ORCH_EVENTS_DAYS=90
+RETAIN_QUEUE_EVENTS_DAYS=60
+RETAIN_DLQ_DAYS=30
+RETAIN_CHECKPOINTS_DAYS=90
+RETAIN_COST_EVENTS_DAYS=180
+RETAIN_GOV_EVENTS_DAYS=365
+```
+
+### Audit Guarantees
+
+All compliance operations are fully audited with:
+
+1. **Legal holds** logged to `logs/legal_holds.jsonl`:
+   ```json
+   {"timestamp": "...", "event": "hold_applied", "tenant": "...", "reason": "..."}
+   ```
+
+2. **Data export** operations logged to governance events
+3. **Data deletion** operations logged to governance events
+4. **Retention enforcement** runs logged with purge counts
+
+### Compliance CLI Operations
+
+**Export (Auditor+):**
+```bash
+python scripts/compliance.py export --tenant acme-corp --out ./exports
+```
+
+**Delete (Compliance+):**
+```bash
+python scripts/compliance.py delete --tenant acme-corp --dry-run
+python scripts/compliance.py delete --tenant acme-corp
+```
+
+**Legal holds (Compliance+):**
+```bash
+python scripts/compliance.py hold --tenant acme-corp --reason "Litigation"
+python scripts/compliance.py release --tenant acme-corp
+python scripts/compliance.py holds --list
+```
+
+**Retention (Compliance+):**
+```bash
+python scripts/compliance.py retention
+```
+
+### Protection Mechanisms
+
+1. **Legal hold blocks deletion**: Active legal holds prevent tenant deletion by default
+2. **Dry-run mode**: Test deletion scope before executing
+3. **RBAC enforcement**: All operations check user role before proceeding
+4. **Audit trail**: Complete history of all compliance operations
+5. **Safe JSONL pruning**: Retention uses temp file + atomic swap
+
+### Exit Codes
+
+Compliance CLI uses specific exit codes:
+- `0` - Success
+- `2` - RBAC denied (insufficient role)
+- `3` - Legal hold active (blocks deletion)
+- `1` - Other error
+
+### Monitoring
+
+Monitor compliance operations:
+
+```bash
+# Recent legal holds
+tail -20 logs/legal_holds.jsonl
+
+# Deletion operations
+grep "delete" logs/governance_events.jsonl | tail -10
+
+# Retention runs
+grep "retention_enforced" logs/governance_events.jsonl
+```
+
+### Related Documentation
+
+See [COMPLIANCE.md](./COMPLIANCE.md) for complete compliance documentation including workflows, examples, and troubleshooting.
+
+## Clearance & Labels (Sprint 33B)
+
+### Classification Hierarchy
+
+Data classification labels follow a total order from least to most sensitive:
+
+```
+Public < Internal < Confidential < Restricted
+```
+
+### Clearance Model
+
+User clearances follow the same hierarchy. Access is granted when:
+
+```
+user_clearance >= artifact_label
+```
+
+**Example**:
+- User with `Confidential` clearance can access: Public, Internal, Confidential
+- User with `Confidential` clearance **cannot** access: Restricted
+
+### Configuration
+
+```bash
+# Classification labels (ordered, comma-separated)
+CLASS_LABELS=Public,Internal,Confidential,Restricted
+
+# Default label for unlabeled artifacts
+DEFAULT_LABEL=Internal
+
+# User's clearance level
+USER_CLEARANCE=Operator  # Maps to Internal by default
+
+# Require labels for export
+REQUIRE_LABELS_FOR_EXPORT=true
+
+# Export policy for insufficient clearance
+EXPORT_POLICY=deny  # deny | redact
+```
+
+### Labeling Artifacts
+
+#### Via CLI
+
+```bash
+# Set label
+python scripts/classification.py set-label \
+  --path artifacts/hot/tenant-a/report.md \
+  --label Confidential
+
+# View metadata
+python scripts/classification.py show \
+  --path artifacts/hot/tenant-a/report.md
+```
+
+#### Programmatically
+
+```python
+from src.storage.secure_io import write_encrypted
+
+write_encrypted(
+    path=Path("artifact.md"),
+    data=b"content",
+    label="Confidential",
+    tenant="acme-corp"
+)
+```
+
+### Access Enforcement
+
+Read access checks clearance automatically:
+
+```python
+from src.storage.secure_io import read_encrypted
+
+try:
+    data = read_encrypted(
+        Path("artifact.md"),
+        user_clearance="Internal"
+    )
+except PermissionError:
+    # Insufficient clearance
+    pass
+```
+
+Export access enforced via compliance API:
+- Unlabeled artifacts: Denied if `REQUIRE_LABELS_FOR_EXPORT=true`
+- Insufficient clearance: Denied (or redacted) based on `EXPORT_POLICY`
+
+### Audit Trail
+
+All access denials logged to `logs/governance_events.jsonl`:
+
+```json
+{
+  "timestamp": "2025-10-03T12:00:00Z",
+  "event": "export_denied",
+  "tenant": "acme-corp",
+  "artifact": "artifacts/hot/acme-corp/report.md",
+  "label": "Restricted",
+  "user_clearance": "Confidential",
+  "reason": "insufficient_clearance",
+  "policy": "deny"
+}
+```
+
+## Key Management & Rotation (Sprint 33B)
+
+### Envelope Encryption
+
+Artifacts encrypted with AES-256-GCM envelope encryption:
+
+```
+Plaintext → AES-256-GCM → Envelope {key_id, nonce, ciphertext, tag}
+```
+
+### Keyring Structure
+
+Keys stored in `logs/keyring.jsonl` (append-only JSONL):
+
+```jsonl
+{"key_id": "key-001", "alg": "AES256-GCM", "status": "active", "created_at": "...", "key_material_base64": "..."}
+{"key_id": "key-001", "alg": "AES256-GCM", "status": "retired", "retired_at": "..."}
+{"key_id": "key-002", "alg": "AES256-GCM", "status": "active", "created_at": "...", "key_material_base64": "..."}
+```
+
+Last-wins semantics: Most recent entry for a `key_id` determines its status.
+
+### Key Operations
+
+```bash
+# List keys (masks key material)
+python scripts/keyring.py list
+
+# Show active key
+python scripts/keyring.py active
+
+# Rotate key
+python scripts/keyring.py rotate
+```
+
+Via compliance CLI:
+
+```bash
+python scripts/compliance.py list-keys
+python scripts/compliance.py rotate-key
+```
+
+### Key Rotation
+
+Rotation creates new active key and retires previous:
+
+1. Current active key → status: `retired`
+2. Generate new key with incremented ID
+3. New key → status: `active`
+
+**Historical data remains accessible**: Retired keys can still decrypt old artifacts.
+
+### Rotation Policy
+
+```bash
+# Rotation interval (days)
+KEY_ROTATION_DAYS=90
+```
+
+Dashboard shows warnings when key age exceeds policy.
+
+### Encrypted Storage
+
+Each artifact has two files:
+
+```
+artifact.md.enc     # Encrypted envelope (JSON)
+artifact.md.json    # Metadata sidecar
+```
+
+**Sidecar metadata**:
+```json
+{
+  "label": "Confidential",
+  "tenant": "acme-corp",
+  "key_id": "key-002",
+  "created_at": "2025-10-03T12:00:00Z",
+  "size": 1024,
+  "encrypted": true
+}
+```
+
+### Configuration
+
+```bash
+# Enable encryption
+ENCRYPTION_ENABLED=true
+
+# Keyring path
+KEYRING_PATH=logs/keyring.jsonl
+
+# Rotation policy
+KEY_ROTATION_DAYS=90
+```
+
+### Security Guarantees
+
+1. **AES-256-GCM**: Industry-standard authenticated encryption
+2. **Unique nonces**: Random 96-bit nonce per encryption
+3. **Tamper detection**: GCM tag verifies integrity
+4. **Key isolation**: Key material never logged or exported
+5. **Audit trail**: All key operations logged
+
+### Backward Compatibility
+
+If `ENCRYPTION_ENABLED=false`:
+- Artifacts written as plaintext
+- Plaintext artifacts remain readable
+- Sidecar metadata still created with `encrypted: false`
+
+### Key Recovery
+
+**Prevention**: Back up `logs/keyring.jsonl` regularly
+
+**Recovery**: Restore keyring from backup. Without backup, encrypted artifacts are unrecoverable.
+
+### Related Documentation
+
+- [ENCRYPTION.md](./ENCRYPTION.md) - Complete encryption guide
+- [CLASSIFICATION.md](./CLASSIFICATION.md) - Classification labels guide
+- [OPERATIONS.md](./OPERATIONS.md) - Key rotation runbook
