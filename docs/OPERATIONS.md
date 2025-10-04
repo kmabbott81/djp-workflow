@@ -5150,3 +5150,224 @@ cp .env.local.drill-backup .env.local
 - [ORCHESTRATION.md](./ORCHESTRATION.md) - Complete checkpoint documentation
 - [SECURITY.md](./SECURITY.md) - RBAC role hierarchy and permissions
 - [STORAGE.md](./STORAGE.md) - Comprehensive storage documentation
+
+---
+
+## First 10 Minutes On-Call: Quick Response Checklist
+
+When you're paged or notified of an issue, follow this rapid triage checklist:
+
+### 1. Health Check (30 seconds)
+```bash
+# Check health endpoints
+curl https://your-instance/health
+curl https://your-instance/ready
+
+# Expected: {"status": "healthy", "checks": {...}}
+```
+
+**Red flags:**
+- 5xx responses
+- Circuit breakers open
+- Database connectivity issues
+
+### 2. Recent Errors (1 minute)
+```bash
+# Check last 100 audit log entries for errors
+tail -100 logs/audit/*.jsonl | grep '"level":"error"'
+
+# Check application logs
+tail -100 logs/app.log | grep ERROR
+```
+
+**Look for:**
+- Authentication failures
+- Rate limit exhaustion
+- External API failures (Slack, Teams, Gmail, etc.)
+
+### 3. Resource Status (1 minute)
+```bash
+# Check Docker containers (if using Docker)
+docker ps -a
+docker stats --no-stream
+
+# Check disk usage
+df -h
+
+# Check memory
+free -h
+```
+
+**Red flags:**
+- Containers in restart loop
+- Disk >90% full
+- Memory exhausted
+
+### 4. Recent Changes (1 minute)
+```bash
+# Check recent git commits
+git log --oneline -10
+
+# Check recent deployments
+cat logs/deploy.log | tail -50
+```
+
+**Question:** Was there a recent deployment or config change?
+
+### 5. Connector Health (2 minutes)
+```bash
+# Check connector circuit breaker states
+cat logs/connectors/circuit_state.jsonl | tail -20
+
+# Check connector metrics
+cat logs/connectors/metrics.jsonl | tail -50 | grep '"status":"error"'
+```
+
+**Red flags:**
+- Multiple circuit breakers open
+- High error rates on specific connectors
+- Token expiration issues
+
+### 6. URG Index Status (1 minute)
+```bash
+# Check URG shard count and size
+ls -lh logs/graph/*/
+
+# Check for index corruption
+python -c "from src.urg.index import URGIndex; idx = URGIndex(); print(f'Resources: {len(idx._resources)}')"
+```
+
+### 7. Budget/Rate Limits (1 minute)
+```bash
+# Check if budgets are breached
+grep "over_budget" logs/audit/*.jsonl | tail -20
+
+# Check rate limit hits
+grep "rate_limit" logs/audit/*.jsonl | tail -20
+```
+
+### 8. User Impact Assessment (1 minute)
+```bash
+# Count recent failed requests
+grep '"result":"error"' logs/audit/*.jsonl | wc -l
+
+# Identify affected users
+grep '"result":"error"' logs/audit/*.jsonl | jq -r '.user_email' | sort | uniq -c
+```
+
+### 9. Immediate Mitigation (2 minutes)
+
+Based on findings, apply quick fixes:
+
+**High memory:** Restart worker processes
+```bash
+docker restart djp-worker  # or relevant process
+```
+
+**Circuit breakers open:** Reset if external service is recovered
+```bash
+python scripts/reset_circuits.py --connector slack
+```
+
+**Disk full:** Archive old logs
+```bash
+./scripts/archive_logs.sh
+```
+
+**Token expired:** Refresh OAuth tokens
+```bash
+python scripts/refresh_tokens.py --connector gmail
+```
+
+### 10. Escalate or Continue (remainder)
+
+**If resolved:**
+- Document in incident log
+- Monitor for 10 more minutes
+- Post mortem if impactful
+
+**If not resolved:**
+- Page senior engineer
+- Enable debug logging: `export LOG_LEVEL=DEBUG`
+- Capture detailed state for analysis
+
+---
+
+## Backup & Restore Dry-Run
+
+Practice your backup and restore procedures quarterly to ensure readiness.
+
+### Backup Dry-Run
+
+```bash
+# 1. Create backup directory
+mkdir -p backups/$(date +%Y%m%d-%H%M%S)
+BACKUP_DIR=backups/$(date +%Y%m%d-%H%M%S)
+
+# 2. Backup audit logs
+cp -r logs/audit/ $BACKUP_DIR/audit/
+
+# 3. Backup URG shards
+cp -r logs/graph/ $BACKUP_DIR/graph/
+
+# 4. Backup connector state
+cp -r logs/connectors/ $BACKUP_DIR/connectors/
+
+# 5. Backup teams/delegations/checkpoints
+cp logs/teams.jsonl $BACKUP_DIR/
+cp logs/delegations.jsonl $BACKUP_DIR/
+cp logs/checkpoints/ $BACKUP_DIR/checkpoints/ -r
+
+# 6. Create backup manifest
+cat > $BACKUP_DIR/manifest.json <<EOF
+{
+  "timestamp": "$(date -Iseconds)",
+  "version": "$(cat src/version.py | grep VERSION | cut -d'"' -f2)",
+  "backup_type": "full",
+  "files": $(find $BACKUP_DIR -type f | wc -l)
+}
+EOF
+
+# 7. Verify backup integrity
+ls -lh $BACKUP_DIR
+cat $BACKUP_DIR/manifest.json
+
+echo "Backup complete: $BACKUP_DIR"
+```
+
+### Restore Dry-Run (Non-Destructive)
+
+```bash
+# 1. List available backups
+ls -lh backups/
+
+# 2. Select backup to restore
+RESTORE_FROM=backups/20251004-140000
+
+# 3. Validate manifest
+cat $RESTORE_FROM/manifest.json
+
+# 4. Dry-run: Compare with current state
+diff -r $RESTORE_FROM/audit/ logs/audit/ || echo "Differences found (expected)"
+
+# 5. For actual restore (DESTRUCTIVE - not part of drill):
+# ./scripts/restore.sh $RESTORE_FROM --confirm
+
+echo "Dry-run complete. To actually restore, use: ./scripts/restore.sh $RESTORE_FROM"
+```
+
+### Restore Checklist
+
+- [ ] Service stopped or in maintenance mode
+- [ ] Current state backed up (pre-restore backup)
+- [ ] Backup manifest validated
+- [ ] Restore script tested in staging
+- [ ] Team notified of maintenance window
+- [ ] Rollback plan ready
+
+### Backup Schedule Recommendations
+
+- **Audit logs**: Daily incremental, weekly full
+- **URG shards**: Daily incremental, weekly full
+- **Connector state**: Hourly snapshots, daily retention
+- **Config/secrets**: On every change, version controlled
