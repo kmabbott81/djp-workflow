@@ -3500,3 +3500,80 @@ Viewer < Author < Operator < Deployer < Auditor < Compliance < Admin
 - [COLLABORATION.md](./COLLABORATION.md) - Complete collaborative governance guide
 - [OPERATIONS.md](./OPERATIONS.md) - Delegation and multi-sign runbooks
 - [CONNECTOR_OBSERVABILITY.md](./CONNECTOR_OBSERVABILITY.md) - Connector health monitoring
+
+---
+
+## Dependency Management & Security Updates
+
+### Dependency Policy
+
+We maintain strict dependency security practices to protect against known vulnerabilities:
+
+**Automated Monitoring:**
+- Dependabot enabled for weekly dependency updates (pip, GitHub Actions, Docker)
+- `pip-audit` runs on every nightly CI build (blocking)
+- `pip-audit` runs on PRs (non-blocking, warning only)
+
+**Update Schedule:**
+- **Security patches**: Applied within 7 days of disclosure
+- **Non-security updates**: Reviewed weekly, applied in batches
+- **Major version updates**: Evaluated quarterly with compatibility testing
+
+### Running Dependency Audits
+
+```bash
+# Install pip-audit
+pip install pip-audit
+
+# Run audit
+pip-audit
+
+# Audit with JSON output
+pip-audit --format json --output audit-report.json
+
+# Fix vulnerabilities automatically (where possible)
+pip-audit --fix
+```
+
+### Overriding Dependency Versions
+
+If you need to override a dependency version due to compatibility issues:
+
+1. **Document the reason** in a comment in `pyproject.toml` or `requirements.txt`
+2. **Create a tracking issue** for the override
+3. **Set a review date** (max 90 days)
+4. **Test thoroughly** before deploying
+
+Example:
+```toml
+# pyproject.toml
+dependencies = [
+    "vulnerable-package==1.2.3",  # TODO(#123): Pin due to breaking changes in 1.3.x, review by 2026-01-15
+]
+```
+
+### Reporting Dependency Vulnerabilities
+
+If you discover a vulnerability in a dependency:
+
+1. Check if it's already tracked in Dependabot alerts
+2. If not, create a **security advisory** (not a public issue)
+3. Follow the process in the [Security Policy](#reporting-vulnerabilities) section
+
+### Best Practices
+
+- **Pin versions** in production deployments
+- **Use lock files** (`requirements.txt` with hashes) for reproducible builds
+- **Review changelogs** before updating dependencies
+- **Test upgrades** in staging environments first
+- **Monitor CVE databases** for your tech stack
+
+### Dependency Review Process
+
+For Dependabot PRs:
+
+1. **Automated**: CI tests run automatically
+2. **Review**: Check changelog for breaking changes
+3. **Security**: Verify CVE fix details if applicable
+4. **Approve**: Merge if tests pass and no breaking changes
+5. **Monitor**: Watch for issues post-merge
