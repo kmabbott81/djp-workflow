@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy requirements first for better caching
 COPY requirements.txt requirements.in pyproject.toml ./
 RUN pip install --no-cache-dir --user -r requirements.txt
-RUN pip install --no-cache-dir --user -e .
+RUN pip install --no-cache-dir --user -e ".[observability]"
 
 # Production stage
 FROM python:3.11-slim
