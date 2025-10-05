@@ -90,9 +90,16 @@ def root():
             "templates": "/api/templates",
             "render": "/api/render",
             "triage": "/api/triage",
+            "health": "/_stcore/health",
             "metrics": "/metrics",
         },
     }
+
+
+@app.get("/_stcore/health")
+def health():
+    """Health check endpoint."""
+    return {"ok": True}
 
 
 @app.get("/metrics", response_class=PlainTextResponse)
