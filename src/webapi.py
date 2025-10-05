@@ -14,13 +14,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
+from .telemetry import init_telemetry
 from .telemetry.middleware import TelemetryMiddleware
 from .templates import list_templates
 from .templates import render_template as render_template_content
 
 app = FastAPI(title="DJP Workflow API", version="1.0.0")
 
-# Sprint 46: Add telemetry middleware if enabled
+# Sprint 46: Initialize telemetry and add middleware
+init_telemetry()
 app.add_middleware(TelemetryMiddleware)
 
 # CORS for local Outlook/VS Code development
