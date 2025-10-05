@@ -9,8 +9,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
-COPY requirements.txt requirements.in ./
+COPY requirements.txt requirements.in pyproject.toml ./
 RUN pip install --no-cache-dir --user -r requirements.txt
+RUN pip install --no-cache-dir --user -e .
 
 # Production stage
 FROM python:3.11-slim
