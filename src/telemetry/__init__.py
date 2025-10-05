@@ -1,11 +1,13 @@
 """Telemetry module for observability (noop by default).
 
 Sprint 46: Factory pattern for backend selection.
+Sprint 47: OpenTelemetry tracing integration.
 
 Backends:
 - noop: No-op (default when TELEMETRY_ENABLED=false)
-- prom: Prometheus metrics (TELEMETRY_BACKEND=prom)
-- otel: OpenTelemetry traces (TELEMETRY_BACKEND=otel, Sprint 47+)
+- prom: Prometheus metrics only (TELEMETRY_BACKEND=prom)
+- otel: OpenTelemetry traces only (TELEMETRY_BACKEND=otel)
+- hybrid: Prometheus metrics + OTel traces (TELEMETRY_BACKEND=hybrid)
 """
 from __future__ import annotations
 
@@ -40,10 +42,23 @@ def init_telemetry() -> None:
 
     elif backend == "otel":
         # Sprint 47: OpenTelemetry initialization
-        _LOG.warning("OTel backend not yet implemented (Sprint 47), using noop")
-        from .noop import init_noop_if_enabled
+        from .log_correlation import install_trace_correlation
+        from .otel import init_tracer
 
-        init_noop_if_enabled()
+        init_tracer()
+        install_trace_correlation()
+        _LOG.info("Telemetry initialized: backend=otel (tracing + log correlation)")
+
+    elif backend == "hybrid":
+        # Sprint 47: Hybrid mode (Prometheus + OpenTelemetry)
+        from .log_correlation import install_trace_correlation
+        from .otel import init_tracer
+        from .prom import init_prometheus
+
+        init_prometheus()
+        init_tracer()
+        install_trace_correlation()
+        _LOG.info("Telemetry initialized: backend=hybrid (prometheus + otel + log correlation)")
 
     elif backend == "noop":
         from .noop import init_noop_if_enabled
