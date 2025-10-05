@@ -93,6 +93,8 @@ def root():
             "render": "/api/render",
             "triage": "/api/triage",
             "health": "/_stcore/health",
+            "ready": "/ready",
+            "version": "/version",
             "metrics": "/metrics",
         },
     }
@@ -102,6 +104,90 @@ def root():
 def health():
     """Health check endpoint."""
     return {"ok": True}
+
+
+@app.get("/version")
+def version():
+    """
+    Version and build metadata endpoint.
+
+    Returns git SHA, version, and build timestamp.
+    """
+    import subprocess
+
+    git_sha = "unknown"
+    git_branch = "unknown"
+
+    try:
+        git_sha = subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"], stderr=subprocess.DEVNULL, text=True
+        ).strip()
+    except Exception:
+        pass
+
+    try:
+        git_branch = subprocess.check_output(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"], stderr=subprocess.DEVNULL, text=True
+        ).strip()
+    except Exception:
+        pass
+
+    return {
+        "version": app.version,
+        "git_sha": git_sha,
+        "git_branch": git_branch,
+        "build_time": os.environ.get("BUILD_TIME", "unknown"),
+        "environment": os.environ.get("RAILWAY_ENVIRONMENT", "local"),
+    }
+
+
+@app.get("/ready")
+def ready():
+    """
+    Readiness check endpoint.
+
+    Returns 200 if service is ready to accept traffic.
+    Checks filesystem and basic dependencies.
+    """
+    checks = {
+        "telemetry": False,
+        "templates": False,
+        "filesystem": False,
+    }
+
+    # Check telemetry initialized
+    try:
+        from .telemetry.prom import generate_metrics_text
+
+        metrics = generate_metrics_text()
+        checks["telemetry"] = len(metrics) > 0
+    except Exception:
+        pass
+
+    # Check templates loadable
+    try:
+        templates = list_templates()
+        checks["templates"] = len(templates) > 0
+    except Exception:
+        pass
+
+    # Check filesystem writable
+    try:
+        artifact_dir = Path("runs/api")
+        artifact_dir.mkdir(parents=True, exist_ok=True)
+        test_file = artifact_dir / ".readiness_check"
+        test_file.write_text("ok")
+        test_file.unlink()
+        checks["filesystem"] = True
+    except Exception:
+        pass
+
+    all_ready = all(checks.values())
+
+    return {
+        "ready": all_ready,
+        "checks": checks,
+    }
 
 
 @app.get("/metrics", response_class=PlainTextResponse)

@@ -1,0 +1,103 @@
+name: Staging Uptime Monitor
+
+on:
+  schedule:
+    # Every 5 minutes
+    - cron: '*/5 * * * *'
+  # Also run nightly at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Check health endpoint
+        id: health
+        run: |
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://relay-production-f2a6.up.railway.app/_stcore/health)
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Health check failed with HTTP $HTTP_CODE"
+            exit 1
+          fi
+
+          echo "✅ Health check passed (HTTP $HTTP_CODE)"
+
+      - name: Check metrics endpoint
+        id: metrics
+        run: |
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://relay-production-f2a6.up.railway.app/metrics)
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "⚠️ Metrics endpoint returned HTTP $HTTP_CODE"
+            exit 1
+          fi
+
+          # Verify Prometheus format
+          CONTENT=$(curl -s https://relay-production-f2a6.up.railway.app/metrics | head -n 5)
+          if ! echo "$CONTENT" | grep -q "# HELP"; then
+            echo "⚠️ Metrics endpoint not returning Prometheus format"
+            exit 1
+          fi
+
+          echo "✅ Metrics endpoint healthy"
+
+      - name: Create failure issue
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '🚨 Staging Service Downtime Detected';
+            const body = `
+            ## Staging Service Alert
+
+            **Time:** ${new Date().toISOString()}
+            **Workflow:** ${context.workflow}
+            **Run:** ${context.runNumber}
+
+            ### Failed Checks
+            ${context.job}
+
+            ### Action Required
+            1. Check Railway logs: \`railway logs --lines 100\`
+            2. Verify service status: \`railway status\`
+            3. Check deployment: https://railway.app/project/relay
+
+            ### Quick Diagnosis
+            \`\`\`bash
+            curl -I https://relay-production-f2a6.up.railway.app/_stcore/health
+            curl https://relay-production-f2a6.up.railway.app/metrics | head -n 20
+            \`\`\`
+
+            [View workflow run](${context.payload.repository.html_url}/actions/runs/${context.runId})
+            `;
+
+            // Check if issue already exists
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'uptime-alert',
+              per_page: 1
+            });
+
+            if (issues.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['uptime-alert', 'staging', 'incident']
+              });
+            } else {
+              // Comment on existing issue
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issues.data[0].number,
+                body: `Another failure detected at ${new Date().toISOString()}\n\n[View run](${context.payload.repository.html_url}/actions/runs/${context.runId})`
+              });
+            }
