@@ -6,10 +6,15 @@ on:
     - cron: '0 3 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   performance-baseline:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    continue-on-error: true
 
     steps:
       - name: Checkout repository
