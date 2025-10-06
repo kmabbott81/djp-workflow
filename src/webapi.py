@@ -27,7 +27,7 @@ app = FastAPI(title="DJP Workflow API", version="1.0.0")
 init_telemetry()
 app.add_middleware(TelemetryMiddleware)
 
-# CORS configuration (Sprint 49 Phase B: Added Vercel Studio domain)
+# CORS configuration (Sprint 50: Hardened headers + expose X-Request-ID/X-Trace-Link)
 allowed_origins = [
     "http://localhost:3000",  # Local development
     "https://relay-studio-one.vercel.app",  # Production Studio
@@ -42,7 +42,8 @@ app.add_middleware(
     allow_origins=allowed_origins,
     allow_credentials=False,  # No cookies needed
     allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Idempotency-Key", "X-Signature"],
+    allow_headers=["Content-Type", "Idempotency-Key", "X-Signature", "Authorization"],  # Sprint 50: +Authorization
+    expose_headers=["X-Request-ID", "X-Trace-Link"],  # Sprint 50: Expose for observability
     max_age=600,  # Cache preflight for 10 minutes
 )
 

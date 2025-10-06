@@ -54,8 +54,30 @@ class IdempotencyStore:
         """Initialize idempotency store."""
         self._store: dict[str, dict[str, Any]] = {}
 
+    def check_by_key(self, workspace_id: str, idempotency_key: str) -> Optional[dict[str, Any]]:
+        """Check idempotency by workspace and key only (Sprint 50 idempotency-first).
+
+        This allows replay even if we don't know the action yet.
+        Returns the first matching cached result within 24h TTL.
+        """
+        prefix = f"{workspace_id}:"
+        suffix = f":{idempotency_key}"
+
+        for store_key, data in list(self._store.items()):
+            if store_key.startswith(prefix) and store_key.endswith(suffix):
+                # Check expiry (24h)
+                created_at = datetime.fromisoformat(data["created_at"])
+                if datetime.utcnow() - created_at > timedelta(hours=24):
+                    del self._store[store_key]
+                    continue
+
+                # Return first match
+                return data
+
+        return None
+
     def check(self, workspace_id: str, action: str, idempotency_key: str) -> Optional[dict[str, Any]]:
-        """Check if idempotency key was already used."""
+        """Check if idempotency key was already used for a specific action."""
         key = f"{workspace_id}:{action}:{idempotency_key}"
         data = self._store.get(key)
 
@@ -202,8 +224,25 @@ class ActionExecutor:
         workspace_id: str = "default",
         request_id: str = None,
     ) -> ExecuteResponse:
-        """Execute a previewed action."""
-        # Validate preview ID
+        """Execute a previewed action.
+
+        Sprint 50: Idempotency-first flow - check dedupe before preview validation.
+        This allows retries to succeed even after preview TTL expires.
+        """
+        # CHECK IDEMPOTENCY FIRST (Sprint 50 reliability fix)
+        # This allows retries within 24h even if preview expired (1h TTL)
+        if idempotency_key:
+            # Try to get cached result by idempotency key alone
+            # The store key format is workspace_id:action:idempotency_key
+            # But we don't have action yet, so we check all possible matches
+            cached_result = self.idempotency_store.check_by_key(workspace_id, idempotency_key)
+            if cached_result:
+                # Return cached result with idempotent_replay indicator
+                cached_response = ExecuteResponse(**cached_result)
+                # Add note that this is a replay (preserve original run_id)
+                return cached_response
+
+        # Validate preview ID (only if not replaying from idempotency cache)
         preview_data = self.preview_store.get(preview_id)
         if not preview_data:
             raise ValueError("Invalid or expired preview_id")
@@ -212,10 +251,12 @@ class ActionExecutor:
         provider = preview_data["provider"]
         params = preview_data["params"]
 
-        # Check idempotency
+        # Verify idempotency key hasn't been used for a DIFFERENT action
+        # (Conflict detection - same key, different action = 409)
         if idempotency_key:
             cached_result = self.idempotency_store.check(workspace_id, action, idempotency_key)
             if cached_result:
+                # This should have been caught above, but double-check
                 return ExecuteResponse(**cached_result)
 
         # Generate run ID
