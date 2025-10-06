@@ -93,8 +93,14 @@ Authorization: Bearer relay_sk_<key>
     # Mark endpoints that require auth
     for path in openapi_schema["paths"]:
         for method in openapi_schema["paths"][path]:
-            if path.startswith("/actions/preview") or path.startswith("/actions/execute"):
+            if path.startswith("/actions/preview") or path.startswith("/actions/execute") or path.startswith("/audit"):
                 openapi_schema["paths"][path][method]["security"] = [{"ApiKeyBearer": []}]
+                # Add scope hints for documentation
+                if path.startswith("/audit"):
+                    openapi_schema["paths"][path][method]["description"] = (
+                        openapi_schema["paths"][path][method].get("description", "")
+                        + "\n\n**Required scope:** `audit:read` (admin only)"
+                    )
 
     app.openapi_schema = openapi_schema
     return app.openapi_schema
@@ -753,6 +759,173 @@ async def execute_action(
         except Exception:
             # Audit logging failure should not break the request
             pass
+
+
+@app.get("/audit")
+@require_scopes(["audit:read"])
+async def get_audit_logs(
+    request: Request,
+    limit: int = 50,
+    offset: int = 0,
+    provider: Optional[str] = None,
+    action_id: Optional[str] = None,
+    status: Optional[str] = None,
+    actor_type: Optional[str] = None,
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
+):
+    """
+    Query audit logs (admin only).
+
+    Requires scope: audit:read
+
+    Args:
+        limit: Number of records to return (1-200, default 50)
+        offset: Offset for pagination (>=0, default 0)
+        provider: Filter by provider (e.g., 'independent')
+        action_id: Filter by action ID (e.g., 'webhook.save')
+        status: Filter by status ('ok' or 'error')
+        actor_type: Filter by actor type ('user' or 'api_key')
+        from_date: Start date (ISO8601)
+        to_date: End date (ISO8601)
+
+    Returns:
+        List of audit log entries (redacted, no secrets)
+    """
+    from datetime import datetime
+
+    from src.db.connection import get_connection
+
+    # Validate limit
+    if limit < 1 or limit > 200:
+        raise HTTPException(status_code=400, detail="limit must be between 1 and 200")
+
+    # Validate offset
+    if offset < 0:
+        raise HTTPException(status_code=400, detail="offset must be >= 0")
+
+    # Validate status enum
+    if status and status not in ["ok", "error"]:
+        raise HTTPException(status_code=400, detail="status must be 'ok' or 'error'")
+
+    # Validate actor_type enum
+    if actor_type and actor_type not in ["user", "api_key"]:
+        raise HTTPException(status_code=400, detail="actor_type must be 'user' or 'api_key'")
+
+    # Get workspace_id from auth context
+    workspace_id = request.state.workspace_id if hasattr(request.state, "workspace_id") else None
+    if not workspace_id:
+        raise HTTPException(status_code=403, detail="workspace_id not found in auth context")
+
+    # Build query
+    query = """
+        SELECT
+            id,
+            run_id,
+            request_id,
+            workspace_id,
+            actor_type,
+            actor_id,
+            provider,
+            action_id,
+            preview_id,
+            signature_present,
+            params_prefix64,
+            status,
+            error_reason,
+            http_status,
+            duration_ms,
+            created_at
+        FROM action_audit
+        WHERE workspace_id = $1
+    """
+    params = [workspace_id]
+    param_idx = 2
+
+    # Add filters
+    if provider:
+        query += f" AND provider = ${param_idx}"
+        params.append(provider)
+        param_idx += 1
+
+    if action_id:
+        query += f" AND action_id = ${param_idx}"
+        params.append(action_id)
+        param_idx += 1
+
+    if status:
+        query += f" AND status = ${param_idx}::audit_status_enum"
+        params.append(status)
+        param_idx += 1
+
+    if actor_type:
+        query += f" AND actor_type = ${param_idx}::actor_type_enum"
+        params.append(actor_type)
+        param_idx += 1
+
+    if from_date:
+        try:
+            from_dt = datetime.fromisoformat(from_date.replace("Z", "+00:00"))
+            query += f" AND created_at >= ${param_idx}"
+            params.append(from_dt)
+            param_idx += 1
+        except ValueError:
+            raise HTTPException(status_code=400, detail="from_date must be valid ISO8601") from None
+
+    if to_date:
+        try:
+            to_dt = datetime.fromisoformat(to_date.replace("Z", "+00:00"))
+            query += f" AND created_at <= ${param_idx}"
+            params.append(to_dt)
+            param_idx += 1
+        except ValueError:
+            raise HTTPException(status_code=400, detail="to_date must be valid ISO8601") from None
+
+    # Order by created_at DESC (uses index)
+    query += " ORDER BY created_at DESC"
+
+    # Pagination
+    query += f" LIMIT ${param_idx} OFFSET ${param_idx + 1}"
+    params.append(limit)
+    params.append(offset)
+
+    # Execute query
+    async with get_connection() as conn:
+        rows = await conn.fetch(query, *params)
+
+    # Convert to dict list (redacted - no params_hash, no idempotency_key_hash)
+    items = [
+        {
+            "id": str(row["id"]),
+            "run_id": row["run_id"],
+            "request_id": row["request_id"],
+            "workspace_id": str(row["workspace_id"]),
+            "actor_type": row["actor_type"],
+            "actor_id": row["actor_id"],
+            "provider": row["provider"],
+            "action_id": row["action_id"],
+            "preview_id": row["preview_id"],
+            "signature_present": row["signature_present"],
+            "params_prefix64": row["params_prefix64"],
+            "status": row["status"],
+            "error_reason": row["error_reason"],
+            "http_status": row["http_status"],
+            "duration_ms": row["duration_ms"],
+            "created_at": row["created_at"].isoformat(),
+        }
+        for row in rows
+    ]
+
+    # Calculate next_offset
+    next_offset = offset + len(items) if len(items) == limit else None
+
+    return {
+        "items": items,
+        "limit": limit,
+        "offset": offset,
+        "next_offset": next_offset,
+        "count": len(items),
+    }
 
 
 if __name__ == "__main__":
