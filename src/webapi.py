@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
+from .auth.security import require_scopes
 from .telemetry import init_telemetry
 from .telemetry.middleware import TelemetryMiddleware
 from .templates import list_templates
@@ -452,6 +453,7 @@ def list_actions(request: Request):
 
 
 @app.post("/actions/preview")
+@require_scopes(["actions:preview"])
 async def preview_action(
     request: Request,
     body: dict[str, Any],
@@ -461,6 +463,7 @@ async def preview_action(
 
     Returns preview_id for use in /actions/execute.
     Requires ACTIONS_ENABLED=true.
+    Requires scope: actions:preview
     """
     if not ACTIONS_ENABLED:
         raise HTTPException(status_code=404, detail="Actions feature not enabled")
@@ -484,6 +487,7 @@ async def preview_action(
 
 
 @app.post("/actions/execute")
+@require_scopes(["actions:execute"])
 async def execute_action(
     request: Request,
     body: dict[str, Any],
@@ -495,6 +499,7 @@ async def execute_action(
     Requires preview_id from /actions/preview.
     Optionally accepts Idempotency-Key header for deduplication.
     Requires ACTIONS_ENABLED=true.
+    Requires scope: actions:execute
     """
     if not ACTIONS_ENABLED:
         raise HTTPException(status_code=404, detail="Actions feature not enabled")
