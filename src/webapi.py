@@ -465,15 +465,25 @@ async def preview_action(
     Requires ACTIONS_ENABLED=true.
     Requires scope: actions:preview
     """
+    import time
+
+    from .actions import PreviewRequest, get_executor
+    from .audit.logger import write_audit
+
     if not ACTIONS_ENABLED:
         raise HTTPException(status_code=404, detail="Actions feature not enabled")
 
-    from .actions import PreviewRequest, get_executor
+    start_time = time.time()
+    status = "ok"
+    error_reason = "none"
+    http_status = 200
+    preview_result = None
 
     try:
         preview_req = PreviewRequest(**body)
         executor = get_executor()
         preview = executor.preview(preview_req.action, preview_req.params)
+        preview_result = preview
 
         return {
             **preview.model_dump(),
@@ -481,9 +491,59 @@ async def preview_action(
         }
 
     except ValueError as e:
+        status = "error"
+        error_reason = "validation"
+        http_status = 400
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
+        status = "error"
+        error_reason = "other"
+        http_status = 500
         raise HTTPException(status_code=500, detail=f"Preview failed: {str(e)}") from e
+    finally:
+        # Write audit log
+        duration_ms = int((time.time() - start_time) * 1000)
+
+        # Extract action details
+        try:
+            action = body.get("action", "unknown")
+            params = body.get("params", {})
+
+            # Parse provider and action_id
+            if "." in action:
+                parts = action.split(".", 1)
+                provider = parts[0]
+                action_id = parts[1] if len(parts) > 1 else action
+            else:
+                provider = "unknown"
+                action_id = action
+
+            request_id = request.state.request_id if hasattr(request.state, "request_id") else str(uuid4())
+            workspace_id = request.state.workspace_id if hasattr(request.state, "workspace_id") else uuid4()
+            actor_type = request.state.actor_type if hasattr(request.state, "actor_type") else "user"
+            actor_id = request.state.actor_id if hasattr(request.state, "actor_id") else "unknown"
+            signature_present = "X-Signature" in request.headers
+
+            await write_audit(
+                run_id=None,  # Preview has no run_id
+                request_id=request_id,
+                workspace_id=workspace_id,
+                actor_type=actor_type,
+                actor_id=actor_id,
+                provider=provider,
+                action_id=action_id,
+                preview_id=preview_result.preview_id if preview_result else None,
+                idempotency_key=None,  # Preview doesn't use idempotency
+                signature_present=signature_present,
+                params=params,
+                status=status,
+                error_reason=error_reason,
+                http_status=http_status,
+                duration_ms=duration_ms,
+            )
+        except Exception:
+            # Audit logging failure should not break the request
+            pass
 
 
 @app.post("/actions/execute")
@@ -501,19 +561,32 @@ async def execute_action(
     Requires ACTIONS_ENABLED=true.
     Requires scope: actions:execute
     """
+    import time
+
+    from .actions import get_executor
+    from .audit.logger import write_audit
+
     if not ACTIONS_ENABLED:
         raise HTTPException(status_code=404, detail="Actions feature not enabled")
 
-    from .actions import get_executor
+    start_time = time.time()
+    status = "ok"
+    error_reason = "none"
+    http_status = 200
+    execute_result = None
+    preview_id = body.get("preview_id")
+    final_idempotency_key = idempotency_key or body.get("idempotency_key")
 
     try:
         # Parse request
-        preview_id = body.get("preview_id")
         if not preview_id:
+            status = "error"
+            error_reason = "validation"
+            http_status = 400
             raise HTTPException(status_code=400, detail="preview_id required")
 
-        # Use Idempotency-Key header if provided, otherwise from body
-        final_idempotency_key = idempotency_key or body.get("idempotency_key")
+        # Get workspace_id from auth context
+        workspace_id = request.state.workspace_id if hasattr(request.state, "workspace_id") else "default"
 
         # Get request ID from telemetry middleware
         request_id = request.state.request_id if hasattr(request.state, "request_id") else str(uuid4())
@@ -523,18 +596,85 @@ async def execute_action(
         result = await executor.execute(
             preview_id=preview_id,
             idempotency_key=final_idempotency_key,
-            workspace_id="default",  # TODO: Get from auth
+            workspace_id=workspace_id,
             request_id=request_id,
         )
+        execute_result = result
 
         return result.model_dump()
 
     except ValueError as e:
+        status = "error"
+        error_reason = "validation"
+        http_status = 400
         raise HTTPException(status_code=400, detail=str(e)) from e
     except NotImplementedError as e:
+        status = "error"
+        error_reason = "provider_unconfigured"
+        http_status = 501
         raise HTTPException(status_code=501, detail=str(e)) from e
+    except TimeoutError as e:
+        status = "error"
+        error_reason = "timeout"
+        http_status = 504
+        raise HTTPException(status_code=504, detail=f"Execution timeout: {str(e)}") from e
     except Exception as e:
+        status = "error"
+        # Check if it's a 5xx from downstream
+        if "5" in str(e) and "xx" in str(e).lower():
+            error_reason = "downstream_5xx"
+        else:
+            error_reason = "other"
+        http_status = 500
         raise HTTPException(status_code=500, detail=f"Execution failed: {str(e)}") from e
+    finally:
+        # Write audit log
+        duration_ms = int((time.time() - start_time) * 1000)
+
+        # Extract action details from execute result or preview store
+        try:
+            # Get action info from result or try to extract from body
+            if execute_result:
+                provider = execute_result.provider
+                action_id = execute_result.action
+                run_id = execute_result.run_id
+            else:
+                # Fallback if result not available
+                provider = "unknown"
+                action_id = "unknown"
+                run_id = None
+
+            # Reconstruct params (not available in execute, use empty dict)
+            params = body.copy()
+            params.pop("preview_id", None)
+            params.pop("idempotency_key", None)
+
+            request_id = request.state.request_id if hasattr(request.state, "request_id") else str(uuid4())
+            workspace_id = request.state.workspace_id if hasattr(request.state, "workspace_id") else uuid4()
+            actor_type = request.state.actor_type if hasattr(request.state, "actor_type") else "user"
+            actor_id = request.state.actor_id if hasattr(request.state, "actor_id") else "unknown"
+            signature_present = "X-Signature" in request.headers
+
+            await write_audit(
+                run_id=run_id,
+                request_id=request_id,
+                workspace_id=workspace_id,
+                actor_type=actor_type,
+                actor_id=actor_id,
+                provider=provider,
+                action_id=action_id,
+                preview_id=preview_id,
+                idempotency_key=final_idempotency_key,
+                signature_present=signature_present,
+                params=params if params else {},
+                status=status,
+                error_reason=error_reason,
+                http_status=http_status,
+                duration_ms=duration_ms,
+            )
+        except Exception:
+            # Audit logging failure should not break the request
+            pass
 
 
 if __name__ == "__main__":
