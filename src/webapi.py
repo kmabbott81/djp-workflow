@@ -1,6 +1,7 @@
 """FastAPI web API for templates and triage endpoints.
 
 Sprint 46: Added /metrics endpoint and telemetry middleware.
+Sprint 49 Phase B: Added /actions endpoints with preview/confirm workflow.
 """
 
 import os
@@ -8,8 +9,9 @@ from base64 import b64encode
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
+from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
@@ -25,13 +27,23 @@ app = FastAPI(title="DJP Workflow API", version="1.0.0")
 init_telemetry()
 app.add_middleware(TelemetryMiddleware)
 
-# CORS for local Outlook/VS Code development
+# CORS configuration (Sprint 49 Phase B: Added Vercel Studio domain)
+allowed_origins = [
+    "http://localhost:3000",  # Local development
+    "https://relay-studio-one.vercel.app",  # Production Studio
+]
+
+# Allow all origins in development
+if os.getenv("RELAY_ENV") != "production":
+    allowed_origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Restrict in production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=allowed_origins,
+    allow_credentials=False,  # No cookies needed
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Idempotency-Key", "X-Signature"],
+    max_age=600,  # Cache preflight for 10 minutes
 )
 
 
@@ -82,20 +94,35 @@ class TriageResponse(BaseModel):
     error: Optional[str] = None
 
 
+# Sprint 49 Phase B: Actions feature flag
+ACTIONS_ENABLED = os.getenv("ACTIONS_ENABLED", "false").lower() == "true"
+
+
 @app.get("/")
 def root():
     """API root endpoint."""
+    endpoints = {
+        "templates": "/api/templates",
+        "render": "/api/render",
+        "triage": "/api/triage",
+        "health": "/_stcore/health",
+        "ready": "/ready",
+        "version": "/version",
+        "metrics": "/metrics",
+    }
+
+    # Add actions endpoints if enabled
+    if ACTIONS_ENABLED:
+        endpoints["actions"] = "/actions"
+        endpoints["actions_preview"] = "/actions/preview"
+        endpoints["actions_execute"] = "/actions/execute"
+
     return {
         "name": "DJP Workflow API",
         "version": "1.0.0",
-        "endpoints": {
-            "templates": "/api/templates",
-            "render": "/api/render",
-            "triage": "/api/triage",
-            "health": "/_stcore/health",
-            "ready": "/ready",
-            "version": "/version",
-            "metrics": "/metrics",
+        "endpoints": endpoints,
+        "features": {
+            "actions": ACTIONS_ENABLED,
         },
     }
 
@@ -394,6 +421,114 @@ async def triage_content(request: TriageRequest):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Triage failed: {str(e)}") from e
+
+
+# ============================================================================
+# Sprint 49 Phase B: Actions Endpoints
+# ============================================================================
+
+
+@app.get("/actions")
+def list_actions(request: Request):
+    """
+    List available actions.
+
+    Returns list of action definitions with schemas.
+    Requires ACTIONS_ENABLED=true.
+    """
+    if not ACTIONS_ENABLED:
+        raise HTTPException(status_code=404, detail="Actions feature not enabled")
+
+    from .actions import get_executor
+
+    executor = get_executor()
+    actions = executor.list_actions()
+
+    return {
+        "actions": actions,
+        "request_id": request.state.request_id if hasattr(request.state, "request_id") else str(uuid4()),
+    }
+
+
+@app.post("/actions/preview")
+async def preview_action(
+    request: Request,
+    body: dict[str, Any],
+):
+    """
+    Preview an action before execution.
+
+    Returns preview_id for use in /actions/execute.
+    Requires ACTIONS_ENABLED=true.
+    """
+    if not ACTIONS_ENABLED:
+        raise HTTPException(status_code=404, detail="Actions feature not enabled")
+
+    from .actions import PreviewRequest, get_executor
+
+    try:
+        preview_req = PreviewRequest(**body)
+        executor = get_executor()
+        preview = executor.preview(preview_req.action, preview_req.params)
+
+        return {
+            **preview.model_dump(),
+            "request_id": request.state.request_id if hasattr(request.state, "request_id") else str(uuid4()),
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Preview failed: {str(e)}") from e
+
+
+@app.post("/actions/execute")
+async def execute_action(
+    request: Request,
+    body: dict[str, Any],
+    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
+):
+    """
+    Execute a previewed action.
+
+    Requires preview_id from /actions/preview.
+    Optionally accepts Idempotency-Key header for deduplication.
+    Requires ACTIONS_ENABLED=true.
+    """
+    if not ACTIONS_ENABLED:
+        raise HTTPException(status_code=404, detail="Actions feature not enabled")
+
+    from .actions import get_executor
+
+    try:
+        # Parse request
+        preview_id = body.get("preview_id")
+        if not preview_id:
+            raise HTTPException(status_code=400, detail="preview_id required")
+
+        # Use Idempotency-Key header if provided, otherwise from body
+        final_idempotency_key = idempotency_key or body.get("idempotency_key")
+
+        # Get request ID from telemetry middleware
+        request_id = request.state.request_id if hasattr(request.state, "request_id") else str(uuid4())
+
+        # Execute
+        executor = get_executor()
+        result = await executor.execute(
+            preview_id=preview_id,
+            idempotency_key=final_idempotency_key,
+            workspace_id="default",  # TODO: Get from auth
+            request_id=request_id,
+        )
+
+        return result.model_dump()
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except NotImplementedError as e:
+        raise HTTPException(status_code=501, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Execution failed: {str(e)}") from e
 
 
 if __name__ == "__main__":
