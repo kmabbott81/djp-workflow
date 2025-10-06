@@ -29,7 +29,20 @@
       "Bash(curl -s \"http://localhost:9090/api/v1/query?query=up{job=\"\"djp-workflow-staging\"\"}\")",
       "Bash(curl:*)",
       "Bash(where vercel)",
-      "Bash(vercel:*)"
+      "Bash(vercel:*)",
+      "Bash(railway whoami:*)",
+      "Bash(railway variables set:*)",
+      "Bash(railway variables:*)",
+      "Bash(railway up:*)",
+      "Bash(railway logs:*)",
+      "Bash(pip-compile:*)",
+      "Bash(railway status:*)",
+      "Bash(git push:*)",
+      "Bash(bash -c 'IDEMPOTENCY_KEY=\"\"test-$(date +%s)\"\"; curl -s -X POST https://relay-production-f2a6.up.railway.app/actions/execute -H \"\"Content-Type: application/json\"\" -H \"\"Idempotency-Key: $IDEMPOTENCY_KEY\"\" -d \"\"{\\\"\"preview_id\\\"\": \\\"\"8ab7e7a4-5a4a-4ae3-9303-e2e2f8731a3d\\\"\"}\"\" | python -m json.tool')",
+      "Bash(bash:*)",
+      "Bash(npx playwright test:*)",
+      "Bash(git restore:*)",
+      "Bash(gh pr create:*)"
     ],
     "deny": [],
     "ask": []
