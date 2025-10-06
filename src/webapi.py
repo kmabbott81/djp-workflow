@@ -22,7 +22,85 @@ from .telemetry.middleware import TelemetryMiddleware
 from .templates import list_templates
 from .templates import render_template as render_template_content
 
-app = FastAPI(title="DJP Workflow API", version="1.0.0")
+app = FastAPI(
+    title="DJP Workflow API",
+    version="1.0.0",
+    openapi_tags=[
+        {"name": "actions", "description": "Action preview and execution endpoints"},
+        {"name": "audit", "description": "Audit log queries (admin only)"},
+        {"name": "health", "description": "Health and status endpoints"},
+    ],
+)
+
+# Sprint 51: Add security scheme for API key authentication
+app.openapi_schema = None  # Force regeneration
+
+
+def custom_openapi():
+    """Custom OpenAPI schema with security definitions."""
+    if app.openapi_schema:
+        return app.openapi_schema
+
+    from fastapi.openapi.utils import get_openapi
+
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description="""
+DJP Workflow API with Sprint 51 Phase 1 security.
+
+## Authentication
+
+All `/actions/*` endpoints require authentication via API key:
+
+```
+Authorization: Bearer relay_sk_<key>
+```
+
+## Scopes
+
+- `actions:preview` - Preview actions before execution
+- `actions:execute` - Execute actions
+- `audit:read` - Query audit logs (admin only)
+
+## Roles
+
+- **viewer**: Can preview actions only
+- **developer**: Can preview and execute actions
+- **admin**: Full access including audit logs
+
+## Error Codes
+
+- `401` - Missing or invalid API key
+- `403` - Insufficient permissions (scope check failed)
+- `409` - Idempotency conflict (duplicate request)
+- `501` - Provider not configured
+- `504` - Execution timeout
+        """,
+        routes=app.routes,
+    )
+
+    # Add security scheme
+    openapi_schema["components"]["securitySchemes"] = {
+        "ApiKeyBearer": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "API-Key",
+            "description": "API key in format: relay_sk_<random>",
+        }
+    }
+
+    # Mark endpoints that require auth
+    for path in openapi_schema["paths"]:
+        for method in openapi_schema["paths"][path]:
+            if path.startswith("/actions/preview") or path.startswith("/actions/execute"):
+                openapi_schema["paths"][path][method]["security"] = [{"ApiKeyBearer": []}]
+
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi
 
 # Sprint 46: Initialize telemetry and add middleware
 init_telemetry()
