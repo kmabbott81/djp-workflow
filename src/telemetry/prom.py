@@ -35,6 +35,10 @@ _queue_job_latency = None
 _queue_depth = None
 _external_api_calls = None
 _external_api_duration = None
+# Sprint 49 Phase B: Action metrics
+_action_exec_total = None
+_action_latency_seconds = None
+_action_error_total = None
 
 
 def _is_enabled() -> bool:
@@ -52,6 +56,7 @@ def init_prometheus() -> None:
     global _http_request_duration, _http_requests_total
     global _queue_job_latency, _queue_depth
     global _external_api_calls, _external_api_duration
+    global _action_exec_total, _action_latency_seconds, _action_error_total
 
     if not _is_enabled():
         _LOG.debug("Telemetry disabled, skipping Prometheus init")
@@ -106,6 +111,26 @@ def init_prometheus() -> None:
             "External API call latency in seconds",
             ["service", "operation"],
             buckets=[0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0],
+        )
+
+        # Sprint 49 Phase B: Action metrics
+        _action_exec_total = Counter(
+            "action_exec_total",
+            "Total action executions by provider, action, and status",
+            ["provider", "action", "status"],
+        )
+
+        _action_latency_seconds = Histogram(
+            "action_latency_seconds",
+            "Action execution latency in seconds",
+            ["provider", "action"],
+            buckets=[0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0],
+        )
+
+        _action_error_total = Counter(
+            "action_error_total",
+            "Total action errors by provider, action, and reason",
+            ["provider", "action", "reason"],
         )
 
         _METRICS_INITIALIZED = True
@@ -224,6 +249,45 @@ def timer_context(label: str = "operation") -> TimerContext:
         TimerContext instance
     """
     return TimerContext(label)
+
+
+# Sprint 49 Phase B: Action metrics recording
+
+
+def record_action_execution(provider: str, action: str, status: str, duration_seconds: float) -> None:
+    """Record action execution metrics.
+
+    Args:
+        provider: Provider name (independent, microsoft, google)
+        action: Action ID (e.g., webhook.save)
+        status: Execution status (success, failed)
+        duration_seconds: Execution duration in seconds
+    """
+    if not _PROM_AVAILABLE or not _METRICS_INITIALIZED:
+        return
+
+    try:
+        _action_exec_total.labels(provider=provider, action=action, status=status).inc()
+        _action_latency_seconds.labels(provider=provider, action=action).observe(duration_seconds)
+    except Exception as exc:
+        _LOG.warning("Failed to record action execution metric: %s", exc)
+
+
+def record_action_error(provider: str, action: str, reason: str) -> None:
+    """Record action error metrics.
+
+    Args:
+        provider: Provider name (independent, microsoft, google)
+        action: Action ID (e.g., webhook.save)
+        reason: Error reason (e.g., timeout, invalid_params)
+    """
+    if not _PROM_AVAILABLE or not _METRICS_INITIALIZED:
+        return
+
+    try:
+        _action_error_total.labels(provider=provider, action=action, reason=reason).inc()
+    except Exception as exc:
+        _LOG.warning("Failed to record action error metric: %s", exc)
 
 
 def generate_metrics_text() -> str:
