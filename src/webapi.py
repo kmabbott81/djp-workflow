@@ -17,6 +17,7 @@ from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
 from .auth.security import require_scopes
+from .limits.limiter import RateLimitExceeded, get_rate_limiter
 from .telemetry import init_telemetry
 from .telemetry.middleware import TelemetryMiddleware
 from .templates import list_templates
@@ -128,9 +129,29 @@ app.add_middleware(
     allow_credentials=False,  # No cookies needed
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type", "Idempotency-Key", "X-Signature", "Authorization"],  # Sprint 50: +Authorization
-    expose_headers=["X-Request-ID", "X-Trace-Link"],  # Sprint 50: Expose for observability
+    expose_headers=[
+        "X-Request-ID",
+        "X-Trace-Link",
+        "X-RateLimit-Limit",
+        "X-RateLimit-Remaining",
+        "X-RateLimit-Reset",
+        "Retry-After",
+    ],  # Sprint 51 P2: +Rate limit headers
     max_age=600,  # Cache preflight for 10 minutes
 )
+
+
+# Sprint 51 Phase 2: Rate limit exception handler
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    """Handle rate limit exceeded exceptions with proper headers."""
+    from fastapi.responses import JSONResponse
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers=exc.headers,
+    )
 
 
 class TemplateInfo(BaseModel):
@@ -674,6 +695,10 @@ async def execute_action(
 
         # Get request ID from telemetry middleware
         request_id = request.state.request_id if hasattr(request.state, "request_id") else str(uuid4())
+
+        # Check rate limit (per workspace)
+        limiter = get_rate_limiter()
+        limiter.check_limit(workspace_id)
 
         # Execute
         executor = get_executor()

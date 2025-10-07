@@ -62,6 +62,8 @@ python-dateutil==2.9.0.post0
     # via pandas
 pytz==2025.2
     # via pandas
+redis==6.4.0
+    # via -r requirements.in
 referencing==0.36.2
     # via
     #   jsonschema
