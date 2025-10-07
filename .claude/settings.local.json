@@ -12,7 +12,10 @@
       "Bash(git checkout:*)",
       "Bash(python -m piptools compile:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(python -m pytest tests/test_sprint51_p2_rate_limit.py -v --tb=short)",
+      "Bash(python -m pytest tests/test_sprint51_p2_rate_limit.py::test_inproc_limiter_refills_tokens_over_time -v --tb=short)",
+      "Bash(python -m pytest tests/test_sprint51_p2_rate_limit.py -v)"
     ],
     "deny": [],
     "ask": []

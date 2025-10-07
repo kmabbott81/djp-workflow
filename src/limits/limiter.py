@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import os
 import time
-from collections import defaultdict
 from typing import Any
 
 from fastapi import HTTPException
@@ -42,9 +41,7 @@ class InProcessRateLimiter:
 
     def __init__(self, limit_per_min: int = 60):
         self.limit_per_min = limit_per_min
-        self.buckets: dict[str, dict[str, Any]] = defaultdict(
-            lambda: {"tokens": limit_per_min, "last_refill": time.time()}
-        )
+        self.buckets: dict[str, dict[str, Any]] = {}
 
     def check_rate_limit(self, workspace_id: str, current_time: float | None = None) -> tuple[bool, int, int, int]:
         """Check if request is within rate limit.
@@ -54,6 +51,10 @@ class InProcessRateLimiter:
         """
         if current_time is None:
             current_time = time.time()
+
+        # Initialize bucket if first request
+        if workspace_id not in self.buckets:
+            self.buckets[workspace_id] = {"tokens": self.limit_per_min, "last_refill": current_time}
 
         bucket = self.buckets[workspace_id]
         time_passed = current_time - bucket["last_refill"]
