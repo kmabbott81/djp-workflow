@@ -1,0 +1,30 @@
+groups:
+  - name: djp-latency
+    interval: 15s
+    rules:
+      - alert: HighP99Latency
+        expr: histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job="djp-workflow-staging"}[5m])) by (le, endpoint)) > 1
+        for: 5m
+        labels:
+          severity: warning
+          environment: staging
+        annotations:
+          summary: "High P99 latency (>1s for 5m) on {{ $labels.endpoint }}"
+          description: "P99 latency is {{ $value }}s for endpoint {{ $labels.endpoint }}"
+
+  - name: djp-errors
+    interval: 15s
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_requests_total{job="djp-workflow-staging", status_code=~"5.."}[5m])) by (endpoint)
+            /
+          sum(rate(http_requests_total{job="djp-workflow-staging"}[5m])) by (endpoint)
+            > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          environment: staging
+        annotations:
+          summary: "High error rate (>5%) on {{ $labels.endpoint }}"
+          description: "Error rate is {{ $value | humanizePercentage }} for endpoint {{ $labels.endpoint }}"

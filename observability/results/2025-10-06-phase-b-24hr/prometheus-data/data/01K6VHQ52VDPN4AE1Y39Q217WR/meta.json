@@ -1,0 +1,18 @@
+{
+	"ulid": "01K6VHQ52VDPN4AE1Y39Q217WR",
+	"minTime": 1759702861444,
+	"maxTime": 1759708800000,
+	"stats": {
+		"numSamples": 55160,
+		"numFloatSamples": 55160,
+		"numSeries": 140,
+		"numChunks": 422
+	},
+	"compaction": {
+		"level": 1,
+		"sources": [
+			"01K6VHQ52VDPN4AE1Y39Q217WR"
+		]
+	},
+	"version": 1
+}

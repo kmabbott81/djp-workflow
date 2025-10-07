@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(powershell -Command \"Get-Content .env | ForEach-Object { if ($_ -match ''^(.*?)=(.*)$'') { [Environment]::SetEnvironmentVariable($matches[1], $matches[2].Trim(), ''Process'') } }\")"
+      "Bash(DATABASE_URL=\"postgresql://postgres:qdwZdIoWsmCvHtNwrRpuUAgqPPXWQcXv@switchyard.proxy.rlwy.net:39963/railway\" timeout 10 python -c \"\nimport sys\nsys.path.insert(0, ''src'')\nprint(''Testing imports...'')\nfrom src.webapi import app\nprint(''App imported successfully'')\nprint(f''App has {len(app.routes)} routes'')\n\")",
+      "Bash(git mv:*)"
     ],
     "deny": [],
     "ask": []
