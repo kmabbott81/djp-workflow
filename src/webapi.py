@@ -154,6 +154,43 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
     )
 
 
+# Sprint 51 Phase 2: Security headers middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Add security headers to all responses."""
+    response = await call_next(request)
+
+    # HSTS: Force HTTPS for 180 days, include subdomains, preload
+    response.headers["Strict-Transport-Security"] = "max-age=15552000; includeSubDomains; preload"
+
+    # CSP: Strict content security policy
+    csp_directives = [
+        "default-src 'self'",
+        "connect-src 'self' https://relay-production-f2a6.up.railway.app https://*.vercel.app",
+        "img-src 'self' data:",
+        "script-src 'self'",
+        "style-src 'self' 'unsafe-inline'",  # unsafe-inline needed for some UI frameworks
+        "frame-ancestors 'none'",  # Prevent clickjacking
+        "base-uri 'self'",
+        "form-action 'self'",
+    ]
+    response.headers["Content-Security-Policy"] = "; ".join(csp_directives)
+
+    # Referrer policy: Don't leak referrer information
+    response.headers["Referrer-Policy"] = "no-referrer"
+
+    # Prevent MIME sniffing
+    response.headers["X-Content-Type-Options"] = "nosniff"
+
+    # Prevent clickjacking
+    response.headers["X-Frame-Options"] = "DENY"
+
+    # XSS protection (legacy, but doesn't hurt)
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+
+    return response
+
+
 class TemplateInfo(BaseModel):
     """Template metadata for listing."""
 
