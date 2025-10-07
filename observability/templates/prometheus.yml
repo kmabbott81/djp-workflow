@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: 'staging'
+    cluster: 'djp-workflow'
+
+scrape_configs:
+  - job_name: 'djp-workflow-staging'
+    metrics_path: '/metrics'
+    scheme: https
+    static_configs:
+      - targets:
+          - 'relay-production-f2a6.up.railway.app'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    honor_labels: true

@@ -1,7 +1,21 @@
 {
   "permissions": {
     "allow": [
-      "Bash(powershell -Command \"Get-Content .env | ForEach-Object { if ($_ -match ''^(.*?)=(.*)$'') { [Environment]::SetEnvironmentVariable($matches[1], $matches[2].Trim(), ''Process'') } }\")"
+      "Bash(DATABASE_URL=\"postgresql://postgres:qdwZdIoWsmCvHtNwrRpuUAgqPPXWQcXv@switchyard.proxy.rlwy.net:39963/railway\" timeout 10 python -c \"\nimport sys\nsys.path.insert(0, ''src'')\nprint(''Testing imports...'')\nfrom src.webapi import app\nprint(''App imported successfully'')\nprint(f''App has {len(app.routes)} routes'')\n\")",
+      "Bash(git mv:*)",
+      "Bash(pip install:*)",
+      "Bash(TEST_WORKSPACE_ID=\"00000000-0000-0000-0000-000000000001\")",
+      "Bash(DATABASE_URL=\"postgresql://postgres:qdwZdIoWsmCvHtNwrRpuUAgqPPXWQcXv@switchyard.proxy.rlwy.net:39963/railway\" python scripts/api_keys_cli.py create-key --workspace $TEST_WORKSPACE_ID --role admin)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:qdwZdIoWsmCvHtNwrRpuUAgqPPXWQcXv@switchyard.proxy.rlwy.net:39963/railway\" python scripts/api_keys_cli.py create-key --workspace $TEST_WORKSPACE_ID --role developer)",
+      "Bash(pytest:*)",
+      "Bash(tee:*)",
+      "Bash(git checkout:*)",
+      "Bash(python -m piptools compile:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(python -m pytest tests/test_sprint51_p2_rate_limit.py -v --tb=short)",
+      "Bash(python -m pytest tests/test_sprint51_p2_rate_limit.py::test_inproc_limiter_refills_tokens_over_time -v --tb=short)",
+      "Bash(python -m pytest tests/test_sprint51_p2_rate_limit.py -v)"
     ],
     "deny": [],
     "ask": []

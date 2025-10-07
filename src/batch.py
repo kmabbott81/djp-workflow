@@ -9,7 +9,7 @@ from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Any
 
-from .secrets import pricing_for
+from .env_utils import pricing_for
 
 # Corpus cache: avoid reloading same corpus across tasks
 _CORPUS_CACHE: dict[str, Any] = {}

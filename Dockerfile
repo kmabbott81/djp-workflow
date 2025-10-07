@@ -9,8 +9,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
-COPY requirements.txt requirements.in ./
+COPY requirements.txt requirements.in pyproject.toml ./
 RUN pip install --no-cache-dir --user -r requirements.txt
+RUN pip install --no-cache-dir --user -e ".[observability]"
 
 # Production stage
 FROM python:3.11-slim
@@ -42,23 +43,21 @@ COPY pyproject.toml ./
 COPY README.md ./
 COPY LICENSE ./
 
+# Make start script executable
+RUN chmod +x scripts/start-server.sh
+
 # Create directories for runtime data
 RUN mkdir -p runs corpus artifacts
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
-ENV STREAMLIT_SERVER_PORT=8080
-ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
-ENV STREAMLIT_SERVER_HEADLESS=true
-ENV STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
-ENV HEALTH_PORT=8086
 
-# Expose Streamlit port and health check port
-EXPOSE 8080 8086
+# Expose port (Railway will set $PORT at runtime)
+EXPOSE 8000
 
-# Health check using /ready endpoint
+# Health check using /_stcore/health endpoint
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:${HEALTH_PORT:-8086}/ready')" || exit 1
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:${PORT:-8000}/_stcore/health')" || exit 1
 
-# Run Streamlit dashboard
-CMD ["python", "-m", "streamlit", "run", "dashboards/app.py", "--server.port=8080", "--server.address=0.0.0.0"]
+# Run FastAPI via uvicorn
+CMD ["sh", "-c", "scripts/start-server.sh"]
