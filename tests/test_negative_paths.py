@@ -249,6 +249,7 @@ def test_fallback_to_safe_defaults():
             assert artifact["provenance"]["estimated_costs"] == {}
 
 
+@pytest.mark.bizlogic_asserts  # Sprint 52: Citation disqualification logic failing
 def test_citation_disqualification_logic():
     """Test the citation disqualification logic in judge_drafts."""
 

@@ -31,16 +31,19 @@ dependencies = [
     "pydantic>=2.0.0",
     "cryptography>=41.0.0",
     "python-docx>=1.0.0",
+    "pyyaml>=6.0.0",
+    "jinja2>=3.1.0",
     "fastapi>=0.104.0",
     "uvicorn>=0.24.0",
 ]
 
 [project.optional-dependencies]
-# Sprint 46: Prometheus metrics + OpenTelemetry tracing (optional)
+# Sprint 46-48: Prometheus metrics + OpenTelemetry tracing (optional)
 observability = [
     "prometheus-client>=0.19.0",
     "opentelemetry-api>=1.21.0",
     "opentelemetry-sdk>=1.21.0",
+    "opentelemetry-exporter-otlp-proto-http>=1.21.0",
 ]
 dashboards = [
     "streamlit>=1.28.0",
@@ -167,5 +170,6 @@ markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
     "live: marks tests requiring live API credentials (skip unless LIVE=true)",
+    "asyncio: marks tests as async (used by pytest-anyio)",
     "e2e: marks tests as end-to-end smoke tests (offline, CI-ready)",
 ]

@@ -59,3 +59,10 @@ nul
 *.tmp
 *.log
 New Text Document.txt
+
+# Observability data (binary artifacts, should be in CI artifacts or object storage)
+observability/results/**/prometheus-data/
+observability/results/**/*.zip
+observability/results/**/data/
+observability/results/**/wal/
+observability/results/**/chunks_head/

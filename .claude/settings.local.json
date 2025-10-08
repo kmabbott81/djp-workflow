@@ -1,7 +1,15 @@
 {
   "permissions": {
     "allow": [
-      "Bash(powershell -Command \"Get-Content .env | ForEach-Object { if ($_ -match ''^(.*?)=(.*)$'') { [Environment]::SetEnvironmentVariable($matches[1], $matches[2].Trim(), ''Process'') } }\")"
+      "Bash(git mv:*)",
+      "Bash(pip install:*)",
+      "Bash(pytest:*)",
+      "Bash(tee:*)",
+      "Bash(git checkout:*)",
+      "Bash(python -m piptools compile:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(python -m pytest:*)"
     ],
     "deny": [],
     "ask": []

@@ -46,7 +46,7 @@ async def run_debate(
         relevant_docs = search_corpus(task, k=6) if corpus_docs else []
         if relevant_docs:
             corpus_context = "\n\nAVAILABLE CONTEXT SOURCES:\n"
-            for i, doc in enumerate(relevant_docs, 1):
+            for _, doc in enumerate(relevant_docs, 1):
                 # Truncate document text to fit in prompt
                 doc_excerpt = doc.text[:500] + "..." if len(doc.text) > 500 else doc.text
                 corpus_context += f"\n[{doc.title}]:\n{doc_excerpt}\n"

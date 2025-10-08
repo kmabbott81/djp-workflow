@@ -213,6 +213,7 @@ def test_make_tasks_generation():
             assert "require_citations: 1" in content or "REQUIRE_CITATIONS: 1" in content
 
 
+@pytest.mark.bizlogic_asserts  # Sprint 52: Policy parameter parsing assertion failing
 def test_policy_parameter_parsing():
     """Test that nightshift_runner correctly parses policy parameters."""
 

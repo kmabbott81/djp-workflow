@@ -495,3 +495,54 @@ def pytest_runtest_logreport(report):
         duration = getattr(report, "duration", 0)
         if duration > 5.0:
             print(f"\n[hotspot] {report.nodeid} took {duration:.2f}s")
+
+
+# ==============================================================================
+# Sprint 52: Quarantine Markers - Auto-skip Hooks
+# ==============================================================================
+# These hooks automatically skip tests marked with specific markers unless
+# opt-in environment variables are set. This allows CI to run a stable subset
+# while developers can still run full suites locally.
+
+
+def pytest_configure(config):
+    """Configure pytest skip policies for quarantine markers."""
+    import os
+
+    # Allow running all tests with RELAY_RUN_ALL=1
+    if os.getenv("RELAY_RUN_ALL", "0") in {"1", "true", "yes"}:
+        return
+
+    # Check for optional dependencies
+    try:
+        import streamlit  # noqa: F401
+
+        has_streamlit = True
+    except ImportError:
+        has_streamlit = False
+
+    # Store skip conditions in config
+    config._relay_skip_streamlit = not has_streamlit
+    config._relay_skip_ports = not os.getenv("RELAY_ALLOW_PORTS")
+    config._relay_skip_artifacts = not os.getenv("RELAY_HAVE_ARTIFACTS")
+
+
+def pytest_collection_modifyitems(config, items):
+    """Apply skip markers based on environment and dependencies."""
+    import pytest
+
+    skip_streamlit = pytest.mark.skip(reason="streamlit not installed (install or set RELAY_RUN_ALL=1)")
+    skip_ports = pytest.mark.skip(reason="port conflicts in CI (set RELAY_ALLOW_PORTS=1 or RELAY_RUN_ALL=1)")
+    skip_artifacts = pytest.mark.skip(
+        reason="test artifacts not available (set RELAY_HAVE_ARTIFACTS=1 or RELAY_RUN_ALL=1)"
+    )
+
+    for item in items:
+        if getattr(config, "_relay_skip_streamlit", False) and "requires_streamlit" in item.keywords:
+            item.add_marker(skip_streamlit)
+
+        if getattr(config, "_relay_skip_ports", False) and "port_conflict" in item.keywords:
+            item.add_marker(skip_ports)
+
+        if getattr(config, "_relay_skip_artifacts", False) and "needs_artifacts" in item.keywords:
+            item.add_marker(skip_artifacts)

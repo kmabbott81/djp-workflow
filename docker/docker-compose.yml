@@ -1,5 +1,3 @@
-version: '3.8'
-
 # DJP Workflow Platform - Development Stack
 # Services: app (dashboard/API), worker (queue processor), redis (message broker)
 # Volumes: logs, artifacts, audit data

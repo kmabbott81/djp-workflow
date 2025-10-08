@@ -11,6 +11,9 @@ from pathlib import Path
 
 import pytest
 
+# Sprint 52: Quarantine marker - needs create_artifacts function
+pytestmark = pytest.mark.needs_artifacts
+
 
 @pytest.fixture
 def temp_storage(monkeypatch):
