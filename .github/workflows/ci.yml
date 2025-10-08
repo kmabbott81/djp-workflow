@@ -40,7 +40,7 @@ jobs:
         pip install pytest pytest-xdist jsonschema ujson pip-audit
         pip install -e ".[dev]"
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        pip install git+https://github.com/openai/swarm.git || true
+        pip install openai-agents || true
 
     - name: Dependency audit (non-blocking)
       continue-on-error: true

@@ -2,7 +2,7 @@
 
 import json
 
-from src.agents import Agent
+from agents import Agent
 
 from .publish import create_sort_key
 from .schemas import Draft, Judgment, ScoredDraft

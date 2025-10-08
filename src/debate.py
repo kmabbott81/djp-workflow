@@ -3,7 +3,7 @@
 import asyncio
 import json
 
-from src.agents import Agent
+from agents import Agent
 
 from .config import get_provider_api_keys
 from .corpus import search_corpus
