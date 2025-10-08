@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(REDIS_URL=redis://localhost:6379/0 python -c \"from src.webapi import app; from fastapi.testclient import TestClient; client = TestClient(app); resp = client.get(''/ready''); import json; print(json.dumps(resp.json(), indent=2))\")"
+      "Bash(railway logs:*)",
+      "Bash(railway variables:*)",
+      "Bash(python:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
