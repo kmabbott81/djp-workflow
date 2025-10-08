@@ -1,0 +1,115 @@
+=== CI Validate Pre-Skip Snapshot ===
+Date: 2025-10-08 05:15 UTC (2025-10-07 22:15 PT)
+Branch: sprint/52-platform-alignment (commit 254044c)
+Purpose: Baseline before quarantine markers
+
+---
+## Lint/Format Status
+
+### Black
+Status: 20 files need reformatting
+Files include:
+- src/audit/logger.py
+- src/auth/security.py
+- src/db/connection.py
+- src/classify/policy.py
+- src/security/rbac_check.py
+- src/telemetry/__init__.py
+- src/scale/worker_pool.py
+- src/telemetry/otel.py
+- src/connectors/ingest.py
+- tests/test_connector_*.py
+- tests/test_labels_policy.py
+- tests/test_queue_strategy.py
+- tests/test_prefs.py
+
+### Ruff
+Status: Import formatting issues (I001 - un-sorted imports)
+Primary issues in src/agents/__init__.py and other files
+
+---
+## Pytest Failure Categories (from CI logs)
+
+### Category 1: requires_streamlit (4 failures)
+- test_connector_dashboard_panel.py::test_render_no_connectors
+- test_connector_dashboard_panel.py::test_render_with_healthy_connector
+- test_connector_dashboard_panel.py::test_render_with_degraded_connector
+- test_connector_dashboard_panel.py::test_render_with_circuit_open
+Error: ModuleNotFoundError: No module named 'streamlit'
+
+### Category 2: needs_artifacts (13 failures)
+All in test_archive_rotation_workflow.py:
+- test_generate_markdown_artifact (1)
+- test_create_artifacts_dry_run (1)
+- test_create_artifacts_live (1)
+- test_show_tier_counts (1)
+- test_lifecycle_promotion_with_fake_clock (1)
+- test_lifecycle_promotion_dry_run (1)
+- test_demo_restore (1)
+- test_demo_restore_dry_run (1)
+- test_full_lifecycle_workflow (1)
+- test_tenant_isolation (1)
+- test_artifact_metadata (1)
+- test_purge_simulation (1)
+- test_lifecycle_events_logged (1)
+Error: ImportError: cannot import name 'create_artifacts' from 'src.workflows.stress.archive_rotation_demo'
+Also: AssertionError: assert b'Checksum (SHA-256)' in b'...' (format change)
+
+### Category 3: port_conflict (6 failures)
+All in test_health_endpoints.py:
+- test_ready_endpoint_fails_when_required_env_missing
+- test_ready_endpoint_succeeds_when_required_envs_present
+- test_ready_endpoint_validates_multi_region_config
+- test_ready_endpoint_validates_blue_green_rbac
+- test_meta_endpoint_returns_build_info
+- test_unknown_endpoint_returns_404
+Error: OSError: [Errno 98] Address already in use (port binding conflicts in parallel test execution)
+
+### Category 4: api_mismatch (4 failures)
+- test_queue_strategy.py::test_enqueue_task_convenience
+  Error: TypeError: sample_task_function() got an unexpected keyword argument 'args'
+- test_scheduler_core.py::test_tick_once_enqueues_matching_schedule
+- test_scheduler_core.py::test_tick_once_skips_non_matching
+- test_scheduler_core.py::test_tick_once_skips_disabled
+  Error: TypeError: tick_once() missing 1 required positional argument: 'dedup_cache'
+
+### Category 5: bizlogic_asserts (13 failures)
+test_connectors_cli.py (11 failures):
+- test_cli_disable_connector: AssertionError: assert 2 == 0
+- test_cli_disable_not_found: AssertionError: assert 2 == 1
+- test_cli_enable_connector: AssertionError: assert 2 == 0
+- test_cli_test_sandbox_list: AssertionError: assert 2 == 0
+- test_cli_test_connector_not_found: AssertionError: assert 2 == 1
+- test_cli_rbac_admin_required_for_register: AssertionError: assert 'RBAC denied' in '...'
+- test_cli_rbac_operator_sufficient_for_test: AssertionError: assert 2 == 0
+- test_cli_list_json_format: AssertionError: assert 2 == 0
+- test_cli_register_connector: AssertionError: assert 2 == 0
+- test_cli_register_with_scopes: AssertionError: assert 2 == 0
+
+test_lifecycle.py (1 failure):
+- test_run_lifecycle_job_full_cycle: assert 2 == 1
+
+test_negative_paths.py (1 failure):
+- test_citation_disqualification_logic: assert 0 == 1
+
+test_nightshift_e2e.py (1 failure):
+- test_policy_parameter_parsing: AssertionError: assert 'openai_only' == 'openai_preferred'
+
+---
+## Summary
+
+Total Failures: ~40
+- requires_streamlit: 4
+- needs_artifacts: 13
+- port_conflict: 6
+- api_mismatch: 4
+- bizlogic_asserts: 13
+
+All failures are pre-existing (not introduced by Sprint 52 commits b652a1d, 35f5b22, 254044c).
+
+Original import/marker blockers resolved:
+✅ openai-agents package installed
+✅ asyncio marker added to pytest.ini
+
+---
+CI Run Reference: https://github.com/kmabbott81/djp-workflow/actions/runs/18334327208

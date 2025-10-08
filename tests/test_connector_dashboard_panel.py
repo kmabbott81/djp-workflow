@@ -2,6 +2,9 @@
 
 import pytest
 
+# Sprint 52: Quarantine marker - requires streamlit dependency
+pytestmark = pytest.mark.requires_streamlit
+
 
 @pytest.fixture
 def setup_test_env(tmp_path, monkeypatch):
