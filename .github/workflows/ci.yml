@@ -100,7 +100,7 @@ jobs:
 
     - name: Test Docker Compose config
       run: |
-        docker-compose -f docker/docker-compose.yml config
+        docker compose -f docker/docker-compose.yml config
 
     - name: Upload release artifacts
       if: always()
