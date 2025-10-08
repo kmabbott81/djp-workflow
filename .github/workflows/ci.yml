@@ -98,6 +98,21 @@ jobs:
         cache-to: type=gha,mode=max
         push: false
 
+    - name: Create stub .env for docker-compose validation
+      run: |
+        cat > .env << 'EOF'
+        # Stub environment file for CI docker-compose validation
+        # Real secrets are managed via GitHub Secrets and Railway
+        DATABASE_URL=postgresql://ci:ci@localhost:5432/ci_test
+        OPENAI_API_KEY=sk-stub-key-for-ci-validation
+        RAILWAY_TOKEN=stub-token
+        ADMIN_KEY=stub-admin-key
+        DEV_KEY=stub-dev-key
+        ACTIONS_SIGNING_SECRET=stub-signing-secret
+        TELEMETRY_ENABLED=false
+        ACTIONS_ENABLED=false
+        EOF
+
     - name: Test Docker Compose config
       run: |
         docker compose -f docker/docker-compose.yml config
