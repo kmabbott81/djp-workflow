@@ -1,14 +1,7 @@
 name: Deploy to Railway
 
 on:
-  push:
-    branches:
-      - sprint/51-phase3-ops
-      - main
-  pull_request:
-    branches:
-      - main
-  workflow_dispatch:
+  workflow_dispatch:  # Manual trigger only - Railway handles auto-deploy
 
 jobs:
   deploy:
