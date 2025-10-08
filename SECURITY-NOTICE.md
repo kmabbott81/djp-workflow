@@ -1,7 +1,7 @@
 # Security Notice - Database Credential Rotation Required
 
 **Date:** October 7, 2025
-**Status:** 🔴 **ACTION REQUIRED BEFORE MERGE**
+**Status:** ✅ **RESOLVED**
 **Affected PR:** #32 (Sprint 52: Platform Alignment)
 
 ---
@@ -172,11 +172,11 @@ The leak was isolated to the database connection string only.
 
 This security notice will be marked as **RESOLVED** once:
 1. ✅ Fixup commit merged (credentials removed from future commits)
-2. ⏳ Railway database password rotated
-3. ⏳ All GitHub Secrets and local `.env` files updated
-4. ⏳ Connection tested successfully with new credentials
+2. ✅ Railway database password rotated
+3. ✅ All GitHub Secrets and local `.env` files updated
+4. ✅ Connection tested successfully with new credentials
 
-**Status:** ⏳ **AWAITING PASSWORD ROTATION**
+**Status:** ✅ **RESOLVED** - DB password rotated and GitHub secret updated on 2025-10-07 PT; old credentials invalid.
 
 ---
 
