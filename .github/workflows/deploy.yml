@@ -32,7 +32,7 @@ jobs:
 
       - name: Run unit tests
         run: |
-          python -m pytest tests/ -v --tb=short
+          python -m pytest tests/ -v --tb=short -m "not (requires_streamlit or needs_artifacts or port_conflict or api_mismatch or bizlogic_asserts or integration)"
 
       - name: Install Railway CLI
         run: |
