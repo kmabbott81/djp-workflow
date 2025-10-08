@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - sprint/51-phase3-ops
+      - main
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   deploy:
