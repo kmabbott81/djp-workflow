@@ -170,5 +170,6 @@ markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
     "live: marks tests requiring live API credentials (skip unless LIVE=true)",
+    "asyncio: marks tests as async (used by pytest-anyio)",
     "e2e: marks tests as end-to-end smoke tests (offline, CI-ready)",
 ]
