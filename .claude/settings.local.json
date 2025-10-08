@@ -5,7 +5,9 @@
       "Bash(railway variables:*)",
       "Bash(python:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git log:*)",
+      "Bash(curl -s -X POST \"https://webhook.site/de889c2e-bcd9-4a65-875e-bcca80204be6\" )"
     ],
     "deny": [],
     "ask": []
