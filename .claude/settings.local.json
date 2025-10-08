@@ -1,15 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git mv:*)",
-      "Bash(pip install:*)",
-      "Bash(pytest:*)",
-      "Bash(tee:*)",
-      "Bash(git checkout:*)",
-      "Bash(python -m piptools compile:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(python -m pytest:*)"
+      "Bash(REDIS_URL=redis://localhost:6379/0 python -c \"from src.webapi import app; from fastapi.testclient import TestClient; client = TestClient(app); resp = client.get(''/ready''); import json; print(json.dumps(resp.json(), indent=2))\")"
     ],
     "deny": [],
     "ask": []

@@ -324,6 +324,7 @@ def ready():
         "telemetry": False,
         "templates": False,
         "filesystem": False,
+        "redis": False,
     }
 
     # Check telemetry initialized
@@ -352,6 +353,22 @@ def ready():
         checks["filesystem"] = True
     except Exception:
         pass
+
+    # Check Redis connection (optional - used for rate limiting and OAuth caching)
+    redis_url = os.getenv("REDIS_URL")
+    if redis_url:
+        try:
+            import redis
+
+            client = redis.from_url(redis_url, decode_responses=True, socket_connect_timeout=2)
+            client.ping()
+            checks["redis"] = True
+        except Exception:
+            # Redis is optional - service can run without it (uses in-process fallback)
+            checks["redis"] = False
+    else:
+        # Redis not configured - mark as true since it's optional
+        checks["redis"] = True
 
     all_ready = all(checks.values())
 
