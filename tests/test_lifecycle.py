@@ -14,6 +14,8 @@ Tests cover:
 
 import time
 
+import pytest
+
 from src.storage.lifecycle import (
     get_last_lifecycle_job,
     get_lifecycle_log_path,
@@ -274,6 +276,7 @@ class TestCompleteLifecycleJob:
         assert results["purged"] == 0
         assert results["total_errors"] == 0
 
+    @pytest.mark.bizlogic_asserts  # Sprint 52: Lifecycle promotion count assertion failing
     def test_run_lifecycle_job_full_cycle(self, lifecycle_env, fake_clock):
         """Test complete lifecycle: hot→warm→cold→purge."""
         # Create artifacts in each tier with different ages

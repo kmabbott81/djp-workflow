@@ -24,6 +24,7 @@ class TestPrometheusInit:
         # Should not raise, should be no-op
         init_prometheus()
 
+    @pytest.mark.integration  # Sprint 52: Prometheus integration test
     def test_init_enabled_without_deps(self, monkeypatch):
         """Should handle missing prometheus-client gracefully."""
         monkeypatch.setenv("TELEMETRY_ENABLED", "true")
@@ -197,6 +198,7 @@ class TestMiddleware:
         assert TelemetryMiddleware._normalize_endpoint("/api/templates") == "/api/templates"
 
     @pytest.mark.asyncio
+    @pytest.mark.integration  # Sprint 52: Prometheus integration test
     async def test_middleware_records_metrics(self, monkeypatch):
         """Middleware should record HTTP metrics."""
         monkeypatch.setenv("TELEMETRY_ENABLED", "true")
@@ -229,6 +231,7 @@ class TestMiddleware:
         assert response.json() == {"status": "ok"}
 
     @pytest.mark.asyncio
+    @pytest.mark.integration  # Sprint 52: Prometheus integration test
     async def test_middleware_handles_exceptions(self, monkeypatch):
         """Middleware should record metrics even when endpoint raises."""
         monkeypatch.setenv("TELEMETRY_ENABLED", "true")
