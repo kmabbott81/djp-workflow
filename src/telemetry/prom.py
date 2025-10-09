@@ -39,6 +39,8 @@ _external_api_duration = None
 _action_exec_total = None
 _action_latency_seconds = None
 _action_error_total = None
+# Sprint 53 Phase B: OAuth metrics
+_oauth_events = None
 
 
 def _is_enabled() -> bool:
@@ -57,6 +59,7 @@ def init_prometheus() -> None:
     global _queue_job_latency, _queue_depth
     global _external_api_calls, _external_api_duration
     global _action_exec_total, _action_latency_seconds, _action_error_total
+    global _oauth_events
 
     if not _is_enabled():
         _LOG.debug("Telemetry disabled, skipping Prometheus init")
@@ -131,6 +134,13 @@ def init_prometheus() -> None:
             "action_error_total",
             "Total action errors by provider, action, and reason",
             ["provider", "action", "reason"],
+        )
+
+        # Sprint 53 Phase B: OAuth metrics
+        _oauth_events = Counter(
+            "oauth_events_total",
+            "OAuth flow events by provider and event type",
+            ["provider", "event"],
         )
 
         _METRICS_INITIALIZED = True

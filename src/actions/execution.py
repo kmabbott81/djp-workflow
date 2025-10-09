@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from typing import Any, Optional
 from uuid import uuid4
 
+from .adapters.google import GoogleAdapter
 from .adapters.independent import IndependentAdapter
 from .contracts import ActionStatus, ExecuteResponse, PreviewResponse, Provider
 
@@ -110,6 +111,7 @@ class ActionExecutor:
         self.idempotency_store = IdempotencyStore()
         self.adapters = {
             "independent": IndependentAdapter(),
+            "google": GoogleAdapter(),
         }
 
     def list_actions(self) -> list[dict[str, Any]]:
@@ -120,6 +122,10 @@ class ActionExecutor:
         independent = self.adapters["independent"]
         actions.extend([a.model_dump(by_alias=True) for a in independent.list_actions()])
 
+        # Google adapter (Sprint 53 Phase B: Gmail Send)
+        google = self.adapters["google"]
+        actions.extend([a.model_dump(by_alias=True) for a in google.list_actions()])
+
         # Microsoft adapter (preview-only stub)
         actions.append(
             {
@@ -127,26 +133,6 @@ class ActionExecutor:
                 "name": "Send Outlook Email",
                 "description": "Send email via Microsoft Outlook",
                 "provider": "microsoft",
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "to": {"type": "string", "format": "email"},
-                        "subject": {"type": "string"},
-                        "body": {"type": "string"},
-                    },
-                    "required": ["to", "subject", "body"],
-                },
-                "enabled": False,
-            }
-        )
-
-        # Google adapter (preview-only stub)
-        actions.append(
-            {
-                "id": "google.send_email",
-                "name": "Send Gmail",
-                "description": "Send email via Gmail",
-                "provider": "google",
                 "schema": {
                     "type": "object",
                     "properties": {
@@ -177,8 +163,10 @@ class ActionExecutor:
         # Get adapter
         if provider == "independent":
             adapter = self.adapters["independent"]
+        elif provider == "google":
+            adapter = self.adapters["google"]
         else:
-            # Stub preview for MS/Google
+            # Stub preview for MS (not configured)
             return PreviewResponse(
                 preview_id=str(uuid4()),
                 action=action,
@@ -222,6 +210,7 @@ class ActionExecutor:
         preview_id: str,
         idempotency_key: Optional[str] = None,
         workspace_id: str = "default",
+        actor_id: str = "system",
         request_id: str = None,
     ) -> ExecuteResponse:
         """Execute a previewed action.
@@ -271,8 +260,13 @@ class ActionExecutor:
                 result = await adapter.execute(action, params)
                 status = ActionStatus.SUCCESS
                 error = None
+            elif provider == "google":
+                adapter = self.adapters["google"]
+                result = await adapter.execute(action, params, workspace_id, actor_id)
+                status = ActionStatus.SUCCESS
+                error = None
             else:
-                # MS/Google not configured - return 501
+                # MS not configured - return 501
                 raise NotImplementedError(f"Provider '{provider}' not configured")
 
         except Exception as e:

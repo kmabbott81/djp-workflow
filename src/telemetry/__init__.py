@@ -79,4 +79,29 @@ def init_noop_if_enabled() -> None:
     _noop_init()
 
 
-__all__ = ["init_telemetry", "init_noop_if_enabled"]
+# Export metrics for direct access
+def _get_oauth_events():
+    """Get OAuth events counter (lazy access)."""
+    from .prom import _oauth_events
+
+    return _oauth_events
+
+
+# Create a proxy object for oauth_events
+class _OAuthEventsProxy:
+    def labels(self, provider: str, event: str):
+        counter = _get_oauth_events()
+        if counter:
+            return counter.labels(provider=provider, event=event)
+        # Return noop object if not initialized
+        return _NoopCounter()
+
+
+class _NoopCounter:
+    def inc(self, amount: int = 1):
+        pass
+
+
+oauth_events = _OAuthEventsProxy()
+
+__all__ = ["init_telemetry", "init_noop_if_enabled", "oauth_events"]
