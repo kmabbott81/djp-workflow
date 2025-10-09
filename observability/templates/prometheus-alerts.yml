@@ -99,3 +99,51 @@ groups:
           summary: "Redis is unavailable"
           description: "Redis has been unavailable for 5+ minutes. Rate limiting will fall back to in-process mode, which may be less accurate in distributed deployments."
           runbook_url: "https://github.com/kmabbott81/djp-workflow/blob/main/docs/SPRINT-51-PHASE-2-STATUS.md#1-durable-rate-limiting-"
+
+  - name: gmail_slo
+    interval: 30s
+    rules:
+      - alert: GmailErrorRateHigh
+        expr: |
+          (
+            increase(action_error_total{provider="google",action="gmail.send"}[5m])
+              /
+            increase(action_exec_total{provider="google",action="gmail.send"}[5m])
+          ) > 0.01
+        for: 10m
+        labels:
+          severity: warning
+          component: actions
+          provider: google
+        annotations:
+          summary: "Gmail send error rate exceeds 1% (10m)"
+          description: "The Gmail send error rate is {{ $value | humanizePercentage }}, which exceeds the 1% SLO target. Check OAuth tokens, Gmail API status, and recent error reasons."
+          runbook_url: "https://github.com/kmabbott81/djp-workflow/blob/main/docs/observability/PHASE-C-OBSERVABILITY.md#issue-high-validation-error-rate"
+
+      - alert: GmailLatencySlow
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(action_latency_seconds_bucket{provider="google",action="gmail.send"}[5m])) by (le)
+          ) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+          component: actions
+          provider: google
+        annotations:
+          summary: "Gmail P95 latency exceeds 0.5s (10m)"
+          description: "The P95 latency for Gmail send is {{ $value }}s, which exceeds the 500ms SLO target. Check Gmail API latency, network issues, or token refresh delays."
+          runbook_url: "https://github.com/kmabbott81/djp-workflow/blob/main/docs/observability/PHASE-C-OBSERVABILITY.md#issue-high-mime-build-latency"
+
+      - alert: OAuthRefreshFailures
+        expr: increase(oauth_events_total{provider="google",event="refresh_failed"}[15m]) > 5
+        for: 0m
+        labels:
+          severity: warning
+          component: oauth
+          provider: google
+        annotations:
+          summary: "OAuth refresh failures spiking (>5 in 15m)"
+          description: "OAuth token refresh for Google provider has failed {{ $value }} times in the last 15 minutes. Check refresh token validity, Google OAuth service status, and credential configuration."
+          runbook_url: "https://github.com/kmabbott81/djp-workflow/blob/main/docs/evidence/sprint-53/oauth/REFRESH-LOGIC.md"

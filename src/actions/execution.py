@@ -1,8 +1,10 @@
 """Action execution engine with preview/confirm workflow.
 
 Sprint 49 Phase B: Preview ID validation, idempotency, metrics.
+Sprint 54: Rollout gate integration for gradual feature rollout.
 """
 
+import os
 import time
 from datetime import datetime, timedelta
 from typing import Any, Optional
@@ -106,13 +108,44 @@ class ActionExecutor:
     """Action execution engine."""
 
     def __init__(self):
-        """Initialize action executor."""
+        """Initialize action executor with rollout gate support."""
         self.preview_store = PreviewStore()
         self.idempotency_store = IdempotencyStore()
+
+        # Initialize rollout gate (Sprint 54)
+        rollout_gate = self._init_rollout_gate()
+
         self.adapters = {
             "independent": IndependentAdapter(),
-            "google": GoogleAdapter(),
+            "google": GoogleAdapter(rollout_gate=rollout_gate),
         }
+
+    def _init_rollout_gate(self):
+        """Initialize rollout gate with Redis backing (if available).
+
+        Returns:
+            MinimalGate instance, or None if Redis unavailable
+        """
+        redis_url = os.getenv("REDIS_URL")
+        if not redis_url:
+            print("[INFO] Rollout gate: No REDIS_URL, rollout disabled")
+            return None
+
+        try:
+            import redis
+
+            from src.rollout.minimal_gate import MinimalGate
+
+            redis_client = redis.from_url(redis_url, decode_responses=True, socket_connect_timeout=2)
+            redis_client.ping()
+
+            gate = MinimalGate(redis_client, cache_ttl_sec=5)
+            print("[INFO] Rollout gate: Initialized with Redis backing")
+            return gate
+
+        except Exception as e:
+            print(f"[WARN] Rollout gate: Redis unavailable ({e}), rollout disabled")
+            return None
 
     def list_actions(self) -> list[dict[str, Any]]:
         """List all available actions from all adapters."""
