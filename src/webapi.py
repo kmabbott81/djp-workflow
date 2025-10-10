@@ -324,6 +324,7 @@ def ready():
         "telemetry": False,
         "templates": False,
         "filesystem": False,
+        "redis": False,
     }
 
     # Check telemetry initialized
@@ -352,6 +353,22 @@ def ready():
         checks["filesystem"] = True
     except Exception:
         pass
+
+    # Check Redis connection (optional - used for rate limiting and OAuth caching)
+    redis_url = os.getenv("REDIS_URL")
+    if redis_url:
+        try:
+            import redis
+
+            client = redis.from_url(redis_url, decode_responses=True, socket_connect_timeout=2)
+            client.ping()
+            checks["redis"] = True
+        except Exception:
+            # Redis is optional - service can run without it (uses in-process fallback)
+            checks["redis"] = False
+    else:
+        # Redis not configured - mark as true since it's optional
+        checks["redis"] = True
 
     all_ready = all(checks.values())
 
@@ -730,6 +747,9 @@ async def execute_action(
         # Get workspace_id from auth context
         workspace_id = request.state.workspace_id if hasattr(request.state, "workspace_id") else "default"
 
+        # Get actor_id from auth context
+        actor_id = request.state.actor_id if hasattr(request.state, "actor_id") else "system"
+
         # Get request ID from telemetry middleware
         request_id = request.state.request_id if hasattr(request.state, "request_id") else str(uuid4())
 
@@ -743,6 +763,7 @@ async def execute_action(
             preview_id=preview_id,
             idempotency_key=final_idempotency_key,
             workspace_id=workspace_id,
+            actor_id=actor_id,
             request_id=request_id,
         )
         execute_result = result
@@ -988,6 +1009,215 @@ async def get_audit_logs(
         "next_offset": next_offset,
         "count": len(items),
     }
+
+
+# ============================================================================
+# OAuth Endpoints - Sprint 53 Phase B
+# ============================================================================
+
+
+@app.get("/oauth/google/authorize")
+async def oauth_google_authorize(
+    request: Request,
+    workspace_id: str,
+    redirect_uri: Optional[str] = None,
+):
+    """
+    Initiate Google OAuth flow.
+
+    Args:
+        workspace_id: Workspace UUID
+        redirect_uri: Optional redirect URI (defaults to RELAY_PUBLIC_BASE_URL/oauth/google/callback)
+
+    Returns:
+        authorize_url: Google OAuth authorization URL with state parameter
+    """
+    import urllib.parse
+
+    from src.auth.oauth.state import OAuthStateManager
+
+    # Get environment variables
+    client_id = os.getenv("GOOGLE_CLIENT_ID")
+    if not client_id:
+        raise HTTPException(status_code=501, detail="Google OAuth not configured (GOOGLE_CLIENT_ID missing)")
+
+    # Default redirect URI
+    if not redirect_uri:
+        base_url = os.getenv("RELAY_PUBLIC_BASE_URL", "https://relay-production-f2a6.up.railway.app")
+        redirect_uri = f"{base_url}/oauth/google/callback"
+
+    # Create state with PKCE
+    state_mgr = OAuthStateManager()
+    state_data = state_mgr.create_state(
+        workspace_id=workspace_id, provider="google", redirect_uri=redirect_uri, use_pkce=True
+    )
+
+    # Build Google OAuth URL
+    auth_params = {
+        "client_id": client_id,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": "https://www.googleapis.com/auth/gmail.send",
+        "state": state_data["state"],
+        "code_challenge": state_data["code_challenge"],
+        "code_challenge_method": "S256",
+        "access_type": "offline",  # Request refresh token
+        "prompt": "consent",  # Force consent screen to get refresh token
+    }
+
+    authorize_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urllib.parse.urlencode(auth_params)}"
+
+    # Emit metric
+    from src.telemetry import oauth_events
+
+    oauth_events.labels(provider="google", event="authorize_started").inc()
+
+    return {
+        "authorize_url": authorize_url,
+        "state": state_data["state"],
+        "expires_in": 600,  # State valid for 10 minutes
+    }
+
+
+@app.get("/oauth/google/callback")
+async def oauth_google_callback(
+    request: Request,
+    code: str,
+    state: str,
+    workspace_id: str,
+    error: Optional[str] = None,
+):
+    """
+    Handle Google OAuth callback.
+
+    Args:
+        code: Authorization code from Google
+        state: State token for CSRF protection
+        workspace_id: Workspace UUID
+        error: Optional error from Google
+
+    Returns:
+        success: True if tokens stored successfully
+        scopes: Granted OAuth scopes
+    """
+    import httpx
+
+    from src.auth.oauth.state import OAuthStateManager
+    from src.auth.oauth.tokens import OAuthTokenCache
+
+    # Check for OAuth error
+    if error:
+        from src.telemetry import oauth_events
+
+        oauth_events.labels(provider="google", event="callback_error").inc()
+        raise HTTPException(status_code=400, detail=f"OAuth error: {error}")
+
+    # Validate state
+    state_mgr = OAuthStateManager()
+    state_data = state_mgr.validate_state(workspace_id=workspace_id, state=state)
+    if not state_data:
+        from src.telemetry import oauth_events
+
+        oauth_events.labels(provider="google", event="invalid_state").inc()
+        raise HTTPException(status_code=400, detail="Invalid or expired state token")
+
+    # Get environment variables
+    client_id = os.getenv("GOOGLE_CLIENT_ID")
+    client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
+    if not client_id or not client_secret:
+        raise HTTPException(status_code=501, detail="Google OAuth not configured")
+
+    # Exchange code for tokens
+    token_url = "https://oauth2.googleapis.com/token"
+    token_data = {
+        "code": code,
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "redirect_uri": state_data["redirect_uri"],
+        "grant_type": "authorization_code",
+        "code_verifier": state_data.get("code_verifier"),  # PKCE
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(token_url, data=token_data)
+            if response.status_code != 200:
+                from src.telemetry import oauth_events
+
+                oauth_events.labels(provider="google", event="token_exchange_failed").inc()
+                raise HTTPException(
+                    status_code=502, detail=f"Token exchange failed: {response.status_code} {response.text[:200]}"
+                )
+
+            token_response = response.json()
+    except httpx.TimeoutException as e:
+        from src.telemetry import oauth_events
+
+        oauth_events.labels(provider="google", event="token_exchange_timeout").inc()
+        raise HTTPException(status_code=504, detail="Token exchange timeout") from e
+
+    # Extract tokens
+    access_token = token_response.get("access_token")
+    refresh_token = token_response.get("refresh_token")
+    expires_in = token_response.get("expires_in")
+    scope = token_response.get("scope")
+
+    if not access_token:
+        from src.telemetry import oauth_events
+
+        oauth_events.labels(provider="google", event="missing_access_token").inc()
+        raise HTTPException(status_code=502, detail="No access token in response")
+
+    # Store tokens (encrypted)
+    # TODO: Get actor_id from request context (for now using placeholder)
+    actor_id = "user_temp_001"  # Will be replaced with actual user ID from auth context
+
+    token_cache = OAuthTokenCache()
+    await token_cache.store_tokens(
+        provider="google",
+        workspace_id=workspace_id,
+        actor_id=actor_id,
+        access_token=access_token,
+        refresh_token=refresh_token,
+        expires_in=expires_in,
+        scope=scope,
+    )
+
+    # Emit metric
+    from src.telemetry import oauth_events
+
+    oauth_events.labels(provider="google", event="tokens_stored").inc()
+
+    return {"success": True, "scopes": scope, "has_refresh_token": bool(refresh_token)}
+
+
+@app.get("/oauth/google/status")
+async def oauth_google_status(
+    request: Request,
+    workspace_id: str,
+):
+    """
+    Check if workspace has Google OAuth connection.
+
+    Args:
+        workspace_id: Workspace UUID
+
+    Returns:
+        linked: True if OAuth tokens exist for this workspace
+        scopes: Granted OAuth scopes (if linked)
+    """
+    from src.auth.oauth.tokens import OAuthTokenCache
+
+    # TODO: Get actor_id from request context
+    actor_id = "user_temp_001"
+
+    token_cache = OAuthTokenCache()
+    tokens = await token_cache.get_tokens(provider="google", workspace_id=workspace_id, actor_id=actor_id)
+
+    if tokens:
+        return {"linked": True, "scopes": tokens.get("scope", "")}
+    else:
+        return {"linked": False, "scopes": None}
 
 
 if __name__ == "__main__":

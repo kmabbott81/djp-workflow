@@ -1,0 +1,75 @@
+Sprint 53 Phase A: Rate Limiter Mode Discovery
+================================================
+
+Date: October 8, 2025
+Task: Wire Redis into backend rate limiting
+
+DISCOVERY: Redis support ALREADY IMPLEMENTED
+=============================================
+
+Found: src/limits/limiter.py
+
+Architecture:
+- RateLimiter class with automatic backend selection
+- RedisRateLimiter: Fixed-window counters (1-minute buckets)
+- InProcessRateLimiter: Token bucket fallback
+- Fail-open strategy on Redis errors
+
+Key Features:
+1. Auto-detects REDIS_URL environment variable
+2. Logs which backend is active on initialization:
+   - Redis: "[INFO] Rate limiter: Using Redis backend (60/min)"
+   - In-process: "[INFO] Rate limiter: Using in-process backend (60/min)"
+3. Gracefully handles Redis connection failures
+4. Redis key format: rl:{workspace_id}:{epoch_min}
+
+Current Behavior (Local):
+-------------------------
+$ python -c "from src.limits.limiter import get_rate_limiter; limiter = get_rate_limiter(); print(type(limiter.backend).__name__)"
+[INFO] Rate limiter: Using in-process backend (60/min)
+InProcessRateLimiter
+
+Docker Compose Configuration:
+------------------------------
+- Redis 7 Alpine
+- Port: 6379
+- Max memory: 512MB
+- Eviction policy: allkeys-lru (good for caching)
+- Persistence: AOF (appendonly yes)
+- Health check: redis-cli ping
+
+Health Check Integration:
+-------------------------
+✅ Added Redis health check to /ready endpoint (commit 21fb9aa)
+- Checks Redis.ping() if REDIS_URL is set
+- Returns "redis": true if not configured (optional)
+- Returns "redis": false if connection fails
+
+Test Results:
+-------------
+1. No REDIS_URL set:
+   {"ready": false, "checks": {"telemetry": false, "templates": true, "filesystem": true, "redis": true}}
+
+2. REDIS_URL set but unavailable:
+   {"ready": false, "checks": {"telemetry": false, "templates": true, "filesystem": true, "redis": false}}
+
+Production Deployment:
+----------------------
+Once Redis is added to Railway:
+1. Set REDIS_URL environment variable in Railway
+2. Backend will automatically switch to Redis backend
+3. Rate limiting will be distributed across instances
+4. /ready endpoint will show "redis": true
+
+NO CODE CHANGES NEEDED - Infrastructure already complete!
+
+Next Steps:
+-----------
+1. User adds Redis to Railway via dashboard (manual - Railway CLI is interactive)
+2. Set REDIS_URL in Railway backend environment variables
+3. Redeploy backend
+4. Verify rate limiter logs show "Using Redis backend"
+5. Check /ready endpoint shows "redis": true
+6. Monitor metrics: redis_connected{instance="..."}
+
+Status: ✅ Backend code complete, waiting on Railway Redis provisioning
