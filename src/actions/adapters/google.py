@@ -50,11 +50,16 @@ class GmailSendParams(BaseModel):
 class GoogleAdapter:
     """Adapter for Google actions (Gmail)."""
 
-    def __init__(self):
-        """Initialize Google adapter."""
+    def __init__(self, rollout_gate=None):
+        """Initialize Google adapter.
+
+        Args:
+            rollout_gate: Optional RolloutGate for gradual feature rollout
+        """
         self.enabled = os.getenv("PROVIDER_GOOGLE_ENABLED", "false").lower() == "true"
         self.client_id = os.getenv("GOOGLE_CLIENT_ID")
         self.client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
+        self.rollout_gate = rollout_gate
 
     def list_actions(self) -> list[ActionDefinition]:
         """List available Google actions."""
@@ -206,6 +211,7 @@ class GoogleAdapter:
 
         Bounded error reasons:
         - provider_disabled: PROVIDER_GOOGLE_ENABLED=false
+        - rollout_gated: Feature not rolled out to this user
         - oauth_token_missing: No tokens found for workspace
         - oauth_token_expired: Token refresh failed
         - gmail_4xx: Client error (400-499)
@@ -220,6 +226,13 @@ class GoogleAdapter:
         if not self.enabled:
             record_action_error(provider="google", action="gmail.send", reason="provider_disabled")
             raise ValueError("Google provider is disabled (PROVIDER_GOOGLE_ENABLED=false)")
+
+        # Guard: Check rollout gate
+        if self.rollout_gate is not None:
+            context = {"actor_id": actor_id, "workspace_id": workspace_id}
+            if not self.rollout_gate.allow("google", context):
+                record_action_error(provider="google", action="gmail.send", reason="rollout_gated")
+                raise ValueError("Gmail send not rolled out to this user (rollout gate)")
 
         # Validate parameters
         try:
