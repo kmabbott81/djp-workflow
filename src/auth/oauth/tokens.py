@@ -49,19 +49,20 @@ class OAuthTokenCache:
             gmail_client = build('gmail', 'v1', credentials=tokens["access_token"])
     """
 
-    def __init__(self, redis_url: Optional[str] = None, encryption_key: Optional[str] = None):
+    def __init__(self, redis_url: Optional[str] = None, encryption_key: Optional[str] = None, redis_client=None):
         """Initialize OAuth token cache.
 
         Args:
             redis_url: Redis connection URL (default from REDIS_URL env var)
             encryption_key: Fernet encryption key (default from OAUTH_ENCRYPTION_KEY env var)
+            redis_client: Pre-configured Redis client for dependency injection (tests)
         """
         self.redis_url = redis_url or os.getenv("REDIS_URL")
-        self.redis_client = None
+        self.redis_client = redis_client  # Allow DI for testing
         self.backend = "db-only"  # or "db+cache"
 
-        # Initialize Redis cache (optional)
-        if self.redis_url:
+        # Initialize Redis cache (optional) - skip if client provided via DI
+        if not self.redis_client and self.redis_url:
             try:
                 import redis
 
@@ -72,6 +73,9 @@ class OAuthTokenCache:
             except Exception as e:
                 print(f"[WARN] OAuth token cache: Redis unavailable: {e}. Using database only.")
                 self.backend = "db-only"
+        elif self.redis_client:
+            # Client provided via DI (testing)
+            self.backend = "db+cache"
         else:
             print("[INFO] OAuth token cache: Using database only (no Redis)")
 

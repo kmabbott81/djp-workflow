@@ -414,6 +414,21 @@ def clean_graph_env(tmp_path, monkeypatch):
     reset_index()
 
 
+# Sprint 54 fixtures for OAuth tests with FakeRedis
+
+
+@pytest.fixture
+def fake_redis():
+    """Provide FakeRedis instance for OAuth token cache tests.
+
+    FakeRedis supports set, get, setnx, expire, delete, setex, ping
+    matching production Redis calls in OAuthTokenCache.
+    """
+    import fakeredis
+
+    return fakeredis.FakeStrictRedis(decode_responses=True)
+
+
 # Sprint 42 fixtures for network blocking (Issue #15)
 
 

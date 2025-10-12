@@ -32,9 +32,10 @@ MS_UPLOAD_SESSIONS_ENABLED = os.getenv("MS_UPLOAD_SESSIONS_ENABLED", "false").lo
 MS_UPLOAD_SESSION_THRESHOLD_BYTES = int(os.getenv("MS_UPLOAD_SESSION_THRESHOLD_BYTES", str(3 * 1024 * 1024)))
 MS_UPLOAD_CHUNK_SIZE_BYTES = int(os.getenv("MS_UPLOAD_CHUNK_SIZE_BYTES", str(4 * 1024 * 1024)))
 
-# Validate chunk size is 320 KiB multiple
+# Validate chunk size is 320 KiB multiple (only if not default)
 CHUNK_SIZE_MULTIPLE = 320 * 1024
-if MS_UPLOAD_CHUNK_SIZE_BYTES % CHUNK_SIZE_MULTIPLE != 0:
+_custom_chunk_size = os.getenv("MS_UPLOAD_CHUNK_SIZE_BYTES")
+if _custom_chunk_size and MS_UPLOAD_CHUNK_SIZE_BYTES % CHUNK_SIZE_MULTIPLE != 0:
     raise ValueError(f"MS_UPLOAD_CHUNK_SIZE_BYTES must be multiple of 320 KiB, got {MS_UPLOAD_CHUNK_SIZE_BYTES}")
 
 

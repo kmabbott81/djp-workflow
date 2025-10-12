@@ -548,12 +548,25 @@ class MicrosoftAdapter:
                 )
                 raise ValueError(json.dumps(error)) from e
 
-        # Check for large attachments (>3MB) - Sprint 55 Week 2 stub
+        # Get OAuth tokens with auto-refresh (needed for both paths)
+        from src.auth.oauth.ms_tokens import get_tokens
+
+        tokens = await get_tokens(workspace_id, actor_id)
+        if not tokens:
+            record_action_error(provider="microsoft", action="outlook.send", reason="oauth_token_missing")
+            raise ValueError(f"No Microsoft OAuth tokens found for workspace={workspace_id}, actor={actor_id}")
+
+        access_token = tokens.get("access_token")
+        if not access_token:
+            record_action_error(provider="microsoft", action="outlook.send", reason="oauth_token_invalid")
+            raise ValueError("OAuth token missing access_token")
+
+        # Check for large attachments (>3MB) - Sprint 55 Week 3: Upload sessions
         if should_use_upload_session(attachments, inline):
             upload_sessions_enabled = os.getenv("MS_UPLOAD_SESSIONS_ENABLED", "false").lower() == "true"
 
             if not upload_sessions_enabled:
-                # Stub for Week 3: Large attachment upload sessions not yet implemented
+                # Feature flag not enabled
                 record_action_error(provider="microsoft", action="outlook.send", reason="provider_payload_too_large")
                 error = self._create_structured_error(
                     error_code="provider_payload_too_large",
@@ -566,25 +579,17 @@ class MicrosoftAdapter:
                         + round(sum(len(img.data) for img in (inline or [])) / (1024 * 1024), 2),
                         "threshold_mb": 3,
                         "feature": "upload_sessions",
-                        "status": "not_implemented",
+                        "status": "disabled",
                     },
-                    remediation="Reduce attachment size to <3MB or enable MS_UPLOAD_SESSIONS_ENABLED=true (Week 3 feature)",
+                    remediation="Reduce attachment size to <3MB or enable MS_UPLOAD_SESSIONS_ENABLED=true",
                     retriable=False,
                 )
                 raise ValueError(json.dumps(error))
 
-        # Get OAuth tokens with auto-refresh
-        from src.auth.oauth.ms_tokens import get_tokens
-
-        tokens = await get_tokens(workspace_id, actor_id)
-        if not tokens:
-            record_action_error(provider="microsoft", action="outlook.send", reason="oauth_token_missing")
-            raise ValueError(f"No Microsoft OAuth tokens found for workspace={workspace_id}, actor={actor_id}")
-
-        access_token = tokens.get("access_token")
-        if not access_token:
-            record_action_error(provider="microsoft", action="outlook.send", reason="oauth_token_invalid")
-            raise ValueError("OAuth token missing access_token")
+            # Sprint 55 Week 3: Use draft + upload session flow for large attachments
+            return await self._execute_outlook_send_with_upload_session(
+                validated, attachments, inline, access_token, workspace_id, actor_id, start_time
+            )
 
         # Build Graph API JSON payload
         from src.actions.adapters.microsoft_graph import GraphMessageBuilder
@@ -760,6 +765,206 @@ class MicrosoftAdapter:
         if last_error:
             raise ValueError(f"Unexpected error in retry loop: {last_error}")
         raise ValueError("Unexpected: retry loop exited without result")
+
+    async def _execute_outlook_send_with_upload_session(
+        self,
+        validated: OutlookSendParams,
+        attachments: Optional[list],  # list[Attachment]
+        inline: Optional[list],  # list[InlineImage]
+        access_token: str,
+        workspace_id: str,
+        actor_id: str,
+        start_time: float,
+    ) -> dict[str, Any]:
+        """Execute outlook.send using draft + upload session flow for large attachments.
+
+        Sprint 55 Week 3: Upload session flow for attachments >3 MB.
+
+        Flow:
+        1. Create draft message (without attachments)
+        2. For each attachment (regular + inline), create upload session and upload chunks
+        3. Send draft message
+
+        Args:
+            validated: Validated parameters
+            attachments: Regular attachments (already decoded)
+            inline: Inline images (already decoded)
+            access_token: OAuth access token
+            workspace_id: Workspace UUID
+            actor_id: Actor ID
+            start_time: Request start time
+
+        Returns:
+            Execution result with status and response data
+
+        Raises:
+            ValueError: If upload session fails
+        """
+        from src.actions.adapters.microsoft_upload import (
+            UploadChunkError,
+            UploadFinalizeError,
+            UploadSessionCreateError,
+            UploadSessionError,
+            create_draft,
+            create_upload_session,
+            put_chunks,
+            send_draft,
+        )
+        from src.telemetry.prom import record_action_error, record_action_execution
+
+        try:
+            # Step 1: Build message without attachments (draft)
+            from src.actions.adapters.microsoft_graph import GraphMessageBuilder
+
+            builder = GraphMessageBuilder()
+            draft_payload = builder.build_message(
+                to=validated.to,
+                subject=validated.subject,
+                text=validated.text,
+                html=validated.html,
+                cc=validated.cc,
+                bcc=validated.bcc,
+                attachments=None,  # No attachments in draft
+                inline=None,  # No inline in draft
+            )
+
+            # Extract message portion (create_draft needs message only, not sendMail wrapper)
+            draft_message = draft_payload["message"]
+
+            # Step 2: Create draft
+            message_id, internet_message_id = await create_draft(access_token, draft_message)
+
+            # Step 3: Upload attachments via upload sessions
+            # Upload regular attachments
+            if attachments:
+                for att in attachments:
+                    attachment_meta = {
+                        "attachmentType": "file",
+                        "name": att.filename,
+                        "size": len(att.data),
+                        "contentType": att.content_type,
+                    }
+
+                    upload_url = await create_upload_session(access_token, message_id, attachment_meta)
+                    await put_chunks(upload_url, att.data)
+
+            # Upload inline images
+            if inline:
+                for img in inline:
+                    attachment_meta = {
+                        "attachmentType": "file",
+                        "name": img.filename,
+                        "size": len(img.data),
+                        "contentType": img.content_type,
+                        "isInline": True,
+                        "contentId": img.cid,  # CID for inline reference
+                    }
+
+                    upload_url = await create_upload_session(access_token, message_id, attachment_meta)
+                    await put_chunks(upload_url, img.data)
+
+            # Step 4: Send draft
+            await send_draft(access_token, message_id)
+
+            # Success
+            duration = time.perf_counter() - start_time
+            record_action_execution(
+                provider="microsoft",
+                action="outlook.send",
+                status="ok",
+                duration_seconds=duration,
+            )
+
+            return {
+                "status": "sent",
+                "message": "Email sent successfully via Microsoft Graph API (upload session)",
+                "to": validated.to,
+                "subject": validated.subject,
+                "provider": "microsoft",
+                "draft_id": message_id,
+                "internet_message_id": internet_message_id,
+                "upload_session_used": True,
+            }
+
+        except UploadSessionCreateError as e:
+            # Failed to create draft or upload session
+            record_action_error(provider="microsoft", action="outlook.send", reason="upload_session_create_error")
+            error = self._create_structured_error(
+                error_code="provider_upload_session_create_failed",
+                message=f"Failed to create upload session: {str(e)}",
+                field="attachments",
+                details={"error": str(e)},
+                remediation="Check attachment sizes and Graph API permissions. Retry may succeed.",
+                retriable=True,
+            )
+            duration = time.perf_counter() - start_time
+            record_action_execution(
+                provider="microsoft",
+                action="outlook.send",
+                status="error",
+                duration_seconds=duration,
+            )
+            raise ValueError(json.dumps(error)) from e
+
+        except UploadChunkError as e:
+            # Failed to upload chunk
+            record_action_error(provider="microsoft", action="outlook.send", reason="upload_chunk_error")
+            error = self._create_structured_error(
+                error_code="provider_upload_chunk_failed",
+                message=f"Failed to upload attachment chunk: {str(e)}",
+                field="attachments",
+                details={"error": str(e)},
+                remediation="Check network stability and attachment sizes. Retry may succeed.",
+                retriable=True,
+            )
+            duration = time.perf_counter() - start_time
+            record_action_execution(
+                provider="microsoft",
+                action="outlook.send",
+                status="error",
+                duration_seconds=duration,
+            )
+            raise ValueError(json.dumps(error)) from e
+
+        except UploadFinalizeError as e:
+            # Failed to send draft
+            record_action_error(provider="microsoft", action="outlook.send", reason="upload_finalize_error")
+            error = self._create_structured_error(
+                error_code="provider_upload_finalize_failed",
+                message=f"Failed to send draft after uploading attachments: {str(e)}",
+                field="attachments",
+                details={"error": str(e), "draft_id": message_id if "message_id" in locals() else None},
+                remediation="Attachments uploaded but send failed. Draft may exist in mailbox. Retry may succeed.",
+                retriable=True,
+            )
+            duration = time.perf_counter() - start_time
+            record_action_execution(
+                provider="microsoft",
+                action="outlook.send",
+                status="error",
+                duration_seconds=duration,
+            )
+            raise ValueError(json.dumps(error)) from e
+
+        except UploadSessionError as e:
+            # Generic upload session error
+            record_action_error(provider="microsoft", action="outlook.send", reason="upload_session_error")
+            error = self._create_structured_error(
+                error_code="provider_upload_session_failed",
+                message=f"Upload session error: {str(e)}",
+                field="attachments",
+                details={"error": str(e)},
+                remediation="Check attachment sizes and Graph API status. Retry may succeed.",
+                retriable=True,
+            )
+            duration = time.perf_counter() - start_time
+            record_action_execution(
+                provider="microsoft",
+                action="outlook.send",
+                status="error",
+                duration_seconds=duration,
+            )
+            raise ValueError(json.dumps(error)) from e
 
 
 def is_configured() -> bool:

@@ -241,4 +241,30 @@ GRAPH_ERROR_CODES = {
     # Conflict
     "ErrorMailboxStoreUnavailable": "provider_conflict",
     "ErrorQuotaExceeded": "provider_conflict",
+    # Sprint 55 Week 3: Upload session errors
+    "ErrorAttachmentSizeLimitExceeded": "provider_payload_too_large",
+    "ErrorInvalidUploadSession": "provider_upload_session_invalid",
+    "ErrorUploadSessionNotFound": "provider_upload_session_not_found",
 }
+
+
+# Sprint 55 Week 3: Upload session error mapping
+def map_upload_session_error(status_code: int, error_response: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+    """Map upload session errors to structured error codes.
+
+    Args:
+        status_code: HTTP status code
+        error_response: Graph API error response JSON (optional)
+
+    Returns:
+        Structured error dict with upload session context
+    """
+    # Delegate to existing error mapper
+    base_error = map_graph_error_to_structured_code(status_code, error_response)
+
+    # Add upload session context
+    base_error["source"] = "microsoft_upload_session"
+    base_error["details"] = base_error.get("details", {})
+    base_error["details"]["upload_session"] = True
+
+    return base_error
