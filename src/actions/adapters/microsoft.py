@@ -314,6 +314,59 @@ class MicrosoftAdapter:
         # Check internal-only recipients
         self._check_internal_only_recipients(validated.to, validated.cc, validated.bcc)
 
+        # Check for large attachments (>3MB) - Sprint 55 Week 2 stub
+        import base64
+
+        from src.actions.adapters.microsoft_graph import should_use_upload_session
+        from src.validation.attachments import Attachment, InlineImage
+
+        attachments = None
+        if validated.attachments:
+            attachments = [
+                Attachment(
+                    filename=att.filename,
+                    content_type=att.content_type,
+                    data=base64.b64decode(att.data),
+                )
+                for att in validated.attachments
+            ]
+
+        inline = None
+        if validated.inline:
+            inline = [
+                InlineImage(
+                    cid=img.cid,
+                    filename=img.filename,
+                    content_type=img.content_type,
+                    data=base64.b64decode(img.data),
+                )
+                for img in validated.inline
+            ]
+
+        # Check if upload session is needed (>3MB attachments)
+        if should_use_upload_session(attachments, inline):
+            upload_sessions_enabled = os.getenv("MS_UPLOAD_SESSIONS_ENABLED", "false").lower() == "true"
+
+            if not upload_sessions_enabled:
+                # Stub for Week 3: Large attachment upload sessions not yet implemented
+                error = self._create_structured_error(
+                    error_code="provider_payload_too_large",
+                    message="Attachments exceed 3MB - upload sessions required but not enabled",
+                    field="attachments",
+                    details={
+                        "total_size_estimate_mb": round(
+                            sum(len(att.data) for att in (attachments or [])) / (1024 * 1024), 2
+                        )
+                        + round(sum(len(img.data) for img in (inline or [])) / (1024 * 1024), 2),
+                        "threshold_mb": 3,
+                        "feature": "upload_sessions",
+                        "status": "not_implemented",
+                    },
+                    remediation="Reduce attachment size to <3MB or enable MS_UPLOAD_SESSIONS_ENABLED=true (Week 3 feature)",
+                    retriable=False,
+                )
+                raise ValueError(json.dumps(error))
+
         # Compute digest (SHA256 of headers + subject + first 64 chars of body)
         digest_input = f"{validated.to}|{validated.subject}|{validated.text[:64]}"
         digest = hashlib.sha256(digest_input.encode("utf-8")).hexdigest()[:16]
@@ -414,28 +467,12 @@ class MicrosoftAdapter:
         # Check internal-only recipients
         self._check_internal_only_recipients(validated.to, validated.cc, validated.bcc)
 
-        # Get OAuth tokens with auto-refresh
-        from src.auth.oauth.ms_tokens import get_tokens
-
-        tokens = await get_tokens(workspace_id, actor_id)
-        if not tokens:
-            record_action_error(provider="microsoft", action="outlook.send", reason="oauth_token_missing")
-            raise ValueError(f"No Microsoft OAuth tokens found for workspace={workspace_id}, actor={actor_id}")
-
-        access_token = tokens.get("access_token")
-        if not access_token:
-            record_action_error(provider="microsoft", action="outlook.send", reason="oauth_token_invalid")
-            raise ValueError("OAuth token missing access_token")
-
-        # Build Graph API JSON payload
+        # Convert parameters to attachment/inline objects (needed for size check)
         import base64
 
-        from src.actions.adapters.microsoft_graph import GraphMessageBuilder
+        from src.actions.adapters.microsoft_graph import should_use_upload_session
         from src.validation.attachments import Attachment, InlineImage
 
-        builder = GraphMessageBuilder()
-
-        # Convert parameters to attachment/inline objects
         attachments = None
         if validated.attachments:
             attachments = [
@@ -458,6 +495,51 @@ class MicrosoftAdapter:
                 )
                 for img in validated.inline
             ]
+
+        # Check for large attachments (>3MB) - Sprint 55 Week 2 stub
+        if should_use_upload_session(attachments, inline):
+            upload_sessions_enabled = os.getenv("MS_UPLOAD_SESSIONS_ENABLED", "false").lower() == "true"
+
+            if not upload_sessions_enabled:
+                # Stub for Week 3: Large attachment upload sessions not yet implemented
+                record_action_error(provider="microsoft", action="outlook.send", reason="provider_payload_too_large")
+                error = self._create_structured_error(
+                    error_code="provider_payload_too_large",
+                    message="Attachments exceed 3MB - upload sessions required but not enabled",
+                    field="attachments",
+                    details={
+                        "total_size_estimate_mb": round(
+                            sum(len(att.data) for att in (attachments or [])) / (1024 * 1024), 2
+                        )
+                        + round(sum(len(img.data) for img in (inline or [])) / (1024 * 1024), 2),
+                        "threshold_mb": 3,
+                        "feature": "upload_sessions",
+                        "status": "not_implemented",
+                    },
+                    remediation="Reduce attachment size to <3MB or enable MS_UPLOAD_SESSIONS_ENABLED=true (Week 3 feature)",
+                    retriable=False,
+                )
+                raise ValueError(json.dumps(error))
+
+        # Get OAuth tokens with auto-refresh
+        from src.auth.oauth.ms_tokens import get_tokens
+
+        tokens = await get_tokens(workspace_id, actor_id)
+        if not tokens:
+            record_action_error(provider="microsoft", action="outlook.send", reason="oauth_token_missing")
+            raise ValueError(f"No Microsoft OAuth tokens found for workspace={workspace_id}, actor={actor_id}")
+
+        access_token = tokens.get("access_token")
+        if not access_token:
+            record_action_error(provider="microsoft", action="outlook.send", reason="oauth_token_invalid")
+            raise ValueError("OAuth token missing access_token")
+
+        # Build Graph API JSON payload
+        from src.actions.adapters.microsoft_graph import GraphMessageBuilder
+
+        builder = GraphMessageBuilder()
+
+        # Note: attachments and inline already converted above for size check
 
         try:
             payload = builder.build_message(
