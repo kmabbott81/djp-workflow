@@ -41,6 +41,20 @@ _action_latency_seconds = None
 _action_error_total = None
 # Sprint 53 Phase B: OAuth metrics
 _oauth_events = None
+# Sprint 54: Gmail Rich Email metrics
+_gmail_mime_build_seconds = None
+_gmail_attachment_bytes_total = None
+_gmail_inline_refs_total = None
+_gmail_html_sanitization_changes_total = None
+# Sprint 55: Outlook (Microsoft) Rich Email metrics
+_outlook_graph_build_seconds = None
+_outlook_attachment_bytes_total = None
+_outlook_inline_refs_total = None
+_outlook_html_sanitization_changes_total = None
+# Sprint 54 Phase 4: Structured error tracking
+_structured_error_total = None
+# Sprint 54 Phase 4: Rollout controller gauge
+_rollout_controller_percent = None
 
 
 def _is_enabled() -> bool:
@@ -60,6 +74,11 @@ def init_prometheus() -> None:
     global _external_api_calls, _external_api_duration
     global _action_exec_total, _action_latency_seconds, _action_error_total
     global _oauth_events
+    global _gmail_mime_build_seconds, _gmail_attachment_bytes_total
+    global _gmail_inline_refs_total, _gmail_html_sanitization_changes_total
+    global _outlook_graph_build_seconds, _outlook_attachment_bytes_total
+    global _outlook_inline_refs_total, _outlook_html_sanitization_changes_total
+    global _structured_error_total, _rollout_controller_percent
 
     if not _is_enabled():
         _LOG.debug("Telemetry disabled, skipping Prometheus init")
@@ -141,6 +160,70 @@ def init_prometheus() -> None:
             "oauth_events_total",
             "OAuth flow events by provider and event type",
             ["provider", "event"],
+        )
+
+        # Sprint 54: Gmail Rich Email metrics
+        _gmail_mime_build_seconds = Histogram(
+            "gmail_mime_build_seconds",
+            "Time to build MIME message in seconds",
+            buckets=[0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0],
+        )
+
+        _gmail_attachment_bytes_total = Counter(
+            "gmail_attachment_bytes_total",
+            "Total bytes of attachments processed",
+            ["result"],  # accepted | rejected
+        )
+
+        _gmail_inline_refs_total = Counter(
+            "gmail_inline_refs_total",
+            "Inline image CID references",
+            ["result"],  # matched | orphan_cid
+        )
+
+        _gmail_html_sanitization_changes_total = Counter(
+            "gmail_html_sanitization_changes_total",
+            "HTML sanitization changes made",
+            ["change_type"],  # tag_removed | attr_removed | script_blocked | style_sanitized
+        )
+
+        # Sprint 55: Outlook (Microsoft) Rich Email metrics
+        _outlook_graph_build_seconds = Histogram(
+            "outlook_graph_build_seconds",
+            "Time to build Graph API JSON message in seconds",
+            buckets=[0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0],
+        )
+
+        _outlook_attachment_bytes_total = Counter(
+            "outlook_attachment_bytes_total",
+            "Total bytes of attachments processed for Outlook",
+            ["result"],  # accepted | rejected
+        )
+
+        _outlook_inline_refs_total = Counter(
+            "outlook_inline_refs_total",
+            "Inline image CID references for Outlook",
+            ["result"],  # matched | orphan_cid
+        )
+
+        _outlook_html_sanitization_changes_total = Counter(
+            "outlook_html_sanitization_changes_total",
+            "HTML sanitization changes made for Outlook",
+            ["change_type"],  # tag_removed | attr_removed | script_blocked | style_sanitized
+        )
+
+        # Sprint 54 Phase 4: Structured error tracking
+        _structured_error_total = Counter(
+            "structured_error_total",
+            "Normalized structured errors emitted by adapters/validators",
+            ["provider", "action", "code", "source"],
+        )
+
+        # Sprint 54 Phase 4: Rollout controller gauge
+        _rollout_controller_percent = Gauge(
+            "rollout_controller_percent",
+            "Current rollout percentage for a feature",
+            ["feature"],
         )
 
         _METRICS_INITIALIZED = True
@@ -316,3 +399,60 @@ def generate_metrics_text() -> str:
     except Exception as exc:
         _LOG.error("Failed to generate metrics: %s", exc)
         return f"# Error generating metrics: {exc}\n"
+
+
+def record_structured_error(provider: str, action: str, code: str, source: str) -> None:
+    """Record structured error metrics.
+
+    Args:
+        provider: Provider name (e.g., "google")
+        action: Action name (e.g., "gmail.send")
+        code: Error code (e.g., "validation_error_attachment_too_large")
+        source: Error source (e.g., "gmail.adapter", "gmail.mime", "gmail.validation")
+    """
+    if not _PROM_AVAILABLE or not _METRICS_INITIALIZED:
+        return
+
+    try:
+        _structured_error_total.labels(provider=provider, action=action, code=code, source=source).inc()
+    except Exception as exc:
+        _LOG.warning("Failed to record structured error metric: %s", exc)
+
+
+def set_rollout_percentage(feature: str, percentage: float) -> None:
+    """Set rollout percentage gauge for a feature.
+
+    Args:
+        feature: Feature name (e.g., "google")
+        percentage: Rollout percentage (0.0 to 100.0)
+    """
+    if not _PROM_AVAILABLE or not _METRICS_INITIALIZED:
+        return
+
+    try:
+        _rollout_controller_percent.labels(feature=feature).set(percentage)
+    except Exception as exc:
+        _LOG.warning("Failed to set rollout percentage metric: %s", exc)
+
+
+# Sprint 54: Gmail Rich Email metric exports
+# These are exported for direct use in the MIME builder (google_mime.py)
+# They are safe to import even if telemetry is disabled (will be None).
+
+gmail_mime_build_seconds = _gmail_mime_build_seconds
+gmail_attachment_bytes_total = _gmail_attachment_bytes_total
+gmail_inline_refs_total = _gmail_inline_refs_total
+gmail_html_sanitization_changes_total = _gmail_html_sanitization_changes_total
+
+# Sprint 55: Outlook (Microsoft) Rich Email metric exports
+# These are exported for direct use in the Graph builder (microsoft_graph.py)
+# They are safe to import even if telemetry is disabled (will be None).
+
+outlook_graph_build_seconds = _outlook_graph_build_seconds
+outlook_attachment_bytes_total = _outlook_attachment_bytes_total
+outlook_inline_refs_total = _outlook_inline_refs_total
+outlook_html_sanitization_changes_total = _outlook_html_sanitization_changes_total
+
+# Sprint 54 Phase 4: Structured error and rollout exports
+structured_error_total = _structured_error_total
+rollout_controller_percent = _rollout_controller_percent

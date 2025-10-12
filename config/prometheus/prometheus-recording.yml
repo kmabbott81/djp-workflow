@@ -1,0 +1,104 @@
+# Prometheus Recording Rules for Gmail Rich Email Integration
+# Sprint 54 Phase 4: Observability
+#
+# These recording rules pre-compute common queries to:
+# 1. Reduce dashboard query complexity
+# 2. Improve query performance
+# 3. Maintain consistency across dashboards and alerts
+
+groups:
+- name: gmail_send_recording
+  interval: 30s
+  rules:
+  # Gmail send execution rate (base metric for guards)
+  - record: job:gmail_send_exec_rate:5m
+    expr: sum(rate(action_exec_total{provider="google",action="gmail.send"}[5m]))
+
+  # Gmail send latency histogram rate (for quantile calculations)
+  - record: job:gmail_send_latency_seconds:rate5m
+    expr: sum(rate(action_latency_seconds_bucket{provider="google",action="gmail.send"}[5m])) by (le)
+
+  # Gmail send latency histogram rate by result (for split analysis)
+  - record: job:gmail_send_latency_seconds:rate5m_by_result
+    expr: sum(rate(action_latency_seconds_bucket{provider="google",action="gmail.send"}[5m])) by (le, status)
+
+  # Gmail send P50 latency
+  - record: job:gmail_send_latency_p50:5m
+    expr: histogram_quantile(0.50, job:gmail_send_latency_seconds:rate5m)
+
+  # Gmail send P95 latency
+  - record: job:gmail_send_latency_p95:5m
+    expr: histogram_quantile(0.95, job:gmail_send_latency_seconds:rate5m)
+
+  # Gmail send P95 latency by result (success vs error)
+  - record: job:gmail_send_latency_p95_by_result:5m
+    expr: histogram_quantile(0.95, job:gmail_send_latency_seconds:rate5m_by_result)
+
+  # Gmail send P99 latency
+  - record: job:gmail_send_latency_p99:5m
+    expr: histogram_quantile(0.99, job:gmail_send_latency_seconds:rate5m)
+
+  # Gmail send error rate (errors / total requests with floor)
+  - record: job:gmail_send_errors_rate:5m
+    expr: |
+      sum(rate(action_error_total{provider="google",action="gmail.send"}[5m]))
+      / clamp_min(job:gmail_send_exec_rate:5m, 1)
+
+  # Gmail send success rate
+  - record: job:gmail_send_success_rate:5m
+    expr: |
+      sum(rate(action_exec_total{provider="google",action="gmail.send",status="ok"}[5m]))
+      / clamp_min(job:gmail_send_exec_rate:5m, 1)
+
+  # Gmail send request rate (requests per second)
+  - record: job:gmail_send_request_rate:1m
+    expr: sum(rate(action_exec_total{provider="google",action="gmail.send"}[1m]))
+
+  # MIME builder histogram rate (for quantile calculations)
+  - record: job:gmail_mime_build_seconds:rate5m
+    expr: sum(rate(gmail_mime_build_seconds_bucket[5m])) by (le)
+
+  # MIME builder P95 build time
+  - record: job:gmail_mime_build_p95:5m
+    expr: histogram_quantile(0.95, job:gmail_mime_build_seconds:rate5m)
+
+  # Structured error rate by code (all codes)
+  - record: job:structured_error_rate_by_code:5m
+    expr: sum(rate(structured_error_total{provider="google",action="gmail.send"}[5m])) by (code)
+
+  # Top 5 structured error codes (cardinality guard)
+  - record: job:structured_error_rate_top5_codes:5m
+    expr: topk(5, sum(rate(structured_error_total{provider="google",action="gmail.send"}[5m])) by (code))
+
+  # Total structured error rate
+  - record: job:structured_error_rate_total:5m
+    expr: sum(rate(structured_error_total{provider="google",action="gmail.send"}[5m]))
+
+  # HTML sanitization rate
+  - record: job:gmail_html_sanitization_rate:5m
+    expr: sum(rate(gmail_html_sanitization_changes_total[5m])) by (change_type)
+
+  # Attachment bytes processed per second
+  - record: job:gmail_attachment_bytes_rate:1m
+    expr: sum(rate(gmail_attachment_bytes_total[1m])) by (result)
+
+  # Inline image references rate
+  - record: job:gmail_inline_refs_rate:1m
+    expr: sum(rate(gmail_inline_refs_total[1m])) by (result)
+
+- name: rollout_controller_recording
+  interval: 30s
+  rules:
+  # Rollout controller run rate
+  - record: job:rollout_controller_run_rate:5m
+    expr: sum(rate(rollout_controller_runs_total[5m])) by (status)
+
+  # Rollout controller decision rate
+  - record: job:rollout_controller_decision_rate:1h
+    expr: sum(rate(rollout_controller_changes_total[1h])) by (result)
+
+  # Rollout controller failure rate
+  - record: job:rollout_controller_failure_rate:5m
+    expr: |
+      sum(rate(rollout_controller_runs_total{status!="ok"}[5m]))
+      / clamp_min(sum(rate(rollout_controller_runs_total[5m])), 1)

@@ -1,0 +1,338 @@
+{
+  "dashboard": {
+    "title": "Gmail Integration Overview",
+    "tags": ["relay", "gmail", "google", "phase4"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Gmail Send Error Rate (with Traffic Guard)",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "job:gmail_send_errors_rate:5m",
+            "legendFormat": "Error Rate",
+            "refId": "A"
+          },
+          {
+            "expr": "job:gmail_send_exec_rate:5m",
+            "legendFormat": "Traffic (req/s)",
+            "refId": "B",
+            "yAxisIndex": 1
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percentunit",
+            "label": "Error Rate",
+            "logBase": 1,
+            "show": true
+          },
+          {
+            "format": "reqps",
+            "label": "Traffic",
+            "logBase": 1,
+            "show": true
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [0.01],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["A", "5m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "60s",
+          "handler": 1,
+          "name": "Gmail Send Error Rate Alert",
+          "noDataState": "no_data",
+          "notifications": []
+        },
+        "thresholds": [
+          {
+            "value": 0.01,
+            "colorMode": "critical",
+            "op": "gt",
+            "fill": true,
+            "line": true
+          },
+          {
+            "value": 0.05,
+            "colorMode": "critical",
+            "op": "gt",
+            "fill": true,
+            "line": true
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Gmail Send Latency (P95) - Split by Result",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "job:gmail_send_latency_p95_by_result:5m{status=\"ok\"}",
+            "legendFormat": "Success P95",
+            "refId": "A"
+          },
+          {
+            "expr": "job:gmail_send_latency_p95_by_result:5m{status=\"error\"}",
+            "legendFormat": "Error P95",
+            "refId": "B"
+          },
+          {
+            "expr": "job:gmail_send_latency_p95:5m",
+            "legendFormat": "Combined P95",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Latency",
+            "logBase": 1,
+            "show": true
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 0.5,
+            "colorMode": "warning",
+            "op": "gt",
+            "fill": false,
+            "line": true
+          },
+          {
+            "value": 2.0,
+            "colorMode": "critical",
+            "op": "gt",
+            "fill": false,
+            "line": true
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Top 5 Structured Error Codes (Cardinality-Bounded)",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "job:structured_error_rate_top5_codes:5m",
+            "legendFormat": "{{code}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "reqps",
+            "label": "Error Rate",
+            "logBase": 1,
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "MIME Builder P95 Build Time",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [
+          {
+            "expr": "job:gmail_mime_build_p95:5m",
+            "legendFormat": "MIME P95",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Build Time",
+            "logBase": 1,
+            "show": true
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 0.5,
+            "colorMode": "warning",
+            "op": "gt",
+            "fill": false,
+            "line": true
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Gmail Send Throughput",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "job:gmail_send_request_rate:1m",
+            "legendFormat": "Requests/sec",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "reqps",
+            "label": "Throughput",
+            "logBase": 1,
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "HTML Sanitization Activity",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+        "targets": [
+          {
+            "expr": "sum(rate(gmail_html_sanitization_changes_total[5m])) by (change_type)",
+            "legendFormat": "{{change_type}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "ops",
+            "label": "Changes/sec",
+            "logBase": 1,
+            "show": true
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 50,
+            "colorMode": "warning",
+            "op": "gt",
+            "fill": false,
+            "line": true
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Attachment Processing (Bytes/sec)",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+        "targets": [
+          {
+            "expr": "job:gmail_attachment_bytes_rate:1m",
+            "legendFormat": "{{result}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "Bps",
+            "label": "Bytes/sec",
+            "logBase": 1,
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Inline Image References",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+        "targets": [
+          {
+            "expr": "job:gmail_inline_refs_rate:1m",
+            "legendFormat": "{{result}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "ops",
+            "label": "Refs/sec",
+            "logBase": 1,
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "SLO Error Budget Burn Rate",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 32},
+        "targets": [
+          {
+            "expr": "sum(rate(action_error_total{provider=\"google\",action=\"gmail.send\"}[5m])) / clamp_min(sum(rate(action_exec_total{provider=\"google\",action=\"gmail.send\"}[5m])), 1)",
+            "legendFormat": "5m window",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(action_error_total{provider=\"google\",action=\"gmail.send\"}[1h])) / clamp_min(sum(rate(action_exec_total{provider=\"google\",action=\"gmail.send\"}[1h])), 1)",
+            "legendFormat": "1h window",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(rate(action_error_total{provider=\"google\",action=\"gmail.send\"}[6h])) / clamp_min(sum(rate(action_exec_total{provider=\"google\",action=\"gmail.send\"}[6h])), 1)",
+            "legendFormat": "6h window",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percentunit",
+            "label": "Error Rate",
+            "logBase": 1,
+            "show": true
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 0.01,
+            "colorMode": "warning",
+            "op": "gt",
+            "fill": true,
+            "line": true
+          }
+        ]
+      }
+    ],
+    "annotations": {
+      "list": [
+        {
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "ALERTS{alertname=~\"GmailSend.*\"}",
+          "iconColor": "red",
+          "name": "Gmail Alerts",
+          "step": "60s",
+          "tagKeys": "alertname,severity",
+          "textFormat": "{{alertname}} - {{severity}}",
+          "titleFormat": "Alert"
+        }
+      ]
+    }
+  }
+}

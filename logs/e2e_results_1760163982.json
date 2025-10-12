@@ -1,0 +1,156 @@
+{
+  "total_scenarios": 8,
+  "passed": 1,
+  "failed": 1,
+  "skipped": 1,
+  "duration_seconds": 2.3732929000107106,
+  "results": [
+    {
+      "scenario": 1,
+      "name": "Scenario 1",
+      "status": "ERROR (expected)",
+      "duration_seconds": 0.8960285000066506,
+      "preview_result": {
+        "digest": "cf741ce2965b4cef",
+        "raw_message_length": 294,
+        "warnings": [],
+        "sanitization_summary": null
+      },
+      "execute_result": null,
+      "error": "OAuth token error: 401: Token expired, no refresh token",
+      "correlation_id": null
+    },
+    {
+      "scenario": 2,
+      "name": "Scenario 2",
+      "status": "ERROR (expected)",
+      "duration_seconds": 0.20053139999799896,
+      "preview_result": {
+        "digest": "3e4d18dafea99df5",
+        "raw_message_length": 1031,
+        "warnings": [],
+        "sanitization_summary": {
+          "sanitized": true,
+          "changes": {
+            "tag_removed": 1,
+            "attr_removed": 0,
+            "script_blocked": 0,
+            "style_sanitized": 0
+          }
+        }
+      },
+      "execute_result": null,
+      "error": "OAuth token error: 401: Token expired, no refresh token",
+      "correlation_id": null
+    },
+    {
+      "scenario": 3,
+      "name": "Scenario 3",
+      "status": "ERROR (expected)",
+      "duration_seconds": 0.18550150000373833,
+      "preview_result": {
+        "digest": "1b1c9d1f60fe0814",
+        "raw_message_length": 1402,
+        "warnings": [],
+        "sanitization_summary": {
+          "sanitized": true,
+          "changes": {
+            "tag_removed": 1,
+            "attr_removed": 0,
+            "script_blocked": 0,
+            "style_sanitized": 0
+          }
+        }
+      },
+      "execute_result": null,
+      "error": "OAuth token error: 401: Token expired, no refresh token",
+      "correlation_id": null
+    },
+    {
+      "scenario": 4,
+      "name": "Scenario 4",
+      "status": "ERROR (expected)",
+      "duration_seconds": 0.19825909999781288,
+      "preview_result": {
+        "digest": "21a40dbe26bcbf6d",
+        "raw_message_length": 1078,
+        "warnings": [],
+        "sanitization_summary": null
+      },
+      "execute_result": null,
+      "error": "OAuth token error: 401: Token expired, no refresh token",
+      "correlation_id": null
+    },
+    {
+      "scenario": 5,
+      "name": "Scenario 5",
+      "status": "ERROR (expected)",
+      "duration_seconds": 0.19283150001137983,
+      "preview_result": {
+        "digest": "a1b5949eab9902ab",
+        "raw_message_length": 1888,
+        "warnings": [],
+        "sanitization_summary": {
+          "sanitized": true,
+          "changes": {
+            "tag_removed": 1,
+            "attr_removed": 0,
+            "script_blocked": 0,
+            "style_sanitized": 0
+          }
+        }
+      },
+      "execute_result": null,
+      "error": "OAuth token error: 401: Token expired, no refresh token",
+      "correlation_id": null
+    },
+    {
+      "scenario": 6,
+      "name": "Scenario 6: Validation Errors",
+      "sub_tests": [
+        {
+          "name": "6a_oversized",
+          "status": "FAIL",
+          "reason": "Should have raised error"
+        },
+        {
+          "name": "6b_blocked_mime",
+          "status": "PASS",
+          "error_code": "validation_error_blocked_mime_type"
+        },
+        {
+          "name": "6c_orphan_cid",
+          "status": "PASS",
+          "error_code": "validation_error_missing_inline_image"
+        }
+      ],
+      "status": "FAIL"
+    },
+    {
+      "scenario": 7,
+      "name": "Scenario 7: Internal Controls",
+      "sub_tests": [
+        {
+          "name": "7a_allowed_domain",
+          "status": "PASS"
+        },
+        {
+          "name": "7b_blocked_external",
+          "status": "PASS"
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "scenario": 8,
+      "name": "Scenario 8: Rollout Observation",
+      "status": "MANUAL",
+      "instructions": [
+        "Run multiple test scenarios to generate traffic",
+        "Monitor logs/rollout_controller.log for DRY_RUN entries",
+        "Query Prometheus: action_execution_total{provider='google'}",
+        "Verify redis-cli GET flags:google:rollout_percent unchanged"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,119 @@
+===============================
+RELAY AI PROJECT — CONTEXT SNAPSHOT
+As of: Sprint 53 (Phase B Complete) / Sprint 54 (Planning Complete)
+Date: October 2025
+===============================
+
+🏁 PROJECT OVERVIEW
+-------------------
+Relay AI is a long-term initiative to build a **provider-agnostic “AI brain” platform** capable of integrating with virtually any system and automating workflows across SaaS, CRMs, email, data, etc. Think of it as a hybrid between n8n, Copilot Studio, and IBM Watson — but designed for real enterprise deployment with multi-model orchestration (OpenAI, Claude, Gemini, etc.), secure infra, and extensible adapters.
+
+Priorities:
+1. **Quality > Speed** — No MVP rush; backend foundations must be robust.
+2. **Provider Breadth** — “Connect to anything, automate anything.”
+3. **Infra First** — Build core infrastructure early (Redis, OAuth, Observability, CI).
+4. **Frontend Second** — Studio UI work follows stable backend foundations.
+5. **Hands-off Rollouts** — Automate canary & SLO-gated feature rollouts to minimize manual babysitting.
+
+---
+
+🧱 CURRENT STATE (Sprint 52 → Sprint 53)
+----------------------------------------
+✅ **Sprint 52** — Platform Alignment
+- Railway production deployment
+- Branch protection configured
+- Observability automated (Prometheus + Grafana + alerting)
+- Validation audit complete
+
+✅ **Sprint 53 Phase A** — Infrastructure Foundation
+- Redis deployed to Railway
+- Rate limiter auto-detected
+- OAuth state management (PKCE)
+- OAuth token cache with encryption
+- Webhook error handling improved
+- Studio integration verified
+
+✅ **Sprint 53 Phase B** — Google OAuth + Gmail Adapter
+- OAuth endpoints implemented (/authorize, /callback, /status)
+- Token refresh with Redis lock
+- Gmail `gmail.send` adapter built (preview + execute)
+- Unit + integration tests created (41 tests total)
+- Smoke tests updated with Gmail path
+- Feature flag defaults to OFF (`PROVIDER_GOOGLE_ENABLED=false`)
+- PR #34 created and ready for merge (https://github.com/kmabbott81/djp-workflow/pull/34)
+- Conservative + automated rollout strategy planned
+
+🧪 **Rollout Plan** (Post-Merge)
+- Merge PR #34 with flag OFF
+- Deploy **automated SLO-gated rollout**:
+  - GmailErrorRateHigh (>1%)
+  - GmailLatencySlow (P95 >500ms)
+  - OAuthRefreshFailures (>5%)
+- Controller promotes 0 → 1 → 10 → 50 → 100% if SLOs stay green, auto-rolls back on violation.
+
+---
+
+🛠️ SPRINT 54 PHASE C — PLANNING COMPLETE
+-----------------------------------------
+Focus: Rich Gmail Support + Studio UX
+
+Deliverables:
+1. 📄 `docs/planning/SPRINT-54-PLAN.md` — 10–12 day sprint plan, 4 rollout phases
+2. 📄 `docs/specs/GMAIL-RICH-EMAIL-SPEC.md` — Validation rules, error taxonomy, 5 payloads
+3. 📄 `docs/specs/STUDIO-GOOGLE-UX.md` — 7 UX states, accessibility requirements
+4. 🧪 `tests/plans/SPRINT-54-TEST-MATRIX.md` — 105+ tests across 8 modules
+5. 📊 `docs/observability/PHASE-C-OBSERVABILITY.md` — 8 metrics, 5 alerts, 6 dashboards
+6. 🧰 `scripts/dev/scaffolds.sh` — MIME builder & sanitization scaffolds
+7. ✅ `docs/evidence/sprint-54/PHASE-C-KICKOFF.md` — Go/No-Go checklist, success metrics
+
+Next:
+- Merge PR #34 → run automated monitoring (no manual babysitting)
+- Kick off Sprint 54 (branch: `sprint/54-gmail-rich-email`)
+
+---
+
+🤝 OPERATIONAL RHYTHM (You + Claude + ChatGPT)
+----------------------------------------------
+- **Claude** runs the day-to-day development tasks (validation audits, PRs, migrations, adapter implementations).
+- **ChatGPT** provides architectural guidance, roadmap updates, execution bundles, and strategic coordination.
+- Prompts often follow this pattern:
+  1. Kyle gives status or decision points
+  2. Claude executes code-level work and reports progress
+  3. ChatGPT plans next phases, aligns strategy, generates prompts or scaffolds for Claude
+
+PR Lifecycle:
+- Claude → implements feature branch → opens PR
+- Kyle → reviews PR via GitHub or `git diff`
+- ChatGPT → prepares rollout strategies, monitoring, or next sprint plans
+
+---
+
+🧠 PROMPTING CONVENTIONS
+-------------------------
+In a new thread, after uploading this file, you can say:
+
+> “Pick up exactly where we left off on Relay AI. PR #34 is awaiting merge and Sprint 54 Phase C is planned. Let’s continue the roadmap and rollout automation work.”
+
+or
+
+> “Claude just finished Sprint 54 Phase C task X. Help me plan Phase D.”
+
+You don’t need to re-explain the project — just give me the latest Claude update or decision point, and I’ll know the rest.
+
+---
+
+📎 RELEVANT LINKS
+-----------------
+- PR #34: https://github.com/kmabbott81/djp-workflow/pull/34
+- Railway Backend: relay-production-f2a6.up.railway.app
+- Studio Vercel Repo: C:/Users/kylem/relay-studio/
+- Primary Branch: `main`
+- Current Dev Branch: `sprint/53-provider-vertical-slice`
+
+---
+
+📝 RECOMMENDED FIRST PROMPT IN NEW THREAD
+------------------------------------------
+> “Here’s the Relay AI context file. PR #34 is waiting to merge, and we planned to use automated SLO-gated rollout instead of manual monitoring. Let’s set up the feature flag controller + alert hooks next.”
+
+This will let me immediately help you scaffold the `scripts/rollout_controller.py`, Redis flags, metrics, and CI job — without reloading the entire conversation history.

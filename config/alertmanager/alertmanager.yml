@@ -1,0 +1,152 @@
+# Alertmanager Configuration for Gmail Rich Email Integration
+# Sprint 54 Phase 4: Observability (Production-Grade)
+#
+# This configuration implements:
+# 1. Alert inhibition (critical suppresses warning)
+# 2. Routing by severity (warning → Slack, critical → PagerDuty)
+# 3. Grouping by service/component for noise reduction
+
+global:
+  # How long to wait before sending notification about new alert group
+  group_wait: 10s
+
+  # How long to wait before sending notification about new alerts in existing group
+  group_interval: 5m
+
+  # How long to wait before re-sending notification if alert is still firing
+  repeat_interval: 4h
+
+# Alert routing tree
+route:
+  # Default grouping: combine alerts by service and component
+  group_by: ['service', 'component', 'alertname']
+  group_wait: 10s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: 'slack-default'
+
+  # Child routes (more specific matches)
+  routes:
+    # Critical alerts → PagerDuty (page on-call)
+    - match:
+        severity: critical
+      receiver: 'pagerduty-critical'
+      group_wait: 30s
+      repeat_interval: 1h
+      continue: false  # Stop processing further routes
+
+    # Warning alerts → Slack ops channel
+    - match:
+        severity: warning
+      receiver: 'slack-ops'
+      group_wait: 5m
+      repeat_interval: 4h
+      continue: false
+
+    # Info alerts → Slack low-noise channel
+    - match:
+        severity: info
+      receiver: 'slack-info'
+      group_wait: 15m
+      repeat_interval: 12h
+      continue: false
+
+# Inhibition rules: suppress lower-severity alerts when higher-severity alerts fire
+inhibit_rules:
+  # Rule 1: Critical gmail send alerts suppress warning gmail send alerts
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['service', 'component', 'provider', 'action']
+
+  # Rule 2: Error budget fast burn suppresses slow burn (same incident)
+  - source_match:
+      alertname: 'GmailSendErrorBudgetFastBurn'
+    target_match:
+      alertname: 'GmailSendErrorBudgetSlowBurn'
+    equal: ['service', 'component', 'provider', 'action']
+
+  # Rule 3: Critical error rate suppresses warning error rate
+  - source_match:
+      alertname: 'GmailSendHighErrorRateCritical'
+    target_match:
+      alertname: 'GmailSendHighErrorRateWarning'
+    equal: ['service', 'component', 'provider', 'action']
+
+  # Rule 4: Critical latency suppresses warning latency
+  - source_match:
+      alertname: 'GmailSendHighLatencyCritical'
+    target_match:
+      alertname: 'GmailSendHighLatencyWarning'
+    equal: ['service', 'component', 'provider', 'action']
+
+  # Rule 5: Metrics missing (critical) suppresses all component alerts
+  # (if metrics aren't flowing, other alerts can't fire anyway)
+  - source_match:
+      alertname: 'GmailMetricsMissing'
+    target_match_re:
+      alertname: '.*'
+    equal: ['service']
+
+# Alert receivers (notification integrations)
+receivers:
+  # Default receiver (Slack general channel)
+  - name: 'slack-default'
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR_WEBHOOK_URL'
+        channel: '#alerts-relay'
+        title: '{{ .GroupLabels.service }}/{{ .GroupLabels.component }}: {{ .GroupLabels.alertname }}'
+        text: |-
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Details:* {{ .Annotations.description }}
+          *Severity:* {{ .Labels.severity }}
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ if .Annotations.dashboard_url }}*Dashboard:* {{ .Annotations.dashboard_url }}{{ end }}
+          {{ end }}
+        send_resolved: true
+
+  # PagerDuty for critical alerts (pages on-call engineer)
+  - name: 'pagerduty-critical'
+    pagerduty_configs:
+      - service_key: 'YOUR_PAGERDUTY_SERVICE_KEY'
+        description: '{{ .GroupLabels.service }}/{{ .GroupLabels.component }}: {{ .GroupLabels.alertname }}'
+        details:
+          summary: '{{ .Annotations.summary }}'
+          description: '{{ .Annotations.description }}'
+          runbook_url: '{{ .Annotations.runbook_url }}'
+          dashboard_url: '{{ .Annotations.dashboard_url }}'
+        send_resolved: true
+
+  # Slack ops channel for warnings
+  - name: 'slack-ops'
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR_WEBHOOK_URL'
+        channel: '#ops-relay'
+        title: '⚠️ {{ .GroupLabels.service }}/{{ .GroupLabels.component }}: {{ .GroupLabels.alertname }}'
+        text: |-
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Details:* {{ .Annotations.description }}
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ if .Annotations.dashboard_url }}*Dashboard:* {{ .Annotations.dashboard_url }}{{ end }}
+          {{ end }}
+        send_resolved: true
+
+  # Slack info channel (low noise)
+  - name: 'slack-info'
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR_WEBHOOK_URL'
+        channel: '#info-relay'
+        title: 'ℹ️ {{ .GroupLabels.service }}/{{ .GroupLabels.component }}: {{ .GroupLabels.alertname }}'
+        text: |-
+          {{ range .Alerts }}
+          *Info:* {{ .Annotations.summary }}
+          *Details:* {{ .Annotations.description }}
+          {{ end }}
+        send_resolved: false  # Don't spam with resolved notifications for info alerts
+
+# Templates for custom notification formatting
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'

@@ -75,11 +75,24 @@ To resume this project with Claude Code:
 
 ## Project Structure
 
+For a comprehensive guide to the project structure, naming conventions, and file organization patterns, see:
+**[docs/PROJECT-STRUCTURE.md](docs/PROJECT-STRUCTURE.md)**
+
+Quick overview:
 ```
 openai-agents-workflows-2025.09.28-v1/
 ├── README.md                           # This file
-├── 2025.09.28-1630-PROJECT-SETUP.md   # Initial setup log
-└── [future log files following YYYY.MM.DD-HHMM-NAME.md pattern]
+├── docs/PROJECT-STRUCTURE.md           # Comprehensive structure guide
+├── 2025.10.10-PHASE-3-OAUTH-COMPLETE.md # Phase 3 OAuth summary (latest)
+├── PHASE3_STATUS.md                    # Current phase status
+├── docs/
+│   ├── evidence/sprint-54/             # Sprint 54 evidence
+│   ├── specs/                          # Technical specifications
+│   └── planning/                       # Sprint plans
+├── scripts/                            # Automation and E2E tests
+├── src/                                # Source code
+├── tests/                              # Test suites
+└── [additional files following YYYY.MM.DD-HHMM-NAME.md pattern]
 ```
 
 ## Log Files

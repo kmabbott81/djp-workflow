@@ -1,0 +1,31 @@
+{
+  "total_scenarios": 1,
+  "passed": 1,
+  "failed": 0,
+  "skipped": 0,
+  "duration_seconds": 0.3113478000013856,
+  "results": [
+    {
+      "scenario": 6,
+      "name": "Scenario 6: Validation Errors",
+      "sub_tests": [
+        {
+          "name": "6a_oversized",
+          "status": "PASS",
+          "error_code": "validation_error_attachment_too_large"
+        },
+        {
+          "name": "6b_blocked_mime",
+          "status": "PASS",
+          "error_code": "validation_error_blocked_mime_type"
+        },
+        {
+          "name": "6c_orphan_cid",
+          "status": "PASS",
+          "error_code": "validation_error_missing_inline_image"
+        }
+      ],
+      "status": "PASS"
+    }
+  ]
+}

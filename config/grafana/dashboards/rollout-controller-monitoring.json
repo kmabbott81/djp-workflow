@@ -1,0 +1,264 @@
+{
+  "dashboard": {
+    "title": "Rollout Controller Monitoring",
+    "tags": ["relay", "rollout", "controller", "phase4"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Current Rollout Percentage (google feature)",
+        "type": "singlestat",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "rollout_controller_percent{feature=\"google\"}",
+            "refId": "A"
+          }
+        ],
+        "format": "percent",
+        "gauge": {
+          "show": true,
+          "minValue": 0,
+          "maxValue": 100,
+          "thresholdLabels": false,
+          "thresholdMarkers": true
+        },
+        "thresholds": "0,25,50,75,100",
+        "colors": ["#d44a3a", "#e0b400", "#299c46"],
+        "valueName": "current"
+      },
+      {
+        "id": 2,
+        "title": "Controller Run Status",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "job:rollout_controller_run_rate:5m",
+            "legendFormat": "{{status}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "ops",
+            "label": "Runs/sec",
+            "logBase": 1,
+            "show": true
+          }
+        ],
+        "stack": true
+      },
+      {
+        "id": 3,
+        "title": "Controller Decision History",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "job:rollout_controller_decision_rate:1h",
+            "legendFormat": "{{result}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "ops",
+            "label": "Decisions/hour",
+            "logBase": 1,
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Controller Failure Rate",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [
+          {
+            "expr": "job:rollout_controller_failure_rate:5m",
+            "legendFormat": "Failure Rate",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percentunit",
+            "label": "Failure Rate",
+            "logBase": 1,
+            "show": true
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 0.05,
+            "colorMode": "critical",
+            "op": "gt",
+            "fill": true,
+            "line": true
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Rollout Percentage History (last 6h)",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "rollout_controller_percent{feature=\"google\"}",
+            "legendFormat": "Rollout %",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percent",
+            "label": "Rollout Percentage",
+            "logBase": 1,
+            "max": 100,
+            "min": 0,
+            "show": true
+          }
+        ],
+        "lines": true,
+        "linewidth": 2,
+        "steppedLine": true
+      },
+      {
+        "id": 6,
+        "title": "SLO Health (Gmail Send) - Controller View",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+        "targets": [
+          {
+            "expr": "job:gmail_send_errors_rate:5m",
+            "legendFormat": "Error Rate",
+            "refId": "A"
+          },
+          {
+            "expr": "job:gmail_send_latency_p95:5m",
+            "legendFormat": "P95 Latency",
+            "refId": "B",
+            "yAxisIndex": 1
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percentunit",
+            "label": "Error Rate",
+            "logBase": 1,
+            "show": true
+          },
+          {
+            "format": "s",
+            "label": "Latency",
+            "logBase": 1,
+            "show": true
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 0.01,
+            "colorMode": "warning",
+            "op": "gt",
+            "fill": false,
+            "line": true
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Recent Controller Changes (events)",
+        "type": "table",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+        "targets": [
+          {
+            "expr": "increase(rollout_controller_changes_total[1h])",
+            "legendFormat": "",
+            "refId": "A",
+            "instant": false
+          }
+        ],
+        "transform": "timeseries_to_rows",
+        "columns": [
+          {
+            "text": "Time",
+            "value": "Time"
+          },
+          {
+            "text": "Result",
+            "value": "result"
+          },
+          {
+            "text": "Changes",
+            "value": "Value"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Controller Health - Stalled Detection",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 32},
+        "targets": [
+          {
+            "expr": "time() - (rollout_controller_runs_total{status=\"ok\"} > 0)",
+            "legendFormat": "Seconds since last success",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Time Since Success",
+            "logBase": 1,
+            "show": true
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 3600,
+            "colorMode": "critical",
+            "op": "gt",
+            "fill": true,
+            "line": true
+          }
+        ]
+      }
+    ],
+    "annotations": {
+      "list": [
+        {
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "ALERTS{alertname=~\"RolloutController.*\"}",
+          "iconColor": "orange",
+          "name": "Controller Alerts",
+          "step": "60s",
+          "tagKeys": "alertname,severity",
+          "textFormat": "{{alertname}} - {{severity}}",
+          "titleFormat": "Alert"
+        },
+        {
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "changes(rollout_controller_percent{feature=\"google\"}[5m]) > 0",
+          "iconColor": "blue",
+          "name": "Rollout Changes",
+          "step": "60s",
+          "textFormat": "Rollout % changed",
+          "titleFormat": "Rollout Decision"
+        }
+      ]
+    }
+  }
+}

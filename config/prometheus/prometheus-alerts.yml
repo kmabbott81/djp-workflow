@@ -1,0 +1,162 @@
+# Prometheus Alert Rules for Gmail Rich Email Integration
+# Sprint 54 Phase 4: Observability
+#
+# Two-tier alert system:
+# - WARNING (1% error rate / 500ms latency): Early warning for ops team
+# - CRITICAL (5% error rate / 2s latency): Page-worthy incidents
+#
+# This aligns with rollout controller SLOs (1% / 500ms for promotions)
+
+groups:
+- name: gmail_send_alerts
+  rules:
+  # ========================================
+  # Error Rate Alerts
+  # ========================================
+
+  - alert: GmailSendHighErrorRateWarning
+    expr: (job:gmail_send_exec_rate:5m > 0.1) and (job:gmail_send_errors_rate:5m > 0.01)
+    for: 10m
+    labels:
+      severity: warning
+      service: relay
+      component: gmail
+      provider: google
+      action: gmail.send
+    annotations:
+      summary: "Gmail send error rate >1% (warn)"
+      description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes (threshold: 1%, traffic: {{ query `job:gmail_send_exec_rate:5m` | first | value | humanize }}req/s)"
+      runbook_url: "docs/observability/PHASE-4-OBSERVABILITY-SETUP.md#gmail-sends"
+      dashboard_url: "https://grafana/d/gmail-integration/overview"
+
+  - alert: GmailSendHighErrorRateCritical
+    expr: (job:gmail_send_exec_rate:5m > 0.1) and (job:gmail_send_errors_rate:5m > 0.05)
+    for: 10m
+    labels:
+      severity: critical
+      component: gmail_adapter
+    annotations:
+      summary: "Gmail send error rate >5% (critical)"
+      description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes (threshold: 5%, traffic: {{ query `job:gmail_send_exec_rate:5m` | first | value | humanize }}req/s)"
+      runbook_url: "docs/observability/PHASE-4-OBSERVABILITY-SETUP.md#gmail-sends"
+      dashboard_url: "https://grafana/d/gmail-integration/overview"
+
+  # ========================================
+  # Latency Alerts (P95)
+  # ========================================
+
+  - alert: GmailSendHighLatencyWarning
+    expr: job:gmail_send_latency_p95:5m > 0.5
+    for: 10m
+    labels:
+      severity: warning
+      component: gmail_adapter
+    annotations:
+      summary: "Gmail send P95 > 500ms (warn)"
+      description: "P95 latency is {{ $value }}s (threshold: 0.5s)"
+      runbook_url: "docs/observability/PHASE-4-OBSERVABILITY-SETUP.md#latency"
+      dashboard_url: "https://grafana/d/gmail-integration/overview"
+
+  - alert: GmailSendHighLatencyCritical
+    expr: job:gmail_send_latency_p95:5m > 2.0
+    for: 10m
+    labels:
+      severity: critical
+      component: gmail_adapter
+    annotations:
+      summary: "Gmail send P95 > 2s (critical)"
+      description: "P95 latency is {{ $value }}s (threshold: 2.0s)"
+      runbook_url: "docs/observability/PHASE-4-OBSERVABILITY-SETUP.md#latency"
+      dashboard_url: "https://grafana/d/gmail-integration/overview"
+
+  # ========================================
+  # Rollout Controller Health
+  # ========================================
+
+  - alert: RolloutControllerStalled
+    expr: absent_over_time(rollout_controller_runs_total{status="ok"}[60m])
+    for: 5m
+    labels:
+      severity: warning
+      component: rollout_controller
+    annotations:
+      summary: "No successful controller runs in 60m"
+      description: "Rollout controller hasn't completed a successful run in the last hour (avoids false positives during low-traffic windows)"
+      runbook_url: "docs/evidence/sprint-54/CONTROLLER-USAGE.md#troubleshooting"
+      dashboard_url: "https://grafana/d/rollout-controller/monitoring"
+
+  - alert: RolloutControllerFailing
+    expr: increase(rollout_controller_runs_total{status!="ok"}[15m]) > 0
+    for: 5m
+    labels:
+      severity: warning
+      component: rollout_controller
+    annotations:
+      summary: "Controller failures observed in last 15m"
+      description: "Rollout controller has {{ $value }} failed runs in the last 15 minutes"
+      runbook_url: "docs/evidence/sprint-54/CONTROLLER-USAGE.md#troubleshooting"
+      dashboard_url: "https://grafana/d/rollout-controller/monitoring"
+
+  # ========================================
+  # Validation Error Spike
+  # ========================================
+
+  - alert: GmailValidationErrorSpike
+    expr: job:structured_error_rate_total:5m > 0.10
+    for: 10m
+    labels:
+      severity: info
+      component: validation
+    annotations:
+      summary: "Structured validation errors >10% of traffic"
+      description: "{{ $value | humanizePercentage }} of requests are failing validation (may indicate client issue)"
+      runbook_url: "docs/observability/PHASE-4-OBSERVABILITY-SETUP.md#structured-errors"
+      dashboard_url: "https://grafana/d/errors/structured-errors"
+
+  # ========================================
+  # MIME Builder Performance
+  # ========================================
+
+  - alert: MimeBuilderSlowPerformance
+    expr: job:gmail_mime_build_p95:5m > 0.5
+    for: 10m
+    labels:
+      severity: warning
+      component: mime_builder
+    annotations:
+      summary: "MIME build P95 > 500ms"
+      description: "P95 MIME build time is {{ $value }}s (threshold: 0.5s)"
+      runbook_url: "docs/observability/PHASE-4-OBSERVABILITY-SETUP.md#mime-performance"
+      dashboard_url: "https://grafana/d/gmail-integration/overview"
+
+  # ========================================
+  # HTML Sanitization Anomaly
+  # ========================================
+
+  - alert: HighSanitizationActivity
+    expr: sum(rate(gmail_html_sanitization_changes_total[5m])) > 50
+    for: 5m
+    labels:
+      severity: info
+      component: html_sanitization
+    annotations:
+      summary: "High HTML sanitization activity (possible hostile input burst)"
+      description: "{{ $value | humanize }} sanitization changes/sec (threshold: 50/sec, evaluated over 5m window)"
+      runbook_url: "docs/observability/PHASE-4-OBSERVABILITY-SETUP.md#sanitization"
+      dashboard_url: "https://grafana/d/gmail-integration/overview"
+
+  # ========================================
+  # Metrics Collection Health (Sentinel)
+  # ========================================
+
+  - alert: GmailMetricsMissing
+    expr: absent(job:gmail_send_exec_rate:5m)
+    for: 15m
+    labels:
+      severity: critical
+      component: metrics_collection
+    annotations:
+      summary: "Gmail metrics not being collected"
+      description: "No Gmail send execution rate metrics for 15+ minutes (Prometheus scrape failure or app down)"
+      runbook_url: "docs/observability/PHASE-4-OBSERVABILITY-SETUP.md#metrics-missing"
+      dashboard_url: "https://grafana/d/gmail-integration/overview"

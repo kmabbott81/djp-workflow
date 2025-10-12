@@ -1,0 +1,94 @@
+# Prometheus Recording Rules for Microsoft Outlook Integration
+# Sprint 55 Phase 1: Microsoft Graph API Scaffolding
+#
+# These recording rules follow Gmail patterns for consistency:
+# 1. Reduce dashboard query complexity
+# 2. Improve query performance
+# 3. Maintain consistency across providers
+#
+# Metrics sourced from: action_exec_total, action_error_total, action_latency_seconds
+
+groups:
+- name: outlook_send_recording
+  interval: 30s
+  rules:
+  # Outlook send execution rate (base metric for traffic guards)
+  - record: job:outlook_send_exec_rate:5m
+    expr: sum(rate(action_exec_total{provider="microsoft",action="outlook.send"}[5m]))
+
+  # Outlook send latency histogram rate (for quantile calculations)
+  - record: job:outlook_send_latency_seconds:rate5m
+    expr: sum(rate(action_latency_seconds_bucket{provider="microsoft",action="outlook.send"}[5m])) by (le)
+
+  # Outlook send latency histogram rate by result (for split analysis)
+  - record: job:outlook_send_latency_seconds:rate5m_by_result
+    expr: sum(rate(action_latency_seconds_bucket{provider="microsoft",action="outlook.send"}[5m])) by (le, status)
+
+  # Outlook send P50 latency
+  - record: job:outlook_send_latency_p50:5m
+    expr: histogram_quantile(0.50, job:outlook_send_latency_seconds:rate5m)
+
+  # Outlook send P95 latency
+  - record: job:outlook_send_latency_p95:5m
+    expr: histogram_quantile(0.95, job:outlook_send_latency_seconds:rate5m)
+
+  # Outlook send P95 latency by result (success vs error)
+  - record: job:outlook_send_latency_p95_by_result:5m
+    expr: histogram_quantile(0.95, job:outlook_send_latency_seconds:rate5m_by_result)
+
+  # Outlook send P99 latency
+  - record: job:outlook_send_latency_p99:5m
+    expr: histogram_quantile(0.99, job:outlook_send_latency_seconds:rate5m)
+
+  # Outlook send error rate (errors / total requests with floor)
+  - record: job:outlook_send_errors_rate:5m
+    expr: |
+      sum(rate(action_error_total{provider="microsoft",action="outlook.send"}[5m]))
+      / clamp_min(job:outlook_send_exec_rate:5m, 1)
+
+  # Outlook send success rate
+  - record: job:outlook_send_success_rate:5m
+    expr: |
+      sum(rate(action_exec_total{provider="microsoft",action="outlook.send",status="ok"}[5m]))
+      / clamp_min(job:outlook_send_exec_rate:5m, 1)
+
+  # Outlook send request rate (requests per second)
+  - record: job:outlook_send_request_rate:1m
+    expr: sum(rate(action_exec_total{provider="microsoft",action="outlook.send"}[1m]))
+
+  # Structured error rate by code (all codes)
+  - record: job:outlook_structured_error_rate_by_code:5m
+    expr: sum(rate(structured_error_total{provider="microsoft",action="outlook.send"}[5m])) by (code)
+
+  # Top 5 structured error codes (cardinality guard)
+  - record: job:outlook_structured_error_rate_top5_codes:5m
+    expr: topk(5, sum(rate(structured_error_total{provider="microsoft",action="outlook.send"}[5m])) by (code))
+
+  # Total structured error rate
+  - record: job:outlook_structured_error_rate_total:5m
+    expr: sum(rate(structured_error_total{provider="microsoft",action="outlook.send"}[5m]))
+
+- name: microsoft_oauth_recording
+  interval: 30s
+  rules:
+  # OAuth event rate by type (consent, code_exchange, refresh, etc.)
+  - record: job:microsoft_oauth_events_rate:5m
+    expr: sum(rate(oauth_events_total{provider="microsoft"}[5m])) by (event)
+
+  # OAuth refresh success rate
+  - record: job:microsoft_oauth_refresh_success_rate:5m
+    expr: |
+      sum(rate(oauth_events_total{provider="microsoft",event="refresh_ok"}[5m]))
+      / clamp_min(sum(rate(oauth_events_total{provider="microsoft",event=~"refresh_.*"}[5m])), 0.1)
+
+  # OAuth refresh failure rate
+  - record: job:microsoft_oauth_refresh_failure_rate:5m
+    expr: |
+      sum(rate(oauth_events_total{provider="microsoft",event=~"refresh_(failed|timeout|no_token)"}[5m]))
+      / clamp_min(sum(rate(oauth_events_total{provider="microsoft",event=~"refresh_.*"}[5m])), 0.1)
+
+  # Code exchange success rate
+  - record: job:microsoft_oauth_code_exchange_success_rate:5m
+    expr: |
+      sum(rate(oauth_events_total{provider="microsoft",event="code_exchange_ok"}[5m]))
+      / clamp_min(sum(rate(oauth_events_total{provider="microsoft",event=~"code_exchange_.*"}[5m])), 0.1)

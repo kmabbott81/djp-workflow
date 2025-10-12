@@ -1,0 +1,273 @@
+{
+  "dashboard": {
+    "title": "Structured Errors Analysis",
+    "tags": ["relay", "errors", "validation", "gmail", "phase4"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Top 5 Error Codes (Cardinality-Bounded)",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [
+          {
+            "expr": "job:structured_error_rate_top5_codes:5m",
+            "legendFormat": "{{code}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "reqps",
+            "label": "Error Rate",
+            "logBase": 1,
+            "show": true
+          }
+        ],
+        "legend": {
+          "show": true,
+          "values": true,
+          "current": true,
+          "total": true
+        }
+      },
+      {
+        "id": 2,
+        "title": "Total Structured Error Rate",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [
+          {
+            "expr": "job:structured_error_rate_total:5m",
+            "legendFormat": "Total Errors",
+            "refId": "A"
+          },
+          {
+            "expr": "job:gmail_send_exec_rate:5m",
+            "legendFormat": "Total Traffic",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "reqps",
+            "label": "Rate",
+            "logBase": 1,
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Error Rate by Code (All Codes - Alerting View)",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8},
+        "targets": [
+          {
+            "expr": "job:structured_error_rate_by_code:5m",
+            "legendFormat": "{{code}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "reqps",
+            "label": "Error Rate",
+            "logBase": 1,
+            "show": true
+          }
+        ],
+        "legend": {
+          "show": true,
+          "alignAsTable": true,
+          "rightSide": true,
+          "values": true,
+          "current": true,
+          "max": true
+        }
+      },
+      {
+        "id": 4,
+        "title": "Errors by Source Component",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+        "targets": [
+          {
+            "expr": "sum(rate(structured_error_total{provider=\"google\",action=\"gmail.send\"}[5m])) by (source)",
+            "legendFormat": "{{source}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "reqps",
+            "label": "Error Rate",
+            "logBase": 1,
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Errors by Provider + Action",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+        "targets": [
+          {
+            "expr": "sum(rate(structured_error_total[5m])) by (provider, action)",
+            "legendFormat": "{{provider}}/{{action}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "reqps",
+            "label": "Error Rate",
+            "logBase": 1,
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Error Code Distribution (Heatmap)",
+        "type": "heatmap",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 24},
+        "targets": [
+          {
+            "expr": "sum(rate(structured_error_total{provider=\"google\",action=\"gmail.send\"}[5m])) by (code)",
+            "legendFormat": "{{code}}",
+            "refId": "A",
+            "format": "time_series"
+          }
+        ],
+        "dataFormat": "timeseries",
+        "heatmap": {},
+        "cards": {
+          "cardPadding": 2,
+          "cardRound": 2
+        },
+        "color": {
+          "mode": "spectrum",
+          "colorScheme": "interpolateOranges",
+          "exponent": 0.5,
+          "min": 0,
+          "max": null
+        },
+        "legend": {
+          "show": true
+        },
+        "yAxis": {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        "xAxis": {
+          "show": true
+        }
+      },
+      {
+        "id": 7,
+        "title": "Validation Error Spike Detection",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 32},
+        "targets": [
+          {
+            "expr": "job:structured_error_rate_total:5m / job:gmail_send_exec_rate:5m",
+            "legendFormat": "Error/Traffic Ratio",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percentunit",
+            "label": "Error Ratio",
+            "logBase": 1,
+            "show": true
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 0.10,
+            "colorMode": "warning",
+            "op": "gt",
+            "fill": true,
+            "line": true
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Top Error Codes by Count (Last Hour)",
+        "type": "table",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 32},
+        "targets": [
+          {
+            "expr": "topk(10, sum(increase(structured_error_total{provider=\"google\",action=\"gmail.send\"}[1h])) by (code))",
+            "legendFormat": "",
+            "refId": "A",
+            "instant": true
+          }
+        ],
+        "transform": "timeseries_aggregations",
+        "columns": [
+          {
+            "text": "Error Code",
+            "value": "code"
+          },
+          {
+            "text": "Count (1h)",
+            "value": "current"
+          }
+        ],
+        "sort": {
+          "col": 1,
+          "desc": true
+        }
+      },
+      {
+        "id": 9,
+        "title": "Policy Block Events (if policy_block label exists)",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 40},
+        "targets": [
+          {
+            "expr": "sum(rate(structured_error_total{code=~\"POLICY_.*\"}[5m])) by (code)",
+            "legendFormat": "{{code}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "reqps",
+            "label": "Policy Blocks/sec",
+            "logBase": 1,
+            "show": true
+          }
+        ]
+      }
+    ],
+    "annotations": {
+      "list": [
+        {
+          "datasource": "Prometheus",
+          "enable": true,
+          "expr": "ALERTS{alertname=\"GmailValidationErrorSpike\"}",
+          "iconColor": "yellow",
+          "name": "Validation Spikes",
+          "step": "60s",
+          "tagKeys": "alertname,severity",
+          "textFormat": "Validation error spike",
+          "titleFormat": "Alert"
+        }
+      ]
+    }
+  }
+}

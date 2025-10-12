@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Start OAuth Flow</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .button {
+            background-color: #4285f4;
+            color: white;
+            padding: 15px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .button:hover {
+            background-color: #357abd;
+        }
+        .info {
+            background-color: #f0f0f0;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        .url {
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            background-color: white;
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1>Google OAuth Flow - E2E Testing</h1>
+
+    <p>Click the button below to start the OAuth flow:</p>
+
+    <button class="button" onclick="startOAuth()">Start OAuth Flow</button>
+
+    <div class="info">
+        <h3>What will happen:</h3>
+        <ol>
+            <li>You'll be redirected to Google sign-in</li>
+            <li>Sign in with <strong>kbmabb@gmail.com</strong></li>
+            <li>Click "Continue" on the unverified app warning</li>
+            <li>Grant "Send email on your behalf" permission</li>
+            <li>You'll be redirected back with tokens stored</li>
+        </ol>
+    </div>
+
+    <div class="info">
+        <h3>Authorization URL:</h3>
+        <div class="url" id="authUrl">Loading...</div>
+    </div>
+
+    <script>
+        // Fetch the authorization URL from the server
+        fetch('http://localhost:8003/oauth/google/authorize?workspace_id=test-workspace-e2e&redirect_uri=http://localhost:8003/oauth/google/callback')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('authUrl').textContent = data.authorize_url;
+                window.oauthUrl = data.authorize_url;
+            })
+            .catch(error => {
+                document.getElementById('authUrl').textContent = 'Error fetching URL: ' + error;
+            });
+
+        function startOAuth() {
+            if (window.oauthUrl) {
+                window.location.href = window.oauthUrl;
+            } else {
+                alert('Authorization URL not loaded yet. Please wait a moment and try again.');
+            }
+        }
+    </script>
+</body>
+</html>
