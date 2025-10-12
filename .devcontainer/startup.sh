@@ -6,9 +6,16 @@ set -e
 
 echo "🚀 Starting OpenAI Agents Workflows Dev Environment..."
 
+# Install Redis if not present
+if ! command -v redis-server &> /dev/null; then
+    echo "📦 Installing Redis..."
+    sudo apt-get update -qq > /dev/null 2>&1
+    sudo apt-get install -y redis-server > /dev/null 2>&1
+fi
+
 # Start Redis
 echo "📦 Starting Redis..."
-redis-server --daemonize yes --bind 127.0.0.1 --port 6379
+redis-server --daemonize yes --bind 127.0.0.1 --port 6379 2>/dev/null || true
 sleep 2
 
 # Check Redis is running

@@ -2,12 +2,6 @@
   "name": "OpenAI Agents Workflows Dev",
   "image": "mcr.microsoft.com/devcontainers/python:3.11",
 
-  "features": {
-    "ghcr.io/devcontainers/features/redis-server:1": {
-      "version": "latest"
-    }
-  },
-
   "postCreateCommand": "pip install --no-cache-dir -r requirements.txt && pip install --no-cache-dir -e .",
 
   "postStartCommand": "bash .devcontainer/startup.sh",
