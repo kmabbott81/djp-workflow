@@ -234,6 +234,116 @@ validate_operations() {
         log_error "Metrics endpoint does not expose http_request_duration_seconds"
     fi
 
+    # Sprint 53 Phase B: Check /actions endpoint
+    log_info "Checking /actions endpoint..."
+
+    ACTIONS_RESPONSE=$(curl -sf "$BACKEND_URL/actions" 2>/dev/null || echo "{}")
+
+    if echo "$ACTIONS_RESPONSE" | grep -q "gmail.send"; then
+        log_success "Actions endpoint exposes gmail.send"
+    else
+        log_warn "Actions endpoint does not expose gmail.send (may be disabled)"
+    fi
+
+    # Sprint 53 Phase B: Conditional Gmail Send Test
+    # Only runs if PROVIDER_GOOGLE_ENABLED=true AND GMAIL_TEST_TO is set
+    if [ "${PROVIDER_GOOGLE_ENABLED:-false}" = "true" ] && [ -n "${GMAIL_TEST_TO:-}" ]; then
+        log_info "Gmail integration test: Running live test (PROVIDER_GOOGLE_ENABLED=true)..."
+
+        # Check for uuidgen command
+        if ! command -v uuidgen &> /dev/null; then
+            log_warn "uuidgen not found - using timestamp for idempotency key"
+            IDEMPOTENCY_KEY="smoke-test-$(date +%s)"
+        else
+            IDEMPOTENCY_KEY=$(uuidgen)
+        fi
+
+        # Generate test parameters
+        TEST_WORKSPACE_ID="smoke-test-workspace-$(date +%s)"
+
+        # Step 1: Preview gmail.send
+        log_info "  [1/2] Calling /actions/preview for gmail.send..."
+        PREVIEW_RESPONSE=$(curl -sf -X POST "$BACKEND_URL/actions/preview" \
+            -H "Content-Type: application/json" \
+            -d "{
+                \"action_id\": \"gmail.send\",
+                \"params\": {
+                    \"to\": \"$GMAIL_TEST_TO\",
+                    \"subject\": \"Relay Smoke Test - $(date)\",
+                    \"text\": \"This is an automated smoke test email from the post-alignment validation script.\"
+                },
+                \"workspace_id\": \"$TEST_WORKSPACE_ID\",
+                \"user_email\": \"smoke-test@relay.dev\"
+            }" 2>/dev/null || echo "{}")
+
+        PREVIEW_ID=$(echo "$PREVIEW_RESPONSE" | command -v jq &> /dev/null && jq -r '.preview_id' <<< "$PREVIEW_RESPONSE" 2>/dev/null || echo "")
+
+        if [ -n "$PREVIEW_ID" ] && [ "$PREVIEW_ID" != "null" ] && [ "$PREVIEW_ID" != "" ]; then
+            log_success "  Preview successful: preview_id=$PREVIEW_ID"
+
+            # Step 2: Execute gmail.send with idempotency key
+            log_info "  [2/2] Calling /actions/execute with Idempotency-Key: ${IDEMPOTENCY_KEY:0:16}..."
+
+            # Save response to temp file to preserve headers
+            TEMP_RESPONSE=$(mktemp)
+            HTTP_STATUS=$(curl -s -w "%{http_code}" -X POST "$BACKEND_URL/actions/execute" \
+                -H "Content-Type: application/json" \
+                -H "Idempotency-Key: $IDEMPOTENCY_KEY" \
+                -H "X-Request-ID: smoke-test-$IDEMPOTENCY_KEY" \
+                -D "$TEMP_RESPONSE" \
+                -o "${TEMP_RESPONSE}.body" \
+                -d "{
+                    \"preview_id\": \"$PREVIEW_ID\"
+                }" 2>/dev/null || echo "000")
+
+            # Extract X-Request-ID if present
+            REQUEST_ID=$(grep -i "X-Request-ID:" "$TEMP_RESPONSE" | cut -d':' -f2 | tr -d ' \r' 2>/dev/null || echo "")
+
+            # Print first 20 response headers
+            log_info "  Response headers (first 20 lines):"
+            head -20 "$TEMP_RESPONSE" | sed 's/^/    /'
+
+            if [ -n "$REQUEST_ID" ]; then
+                log_info "  X-Request-ID: $REQUEST_ID"
+            fi
+
+            # Check if execute was successful (2xx status)
+            if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+                log_success "  Gmail send successful (HTTP $HTTP_STATUS)"
+
+                # Extract message_id from response body
+                if command -v jq &> /dev/null && [ -f "${TEMP_RESPONSE}.body" ]; then
+                    MESSAGE_ID=$(jq -r '.message_id' < "${TEMP_RESPONSE}.body" 2>/dev/null || echo "")
+                    if [ -n "$MESSAGE_ID" ] && [ "$MESSAGE_ID" != "null" ]; then
+                        log_success "  Gmail message_id: $MESSAGE_ID"
+                    fi
+                fi
+            else
+                log_error "  Gmail send failed (HTTP $HTTP_STATUS)"
+                if [ -f "${TEMP_RESPONSE}.body" ]; then
+                    cat "${TEMP_RESPONSE}.body" | sed 's/^/    /'
+                fi
+
+                # Clean up temp files
+                rm -f "$TEMP_RESPONSE" "${TEMP_RESPONSE}.body"
+
+                log_error "Exiting due to Gmail send failure"
+                exit 1
+            fi
+
+            # Clean up temp files
+            rm -f "$TEMP_RESPONSE" "${TEMP_RESPONSE}.body"
+        else
+            log_error "  Preview failed: no preview_id returned"
+            echo "$PREVIEW_RESPONSE" | sed 's/^/    /'
+            log_error "Exiting due to preview failure"
+            exit 1
+        fi
+    else
+        log_info "Gmail integration test: PROVIDER_GOOGLE_ENABLED=${PROVIDER_GOOGLE_ENABLED:-false}, GMAIL_TEST_TO=${GMAIL_TEST_TO:-(not set)}"
+        log_info "  Skipping live Gmail test (requires both PROVIDER_GOOGLE_ENABLED=true and GMAIL_TEST_TO)"
+    fi
+
     # Check CI/CD workflow files
     log_info "Checking CI/CD workflow files..."
 
@@ -432,6 +542,47 @@ validate_database() {
 }
 
 ###############################################################################
+# Sprint 53 Phase B: PromQL Query Helpers
+###############################################################################
+
+print_promql_helpers() {
+    echo ""
+    log_info "=== PromQL Query Helpers (Sprint 53 Phase B) ==="
+    echo ""
+    echo "Use these queries with Prometheus/Grafana to monitor Gmail integration:"
+    echo ""
+    echo "# Total Gmail actions executed (success + errors)"
+    echo "sum(relay_actions_executed_total{action_id=\"gmail.send\"})"
+    echo ""
+    echo "# Gmail execution errors by reason"
+    echo "sum by (reason) (relay_actions_errors_total{action_id=\"gmail.send\"})"
+    echo ""
+    echo "# OAuth token refresh attempts (all providers)"
+    echo "sum(relay_oauth_token_refresh_total{provider=\"google\"})"
+    echo ""
+    echo "# OAuth token refresh errors by reason"
+    echo "sum by (reason) (relay_oauth_token_refresh_errors_total{provider=\"google\"})"
+    echo ""
+    echo "# Gmail send latency (p95)"
+    echo "histogram_quantile(0.95, sum(rate(relay_actions_duration_seconds_bucket{action_id=\"gmail.send\"}[5m])) by (le))"
+    echo ""
+    echo "# Gmail send rate (requests/sec over 5 minutes)"
+    echo "rate(relay_actions_executed_total{action_id=\"gmail.send\"}[5m])"
+    echo ""
+    echo "# OAuth token cache hit rate"
+    echo "sum(relay_oauth_token_cache_hits_total{provider=\"google\"}) / (sum(relay_oauth_token_cache_hits_total{provider=\"google\"}) + sum(relay_oauth_token_cache_misses_total{provider=\"google\"}))"
+    echo ""
+    echo "# Redis lock contention (refresh lock failures)"
+    echo "sum(relay_oauth_refresh_lock_contention_total{provider=\"google\"})"
+    echo ""
+    echo "To run these queries:"
+    echo "  1. Prometheus UI: $PROMETHEUS_URL/graph"
+    echo "  2. Grafana: $GRAFANA_URL (import queries into dashboard panels)"
+    echo "  3. API: curl \"$PROMETHEUS_URL/api/v1/query?query=<QUERY>\""
+    echo ""
+}
+
+###############################################################################
 # Summary & Exit
 ###############################################################################
 
@@ -477,8 +628,12 @@ main() {
     validate_database
 
     print_summary
+    EXIT_CODE=$?
 
-    return $?
+    # Sprint 53 Phase B: Print PromQL helpers (always, regardless of test status)
+    print_promql_helpers
+
+    return $EXIT_CODE
 }
 
 # Run main and exit with its exit code

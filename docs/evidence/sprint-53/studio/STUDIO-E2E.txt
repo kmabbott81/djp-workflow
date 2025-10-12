@@ -1,0 +1,253 @@
+Sprint 53 Phase A: Studio Integration Verification
+==================================================
+
+Date: October 8, 2025
+Task: Verify Studio ↔ Backend integration
+Status: ⚠️ Partially Verified (Studio not actively deployed)
+
+---
+
+## Studio Configuration Verified
+
+**Repository:** C:/Users/kylem/relay-studio/
+**Vercel Project:** prj_JcECB2o6EnqHe6q64U4xf35xH13b
+**Vercel Team:** team_kmuROYSNZA7YHh4AoixaHH4z
+
+**Recent Commits:**
+- 1fd6408: "Phase B: Configure Studio for real API"
+- d51d499: "fix(studio): downgrade to Tailwind 3 and Zod 3"
+- 6446dd4: "feat(studio): scaffold Relay Studio Phase A - UI shell"
+
+---
+
+## Production Configuration
+
+**File:** relay-studio/.env.production
+
+```bash
+# Backend API URL (Railway)
+NEXT_PUBLIC_RELAY_API_URL=https://relay-production-f2a6.up.railway.app
+```
+
+✅ Studio is configured to point to the correct Railway backend
+✅ Environment variable format correct for Next.js (NEXT_PUBLIC_*)
+
+---
+
+## Deployment Status
+
+**Vercel Setup:** ✅ Configured (project linked)
+**Active Deployment:** ⚠️ Unknown / Not Found
+
+**Evidence from README.md:**
+```
+⚠️ **NO DEPLOYS** during 24-hour monitoring window
+```
+
+**Possible Vercel URLs (not verified):**
+- https://relay-studio.vercel.app
+- https://relay-studio-<team-slug>.vercel.app
+- <project-specific-url>.vercel.app
+
+**Conclusion:** Studio is scaffolded and configured but deployment may not be active or URL not documented.
+
+---
+
+## Backend CORS Configuration
+
+**File:** src/webapi.py (lines 117-141)
+
+```python
+allowed_origins = [
+    "http://localhost:3000",  # Local development
+    "https://relay-studio-one.vercel.app",  # Production Studio
+]
+
+# Allow all origins in development
+if os.getenv("RELAY_ENV") != "production":
+    allowed_origins = ["*"]
+```
+
+✅ Backend already allows requests from Vercel Studio
+✅ Local development supported (http://localhost:3000)
+⚠️ Production URL hardcoded as "relay-studio-one.vercel.app" (verify this is correct)
+
+---
+
+## API Endpoints Ready for Studio
+
+**Available Endpoints:**
+1. `GET /` - API info and available endpoints
+2. `GET /ready` - Health check
+3. `GET /metrics` - Prometheus metrics
+4. `GET /actions` - List available actions
+5. `POST /actions/preview` - Preview action (requires API key)
+6. `POST /actions/execute` - Execute action (requires API key)
+7. `GET /audit` - Audit logs (requires API key, admin scope)
+
+**Authentication:**
+- Method: Bearer token (API key)
+- Format: `Authorization: Bearer relay_sk_<key>`
+- Scopes: actions:preview, actions:execute, audit:read
+
+**Current Actions Available:**
+- webhook.save (enabled) - Send webhook with HMAC signing
+- microsoft.send_email (disabled) - Stub only
+- google.send_email (disabled) - Stub only
+
+---
+
+## Integration Test Plan (Manual)
+
+### Test 1: Studio Can Reach Backend
+
+**From Vercel Studio (once deployed):**
+```javascript
+fetch('https://relay-production-f2a6.up.railway.app/')
+  .then(r => r.json())
+  .then(console.log)
+
+// Expected:
+// {
+//   "name": "DJP Workflow API",
+//   "version": "1.0.0",
+//   "endpoints": { ... },
+//   "features": { "actions": true }
+// }
+```
+
+### Test 2: CORS Works
+
+**Check headers:**
+```
+Access-Control-Allow-Origin: https://relay-studio-one.vercel.app
+Access-Control-Allow-Methods: GET, POST, OPTIONS
+Access-Control-Allow-Headers: Content-Type, Idempotency-Key, ...
+```
+
+### Test 3: List Actions
+
+**From Studio:**
+```javascript
+fetch('https://relay-production-f2a6.up.railway.app/actions')
+  .then(r => r.json())
+  .then(console.log)
+
+// Expected:
+// {
+//   "actions": [
+//     { "id": "webhook.save", "name": "Send Webhook", "enabled": true },
+//     { "id": "microsoft.send_email", "enabled": false },
+//     { "id": "google.send_email", "enabled": false }
+//   ]
+// }
+```
+
+### Test 4: Preview/Execute Flow (with API key)
+
+Requires:
+1. Studio to get/generate API key (not implemented yet)
+2. Store API key securely
+3. Send with Authorization header
+
+---
+
+## Blocker Identified
+
+**API Key Management:**
+- Backend has API key support (Sprint 51)
+- Database tables exist: `api_keys` table
+- Studio needs UI to:
+  1. Create/manage API keys
+  2. Store keys securely
+  3. Include in requests
+
+**Without API Key:**
+- `/actions` works (no auth required)
+- `/actions/preview` returns 401 Unauthorized
+- `/actions/execute` returns 401 Unauthorized
+
+---
+
+## Recommendations
+
+### Immediate Actions (User)
+
+1. **Verify Vercel Deployment:**
+   - Check Vercel dashboard: https://vercel.com/dashboard
+   - Find relay-studio project
+   - Get deployment URL
+   - Test URL in browser
+
+2. **Update CORS if Needed:**
+   If actual Vercel URL differs from "relay-studio-one.vercel.app":
+   - Update `src/webapi.py` line 119
+   - Redeploy backend to Railway
+
+3. **Test Basic Connectivity:**
+   ```bash
+   curl https://<vercel-url>
+   # Should show Studio UI
+
+   # From browser console on Studio page:
+   fetch('https://relay-production-f2a6.up.railway.app/')
+   # Should return API info without CORS error
+   ```
+
+### Next Sprint Tasks (Phase B)
+
+1. **API Key UI in Studio:**
+   - Create key management page
+   - Generate keys via backend API
+   - Store in browser local storage (or better: backend session)
+   - Auto-include in all API requests
+
+2. **Actions Flow UI:**
+   - List actions from `/actions`
+   - Show action details
+   - Preview form
+   - Execute button
+   - Show results
+
+3. **Error Handling:**
+   - Show CORS errors clearly
+   - Handle 401 Unauthorized
+   - Retry logic for network failures
+
+---
+
+## Current Status Summary
+
+**Configuration:** ✅ Complete
+- Backend URL correctly set in .env.production
+- CORS configured in backend
+- API endpoints operational
+
+**Deployment:** ⚠️ Unclear
+- Vercel project linked
+- No active deployment confirmed
+- URL not documented
+
+**Integration:** ⚠️ Not Tested
+- Cannot verify without active deployment
+- API key management needed for full E2E test
+
+**Next Step:** User must deploy Studio to Vercel and provide URL for testing
+
+---
+
+**Verification Method:**
+Once Studio URL is available, run:
+```bash
+# Test from command line (simulating Studio)
+curl -H "Origin: https://<studio-url>" \
+     https://relay-production-f2a6.up.railway.app/
+
+# Should return API info with CORS headers
+```
+
+---
+
+**Status:** Configuration verified, deployment status TBD
+**Blocker:** Need active Vercel deployment URL to complete verification
+**User Action Required:** Deploy Studio to Vercel or provide deployment URL

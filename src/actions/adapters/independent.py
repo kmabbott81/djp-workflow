@@ -111,24 +111,40 @@ class IndependentAdapter:
             signature = self._compute_signature(body)
             headers["X-Signature"] = f"sha256={signature}"
 
-        # Send request
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.request(
-                method=method,
-                url=url,
-                content=body,
-                headers=headers,
-            )
+        # Send request with improved error handling
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.request(
+                    method=method,
+                    url=url,
+                    content=body,
+                    headers=headers,
+                )
 
-            # Check response
-            response.raise_for_status()
+                # Check response status
+                if response.status_code >= 400:
+                    error_body = response.text[:200]
 
-            return {
-                "status_code": response.status_code,
-                "response_body": response.text[:500],  # Truncate
-                "url": url,
-                "method": method,
-            }
+                    raise httpx.HTTPStatusError(
+                        f"Webhook returned {response.status_code}: {error_body}",
+                        request=response.request,
+                        response=response,
+                    )
+
+                return {
+                    "status_code": response.status_code,
+                    "response_body": response.text[:500],  # Truncate
+                    "url": url,
+                    "method": method,
+                }
+
+        except httpx.TimeoutException as e:
+            raise TimeoutError(f"Webhook request timed out after 10s: {url}") from e
+        except httpx.NetworkError as e:
+            raise ConnectionError(f"Network error connecting to webhook: {url}") from e
+        except httpx.HTTPStatusError:
+            # Re-raise with our enhanced message
+            raise
 
     def _compute_signature(self, body: str) -> str:
         """Compute HMAC-SHA256 signature for request body."""

@@ -3,6 +3,15 @@
 import pytest
 
 
+@pytest.fixture(scope="session")
+def anyio_backend():
+    """Force pytest-anyio to use asyncio backend only (no trio).
+
+    Sprint 53 Phase B: Pin async tests to asyncio to avoid trio dependency.
+    """
+    return "asyncio"
+
+
 @pytest.fixture(autouse=True)
 def _enable_rbac_and_budgets(monkeypatch):
     """
