@@ -14,6 +14,7 @@ from uuid import uuid4
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .auth.security import require_scopes
@@ -240,6 +241,11 @@ class TriageResponse(BaseModel):
 
 # Sprint 49 Phase B: Actions feature flag
 ACTIONS_ENABLED = os.getenv("ACTIONS_ENABLED", "false").lower() == "true"
+
+# Mount static files for dev UI (Sprint 55 Week 3)
+static_dir = Path(__file__).parent.parent / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 
 @app.get("/")
@@ -1219,6 +1225,35 @@ async def oauth_google_status(
         return {"linked": True, "scopes": tokens.get("scope", "")}
     else:
         return {"linked": False, "scopes": None}
+
+
+# ============================================================================
+# Dev Mode Endpoints - Sprint 55 Week 3
+# ============================================================================
+
+
+@app.get("/dev/outbox")
+def get_demo_outbox():
+    """
+    List demo mode outbox (emails saved instead of sent).
+
+    Returns list of saved email artifacts for testing.
+    """
+    outbox_dir = Path("runs/dev/outbox")
+    if not outbox_dir.exists():
+        return {"items": []}
+
+    import json
+
+    items = []
+    for file_path in sorted(outbox_dir.glob("*.json"), reverse=True):
+        try:
+            data = json.loads(file_path.read_text())
+            items.append(data)
+        except Exception:
+            pass
+
+    return {"items": items, "count": len(items)}
 
 
 if __name__ == "__main__":
