@@ -2,15 +2,24 @@ name: Rollout Controller Nudge
 
 on:
   schedule:
-    # Every Monday at 17:00 UTC (09:00 PT / 12:00 ET)
-    - cron: '0 17 * * MON'
+    # Every Monday at 14:00 UTC (weekly nudge)
+    - cron: '0 14 * * MON'
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
-  check:
+  nudge:
     runs-on: ubuntu-latest
-    # Only run if we're in Sprint 55+ and controller is still disabled
-    if: ${{ vars.SPRINT_NUMBER >= 55 && vars.ROLLOUT_CONTROLLER_ENABLED != 'true' }}
+    # Only run on main branch when explicitly enabled
+    if: ${{ github.ref == 'refs/heads/main' && vars.NUDGE_ENABLED == 'true' }}
+
+    concurrency:
+      group: rollout-nudge
+      cancel-in-progress: true
+
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
 
     steps:
       - name: Checkout code
@@ -19,7 +28,7 @@ jobs:
       - name: Post reminder issue
         uses: peter-evans/create-issue-from-file@v5
         with:
-          title: "⏰ Reminder: Enable Rollout Controller for Observation Window (Sprint ${{ vars.SPRINT_NUMBER }})"
+          title: "⏰ Reminder: Rollout Controller Weekly Nudge (Sprint ${{ vars.SPRINT_NUMBER || 'TBD' }})"
           content-filepath: docs/evidence/sprint-54/OBSERVATION-WINDOW-START.md
           labels: |
             phase:ops
@@ -30,12 +39,12 @@ jobs:
 
       - name: Log reminder
         run: |
-          echo "📬 Reminder issue created: Rollout Controller still disabled in Sprint ${{ vars.SPRINT_NUMBER }}"
+          echo "📬 Weekly rollout nudge triggered"
           echo ""
-          echo "To enable observation window:"
+          echo "To enable rollout controller:"
           echo "  1. Deploy Prometheus stack (Docker Compose or Railway)"
           echo "  2. Set ROLLOUT_CONTROLLER_ENABLED=true in GitHub repo variables"
           echo "  3. Set PROMETHEUS_BASE_URL and REDIS_URL"
           echo "  4. Run controller for 24-48h observation"
           echo ""
-          echo "Or: Set SPRINT_NUMBER=${{ vars.SPRINT_NUMBER + 1 }} to defer reminder to next sprint"
+          echo "To disable this nudge: Set NUDGE_ENABLED=false in repo variables"
