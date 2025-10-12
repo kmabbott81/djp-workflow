@@ -55,6 +55,15 @@ _outlook_html_sanitization_changes_total = None
 _structured_error_total = None
 # Sprint 54 Phase 4: Rollout controller gauge
 _rollout_controller_percent = None
+# Sprint 55 Week 3: Microsoft upload session metrics
+_outlook_upload_session_total = None
+_outlook_upload_session_create_seconds = None
+_outlook_upload_bytes_total = None
+_outlook_upload_chunk_seconds = None
+_outlook_draft_created_total = None
+_outlook_draft_create_seconds = None
+_outlook_draft_sent_total = None
+_outlook_draft_send_seconds = None
 
 
 def _is_enabled() -> bool:
@@ -79,6 +88,10 @@ def init_prometheus() -> None:
     global _outlook_graph_build_seconds, _outlook_attachment_bytes_total
     global _outlook_inline_refs_total, _outlook_html_sanitization_changes_total
     global _structured_error_total, _rollout_controller_percent
+    global _outlook_upload_session_total, _outlook_upload_session_create_seconds
+    global _outlook_upload_bytes_total, _outlook_upload_chunk_seconds
+    global _outlook_draft_created_total, _outlook_draft_create_seconds
+    global _outlook_draft_sent_total, _outlook_draft_send_seconds
 
     if not _is_enabled():
         _LOG.debug("Telemetry disabled, skipping Prometheus init")
@@ -224,6 +237,55 @@ def init_prometheus() -> None:
             "rollout_controller_percent",
             "Current rollout percentage for a feature",
             ["feature"],
+        )
+
+        # Sprint 55 Week 3: Microsoft upload session metrics
+        _outlook_upload_session_total = Counter(
+            "outlook_upload_session_total",
+            "Total Microsoft Graph upload sessions",
+            ["result"],  # started | completed | failed | error
+        )
+
+        _outlook_upload_session_create_seconds = Histogram(
+            "outlook_upload_session_create_seconds",
+            "Time to create upload session in seconds",
+            buckets=[0.1, 0.25, 0.5, 1.0, 2.5, 5.0],
+        )
+
+        _outlook_upload_bytes_total = Counter(
+            "outlook_upload_bytes_total",
+            "Total bytes uploaded via Microsoft Graph upload sessions",
+            ["result"],  # completed | failed
+        )
+
+        _outlook_upload_chunk_seconds = Histogram(
+            "outlook_upload_chunk_seconds",
+            "Microsoft Graph upload chunk duration in seconds",
+            buckets=[0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0],
+        )
+
+        _outlook_draft_created_total = Counter(
+            "outlook_draft_created_total",
+            "Total draft messages created",
+            ["result"],  # success | error
+        )
+
+        _outlook_draft_create_seconds = Histogram(
+            "outlook_draft_create_seconds",
+            "Time to create draft message in seconds",
+            buckets=[0.1, 0.25, 0.5, 1.0, 2.5, 5.0],
+        )
+
+        _outlook_draft_sent_total = Counter(
+            "outlook_draft_sent_total",
+            "Total draft messages sent",
+            ["result"],  # success | error
+        )
+
+        _outlook_draft_send_seconds = Histogram(
+            "outlook_draft_send_seconds",
+            "Time to send draft message in seconds",
+            buckets=[0.1, 0.25, 0.5, 1.0, 2.5, 5.0],
         )
 
         _METRICS_INITIALIZED = True
@@ -456,3 +518,16 @@ outlook_html_sanitization_changes_total = _outlook_html_sanitization_changes_tot
 # Sprint 54 Phase 4: Structured error and rollout exports
 structured_error_total = _structured_error_total
 rollout_controller_percent = _rollout_controller_percent
+
+# Sprint 55 Week 3: Microsoft upload session metric exports
+# These are exported for direct use in the upload session module (microsoft_upload.py)
+# They are safe to import even if telemetry is disabled (will be None).
+
+outlook_upload_session_total = _outlook_upload_session_total
+outlook_upload_session_create_seconds = _outlook_upload_session_create_seconds
+outlook_upload_bytes_total = _outlook_upload_bytes_total
+outlook_upload_chunk_seconds = _outlook_upload_chunk_seconds
+outlook_draft_created_total = _outlook_draft_created_total
+outlook_draft_create_seconds = _outlook_draft_create_seconds
+outlook_draft_sent_total = _outlook_draft_sent_total
+outlook_draft_send_seconds = _outlook_draft_send_seconds

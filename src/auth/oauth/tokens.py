@@ -76,11 +76,19 @@ class OAuthTokenCache:
             print("[INFO] OAuth token cache: Using database only (no Redis)")
 
         # Initialize encryption
+        app_env = os.getenv("APP_ENV", "dev").lower()
         encryption_key_str = encryption_key or os.getenv("OAUTH_ENCRYPTION_KEY")
+
         if not encryption_key_str:
-            # Generate a key for development (INSECURE - use env var in production)
-            print("[WARN] OAUTH_ENCRYPTION_KEY not set. Generating ephemeral key (dev only).")
-            self.cipher = Fernet(Fernet.generate_key())
+            if app_env in ("dev", "ci"):
+                # Dev-only ephemeral key; DO NOT use in prod
+                print("[WARN] OAUTH_ENCRYPTION_KEY not set. Using ephemeral key (dev/ci only).")
+                self.cipher = Fernet(Fernet.generate_key())
+            else:
+                raise RuntimeError(
+                    "OAUTH_ENCRYPTION_KEY is required in non-dev environments. "
+                    f"Current APP_ENV: {app_env}. Set APP_ENV=dev for local development."
+                )
         else:
             self.cipher = Fernet(encryption_key_str.encode("utf-8"))
 

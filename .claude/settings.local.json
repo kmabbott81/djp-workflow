@@ -48,7 +48,11 @@
       "Bash(move scriptsstore_tokens.py scriptsoauth )",
       "Bash(move scriptsoauth_flow.py scriptsoauth)",
       "Bash(set ROLLOUT_DRY_RUN=true)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(git rm:*)",
+      "Bash(git fetch:*)",
+      "Bash(git stash:*)",
+      "Bash(gh pr comment:*)"
     ],
     "deny": [],
     "ask": []
