@@ -10,18 +10,23 @@
 
   "postCreateCommand": "pip install --no-cache-dir -r requirements.txt && pip install --no-cache-dir -e .",
 
-  "postStartCommand": "redis-server --daemonize yes && python -m uvicorn src.webapi:app --host 0.0.0.0 --port 8000 --reload",
+  "postStartCommand": "bash .devcontainer/startup.sh",
+
+  "postAttachCommand": "echo '🚀 Dev UI ready at: https://${CODESPACE_NAME}-8000.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}/static/dev/action-runner.html'",
 
   "forwardPorts": [8000, 6379],
 
   "portsAttributes": {
     "8000": {
-      "label": "FastAPI Server",
-      "onAutoForward": "notify"
+      "label": "Action Runner Dev UI",
+      "onAutoForward": "openBrowser",
+      "visibility": "public",
+      "protocol": "https"
     },
     "6379": {
       "label": "Redis",
-      "onAutoForward": "silent"
+      "onAutoForward": "silent",
+      "visibility": "private"
     }
   },
 
