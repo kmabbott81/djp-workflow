@@ -67,13 +67,26 @@ Create foundation for Microsoft Outlook integration with auth, adapter, and tele
 
 ### Timeline
 - Start: 2025-10-11 (NOW)
-- Week 1 Complete: 2025-10-14
-- Week 2 Complete: 2025-10-18 (OAuth working)
-- Week 3 Complete: 2025-10-21 (Docs + PR)
+- Week 1 Complete: ✅ 2025-10-14 (Scaffolding complete)
+- Week 2 Complete: ✅ 2025-10-12 (Graph API sendMail with OAuth + retry logic)
+- Week 3 Complete: 2025-10-21 (Upload sessions + docs + PR)
 
 ---
 
 ## Implementation Log
+
+### 2025-10-12 - Week 2 Complete ✅
+- **Microsoft Graph API sendMail integration complete**
+- Real OAuth flow with token auto-refresh (Azure AD + PKCE)
+- Graph JSON translator (MIME → Graph format)
+- Retry logic: exponential backoff (max 3, ±20% jitter), 429 Retry-After parsing
+- Error mapping module (structured errors)
+- Full observability: Outlook metrics, recording rules, alerts
+- Integration test suite (gated, 4 scenarios)
+- CLI smoke test (simple + full complexity)
+- Large attachment stub (>3MB detection)
+- **Evidence:** `docs/evidence/sprint-55/WEEK-2-MS-GRAPH-COMPLETE.md`
+- **Commits:** f1030de, 9bd8ae5, ade4ad3, 38660ef, 55a7a44
 
 ### 2025-10-11 - Sprint Start
 - Created Sprint 55 tracking structure
