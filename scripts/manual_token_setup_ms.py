@@ -153,6 +153,16 @@ async def main():
     # Step 4: Validate state and exchange code for tokens
     print("[Step 4/4] Validating state and exchanging code for tokens...")
 
+    # CSRF protection: Compare returned state with original using constant-time comparison
+    import hmac
+
+    if not hmac.compare_digest(returned_state, state):
+        print("❌ [ERROR] CSRF protection failed - state mismatch")
+        print(f"  Expected: {state[:20]}...")
+        print(f"  Received: {returned_state[:20]}...")
+        print("  This could indicate a CSRF attack or OAuth callback tampering.")
+        sys.exit(1)
+
     validated_state = state_mgr.validate_state(workspace_id=workspace_id, state=returned_state)
     if not validated_state:
         print("❌ [ERROR] State validation failed - state expired or invalid")

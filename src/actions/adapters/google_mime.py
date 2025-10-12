@@ -223,7 +223,7 @@ class MimeBuilder:
         lines.append("")
         lines.append(text)
 
-        return "\n".join(lines)
+        return "\r\n".join(lines)
 
     def _build_html_alternative(
         self,
@@ -266,7 +266,7 @@ class MimeBuilder:
 
         lines.append(f"--{boundary}--")
 
-        return "\n".join(lines)
+        return "\r\n".join(lines)
 
     def _build_with_inline(
         self,
@@ -334,7 +334,7 @@ class MimeBuilder:
 
         lines.append(f"--{boundary_related}--")
 
-        return "\n".join(lines)
+        return "\r\n".join(lines)
 
     def _build_with_attachments(
         self,
@@ -460,4 +460,4 @@ class MimeBuilder:
 
         lines.append(f"--{boundary_mixed}--")
 
-        return "\n".join(lines)
+        return "\r\n".join(lines)

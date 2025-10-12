@@ -133,6 +133,9 @@ def get_last_change_time(redis_client) -> Optional[datetime]:
 
     Returns:
         Datetime of last change, or None if no previous change
+
+    Raises:
+        ValueError: If timestamp is corrupted (fail-fast to prevent bypassing dwell/cooldown)
     """
     timestamp_str = redis_client.get("flags:google:last_change_time")
     if not timestamp_str:
@@ -140,8 +143,11 @@ def get_last_change_time(redis_client) -> Optional[datetime]:
 
     try:
         return datetime.fromisoformat(timestamp_str)
-    except Exception:
-        return None
+    except Exception as e:
+        # Fail-fast on corrupted timestamp - prevents bypassing dwell/cooldown safety guards
+        print(f"[ERROR] REDIS_TIMESTAMP_CORRUPT: Unable to parse timestamp '{timestamp_str}': {e}")
+        print("[ERROR] Failing fast to prevent bypassing rollout safety guards (dwell time, cooldown)")
+        raise ValueError(f"Corrupted Redis timestamp: {timestamp_str}") from e
 
 
 def set_last_change_time(redis_client, dt: datetime):
@@ -270,7 +276,13 @@ def main():
         return
 
     # Safety guard: Min dwell time (15 minutes)
-    last_change = get_last_change_time(redis_client)
+    try:
+        last_change = get_last_change_time(redis_client)
+    except ValueError as e:
+        print(f"[ERROR] {e}")
+        push_gateway(feature="google", result="hold", status="redis_error")
+        sys.exit(1)
+
     if last_change:
         elapsed = datetime.now(timezone.utc) - last_change.replace(tzinfo=timezone.utc)
         min_dwell = timedelta(minutes=15)

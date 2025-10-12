@@ -446,3 +446,33 @@ class TestEdgeCases:
         # Remove whitespace from result to compare
         result_no_whitespace = result.replace("\n", "").replace("\r", "")
         assert encoded in result_no_whitespace
+
+
+class TestRFC5322Compliance:
+    """Test RFC 5322 compliance (CRLF line endings)."""
+
+    def test_mime_uses_crlf_only(self):
+        """Test that MIME output uses CRLF (\\r\\n) line endings, not bare LF (\\n).
+
+        RFC 5322 requires CRLF for email line endings. Bare LF is non-compliant.
+        """
+        builder = MimeBuilder()
+        result = builder.build_message(
+            to="alice@example.com",
+            subject="Test CRLF",
+            text="Test body",
+            html="<p>HTML body</p>",
+        )
+
+        # Check that result contains CRLF line endings
+        assert "\r\n" in result, "MIME output must contain CRLF line endings"
+
+        # Check for bare LF (not preceded by CR)
+        # Split by \r\n first, then check if any remaining segments have \n
+        segments = result.split("\r\n")
+        for segment in segments:
+            # If a segment contains \n, it's a bare LF (non-compliant)
+            assert "\n" not in segment, (
+                f"Found bare LF (not CRLF) in MIME output. "
+                f"RFC 5322 requires CRLF line endings. Segment: {segment[:100]!r}"
+            )

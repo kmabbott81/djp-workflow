@@ -139,6 +139,20 @@ class TestLastChangeTime:
 
         assert result is None
 
+    def test_corrupted_timestamp_triggers_fail_fast(self):
+        """Test that corrupted timestamp raises ValueError (fail-fast safety guard)."""
+        import pytest
+
+        r = FakeRedis()
+        r["flags:google:last_change_time"] = "not-a-valid-timestamp"
+
+        with pytest.raises(ValueError) as exc_info:
+            get_last_change_time(r)
+
+        # Verify error message mentions corruption
+        assert "Corrupted Redis timestamp" in str(exc_info.value)
+        assert "not-a-valid-timestamp" in str(exc_info.value)
+
     def test_set_last_change_time(self):
         """Test writing timestamp."""
         r = FakeRedis()
