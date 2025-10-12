@@ -3,6 +3,10 @@
 
 Sprint 54 Phase 3: Verify full path with real Gmail API.
 
+SECURITY NOTE:
+  File logging is disabled by default. To enable, set E2E_LOG_TO_FILE=true.
+  When enabled, payloads (base64, large subjects) are redacted/hashed for security.
+
 Usage:
     python scripts/e2e_gmail_test.py --scenarios all
     python scripts/e2e_gmail_test.py --scenarios 1,2,3 --dry-run
@@ -12,6 +16,7 @@ Usage:
 import argparse
 import asyncio
 import base64
+import hashlib
 import json
 import logging
 import os
@@ -30,6 +35,50 @@ RED_PIXEL_PNG = base64.b64decode(
 )
 
 SMALL_PDF = b"%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n>>\nendobj\n%%EOF"
+
+
+def redact_payload(params: dict[str, Any]) -> dict[str, Any]:
+    """Redact sensitive payload fields for logging.
+
+    - Hash base64 blobs (attachments, inline images)
+    - Truncate long subjects to 80 chars
+
+    Args:
+        params: Email parameters
+
+    Returns:
+        Redacted copy of params
+    """
+    redacted = params.copy()
+
+    # Truncate subject
+    if "subject" in redacted and len(redacted["subject"]) > 80:
+        redacted["subject"] = redacted["subject"][:80] + "..."
+
+    # Hash attachment data
+    if "attachments" in redacted:
+        redacted["attachments"] = [
+            {
+                "filename": att.get("filename", "unknown"),
+                "content_type": att.get("content_type", "unknown"),
+                "data_sha256": hashlib.sha256(att.get("data", "").encode()).hexdigest()[:16],
+            }
+            for att in redacted["attachments"]
+        ]
+
+    # Hash inline image data
+    if "inline" in redacted:
+        redacted["inline"] = [
+            {
+                "cid": img.get("cid", "unknown"),
+                "filename": img.get("filename", "unknown"),
+                "content_type": img.get("content_type", "unknown"),
+                "data_sha256": hashlib.sha256(img.get("data", "").encode()).hexdigest()[:16],
+            }
+            for img in redacted["inline"]
+        ]
+
+    return redacted
 
 
 class E2ETestRunner:
@@ -60,12 +109,25 @@ class E2ETestRunner:
 
         # Set up logging
         log_level = logging.DEBUG if verbose else logging.INFO
+        handlers = [logging.StreamHandler()]
+
+        # Gate file logging behind E2E_LOG_TO_FILE (default off)
+        if os.getenv("E2E_LOG_TO_FILE", "false").lower() == "true":
+            handlers.append(logging.FileHandler("logs/e2e_test.log"))
+
         logging.basicConfig(
             level=log_level,
             format="%(asctime)s [%(levelname)s] %(message)s",
-            handlers=[logging.StreamHandler(), logging.FileHandler("logs/e2e_test.log")],
+            handlers=handlers,
         )
         self.logger = logging.getLogger(__name__)
+
+        # Log redaction notice if file logging enabled
+        if os.getenv("E2E_LOG_TO_FILE", "false").lower() == "true":
+            self.logger.info("=" * 60)
+            self.logger.info("SECURITY: File logging enabled with payload redaction")
+            self.logger.info("Base64 blobs hashed, subjects truncated to 80 chars")
+            self.logger.info("=" * 60)
 
         # Initialize adapter
         self.adapter = GoogleAdapter()
@@ -122,6 +184,8 @@ class E2ETestRunner:
 
             # Run preview
             self.logger.info("Running preview...")
+            if self.verbose:
+                self.logger.debug(f"Params (redacted): {redact_payload(params)}")
             preview_result = self.adapter._preview_gmail_send(params)
             result["preview_result"] = {
                 "digest": preview_result["digest"],
