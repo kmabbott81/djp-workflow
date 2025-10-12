@@ -1,19 +1,31 @@
-# 📌 LEFT OFF HERE — Phase 4 Complete + Microsoft Phase 1 Ready
+# 📌 LEFT OFF HERE — Microsoft Week 2 Complete + PR #36 Open
 
-**Date:** 2025-10-11
-**Branch:** `feat/rollout-infrastructure`
-**Sprint:** 54 → 55 Transition
-**Status:** ✅ Gmail Phase 4 Complete | 🚀 Microsoft Phase 1 Planned
+**Date:** 2025-10-12
+**Branch:** `feat/rollout-infrastructure` → PR #36 to `main`
+**Sprint:** 55 Week 2
+**Status:** ✅ Microsoft Graph sendMail Complete | 📋 PR Ready for Review
 
 ---
 
 ## Executive Summary
 
-**Major Milestone:** Gmail integration has reached production-grade observability with full operational readiness framework. All Phase 4 (A/B/C/D) artifacts are complete and validated. The system is ready for 24-48h observation window before final production rollout.
+**✅ SPRINT 55 WEEK 2 COMPLETE (2025-10-12)**
 
-**Parallel Track:** Microsoft Outlook integration Phase 1 is fully planned and ready for implementation, designed to leverage all Gmail patterns and infrastructure.
+Microsoft Graph API `sendMail` integration is **production-ready** with full feature parity to Gmail:
+- Real OAuth flow (Azure AD + PKCE) with token auto-refresh
+- MIME → Graph JSON translation layer
+- Retry logic: exponential backoff (max 3 retries, ±20% jitter), 429 Retry-After parsing
+- Error mapping module with structured error codes
+- Full observability: Outlook metrics, recording rules, alerts
+- Integration test suite (gated, 4 scenarios)
+- CLI smoke test (simple + full complexity)
+- Large attachment stub (>3MB detection for Week 3)
 
-**Key Achievement:** This represents the final operational checkpoint before real user traffic for Gmail, and the foundation for multi-provider email integration.
+**PR #36 OPEN:** https://github.com/kmabbott81/djp-workflow/pull/36
+
+**Evidence:** `docs/evidence/sprint-55/WEEK-2-MS-GRAPH-COMPLETE.md` (535 lines)
+
+**Next:** Week 3 (upload sessions) or observation window for Gmail (separate gated rollout controller workflow)
 
 ---
 
@@ -251,51 +263,52 @@ docs/evidence/sprint-55/
 
 ## 🎯 Next Actions
 
-### Immediate (Today)
-1. **Start Gmail observation window** (if Prometheus stack available)
-   ```bash
-   export PROMETHEUS_BASE_URL=http://localhost:9090
-   export ROLLOUT_DRY_RUN=true
-   python scripts/rollout_controller.py
-   ```
+### Immediate (Today/This Week)
 
-2. **Or: Begin Microsoft Phase 1 scaffolding** (can work in parallel)
-   - Create `src/auth/oauth/ms_tokens.py` stub
-   - Create `src/actions/adapters/microsoft.py` stub
-   - Add env vars to `src/config/prefs.py`
-   - Create recording rule stubs
+1. **Review PR #36** ✅
+   - URL: https://github.com/kmabbott81/djp-workflow/pull/36
+   - Check CI passes
+   - Review evidence doc: `docs/evidence/sprint-55/WEEK-2-MS-GRAPH-COMPLETE.md`
+   - Merge when approved
 
-### This Week
-3. **Schedule tabletop drill** (Hour 12 of observation window)
-   ```bash
-   python scripts/observability/pushgateway_synth.py --scenario error-rate-warn --duration 15m
-   ```
+2. **Re-add Gated Rollout Controller** (separate PR)
+   - Restore `.github/workflows/rollout-controller.yml`
+   - Add gating: `if: ${{ vars.ROLLOUT_CONTROLLER_ENABLED == 'true' }}`
+   - Require env vars: `REDIS_URL`, `PROMETHEUS_BASE_URL`
+   - Default: `ROLLOUT_DRY_RUN=true`
+   - Link runbook: `docs/runbooks/rollout-controller-switch.md`
+   - **Note:** Only needed when ready to start Gmail observation window
 
-4. **Microsoft scaffolding complete**
-   - Unit tests pass (no external calls)
-   - Recording rules + alerts configured
+3. **Start Gmail Observation Window** (when Prometheus stack ready)
+   - Deploy: Prometheus + Alertmanager + Grafana + Pushgateway
+   - Enable controller: Set `ROLLOUT_CONTROLLER_ENABLED=true` in GitHub
+   - Monitor for 24-48 hours
+   - Complete: `docs/evidence/sprint-54/PHASE-4C-OBSERVATION-REPORT.md`
 
-### Next Week
-5. **Complete observation report**
-   - Screenshot dashboards
-   - Calculate readiness score
-   - Make go/no-go decision
+### Week 3 (Sprint 55)
 
-6. **Microsoft OAuth working**
-   - Azure AD app registration
-   - OAuth flow completes locally
-   - Integration test passes (1 real send)
+4. **Microsoft Upload Sessions** (>3MB attachments)
+   - Implement `createUploadSession` API for Microsoft Graph
+   - Add env var: `MS_UPLOAD_SESSIONS_ENABLED=true`
+   - Update integration test to verify large attachment flow
+   - Documentation: upload session guide
 
-### Week After
-7. **Phase 5 Gmail rollout** (if observation GO)
+5. **Microsoft Phase 1 Finalization**
+   - Update runbooks for Microsoft-specific scenarios
+   - Add delivery webhook setup guide (Phase 2 scope)
+   - Create calendar integration plan (Phase 2)
+
+### Upcoming
+
+6. **Phase 5 Gmail Rollout** (after observation window GO)
    - Disable dry-run mode
    - Set rollout to 10%
-   - Monitor progression
+   - Monitor progression to 100%
 
-8. **Microsoft Phase 1 complete**
-   - Documentation finalized
-   - PR review + merge
-   - Ready for Phase 2 planning
+7. **Microsoft Phase 2 Planning**
+   - External domains (remove internal-only restriction)
+   - Delivery status webhooks (Graph change notifications)
+   - Calendar integration (`calendar.create_event`)
 
 ---
 
