@@ -312,3 +312,73 @@ class TestMicrosoftConfiguration:
 
         os.environ.pop("MS_CLIENT_ID", None)
         assert is_configured() is False
+
+
+class TestMicrosoftBase64Validation:
+    """Test base64 validation for attachments and inline images.
+
+    Sprint 54: Compliance Fix #5 - structured errors for invalid base64.
+    """
+
+    @pytest.fixture
+    def adapter(self):
+        """Create adapter with default config."""
+        os.environ["PROVIDER_MICROSOFT_ENABLED"] = "true"
+        os.environ["MS_CLIENT_ID"] = "test-client-id"
+        os.environ["MICROSOFT_INTERNAL_ONLY"] = "false"
+
+        adapter = MicrosoftAdapter()
+
+        yield adapter
+
+        os.environ.pop("PROVIDER_MICROSOFT_ENABLED", None)
+        os.environ.pop("MS_CLIENT_ID", None)
+        os.environ.pop("MICROSOFT_INTERNAL_ONLY", None)
+
+    def test_preview_invalid_attachment_base64(self, adapter):
+        """Test preview raises structured error for invalid attachment base64."""
+        params = {
+            "to": "user@example.com",
+            "subject": "Test",
+            "text": "Body",
+            "attachments": [
+                {
+                    "filename": "test.txt",
+                    "content_type": "text/plain",
+                    "data": "NOT_VALID_BASE64!!!",
+                }
+            ],
+        }
+
+        with pytest.raises(ValueError) as exc_info:
+            adapter.preview("outlook.send", params)
+
+        error_msg = str(exc_info.value)
+        assert "validation_error_invalid_attachment_data" in error_msg
+        assert "decode" in error_msg.lower() or "attachment" in error_msg.lower()
+        assert "valid base64" in error_msg.lower()
+
+    def test_preview_invalid_inline_base64(self, adapter):
+        """Test preview raises structured error for invalid inline image base64."""
+        params = {
+            "to": "user@example.com",
+            "subject": "Test",
+            "text": "Body",
+            "html": '<p>Logo: <img src="cid:logo"></p>',
+            "inline": [
+                {
+                    "cid": "logo",
+                    "filename": "logo.png",
+                    "content_type": "image/png",
+                    "data": "INVALID@BASE64#DATA",
+                }
+            ],
+        }
+
+        with pytest.raises(ValueError) as exc_info:
+            adapter.preview("outlook.send", params)
+
+        error_msg = str(exc_info.value)
+        assert "validation_error_invalid_inline_data" in error_msg
+        assert "decode" in error_msg.lower() or "inline" in error_msg.lower()
+        assert "valid base64" in error_msg.lower()

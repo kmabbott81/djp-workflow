@@ -316,32 +316,55 @@ class MicrosoftAdapter:
 
         # Check for large attachments (>3MB) - Sprint 55 Week 2 stub
         import base64
+        import binascii
 
         from src.actions.adapters.microsoft_graph import should_use_upload_session
         from src.validation.attachments import Attachment, InlineImage
 
         attachments = None
         if validated.attachments:
-            attachments = [
-                Attachment(
-                    filename=att.filename,
-                    content_type=att.content_type,
-                    data=base64.b64decode(att.data),
+            try:
+                attachments = [
+                    Attachment(
+                        filename=att.filename,
+                        content_type=att.content_type,
+                        data=base64.b64decode(att.data),
+                    )
+                    for att in validated.attachments
+                ]
+            except (binascii.Error, ValueError) as e:
+                error = self._create_structured_error(
+                    error_code="validation_error_invalid_attachment_data",
+                    message=f"Failed to decode attachment data: {str(e)}",
+                    field="attachments",
+                    details={"error": str(e)},
+                    remediation="Ensure attachment data is valid base64",
+                    retriable=False,
                 )
-                for att in validated.attachments
-            ]
+                raise ValueError(json.dumps(error)) from e
 
         inline = None
         if validated.inline:
-            inline = [
-                InlineImage(
-                    cid=img.cid,
-                    filename=img.filename,
-                    content_type=img.content_type,
-                    data=base64.b64decode(img.data),
+            try:
+                inline = [
+                    InlineImage(
+                        cid=img.cid,
+                        filename=img.filename,
+                        content_type=img.content_type,
+                        data=base64.b64decode(img.data),
+                    )
+                    for img in validated.inline
+                ]
+            except (binascii.Error, ValueError) as e:
+                error = self._create_structured_error(
+                    error_code="validation_error_invalid_inline_data",
+                    message=f"Failed to decode inline image data: {str(e)}",
+                    field="inline",
+                    details={"error": str(e)},
+                    remediation="Ensure inline image data is valid base64",
+                    retriable=False,
                 )
-                for img in validated.inline
-            ]
+                raise ValueError(json.dumps(error)) from e
 
         # Check if upload session is needed (>3MB attachments)
         if should_use_upload_session(attachments, inline):
@@ -469,32 +492,61 @@ class MicrosoftAdapter:
 
         # Convert parameters to attachment/inline objects (needed for size check)
         import base64
+        import binascii
 
         from src.actions.adapters.microsoft_graph import should_use_upload_session
         from src.validation.attachments import Attachment, InlineImage
 
         attachments = None
         if validated.attachments:
-            attachments = [
-                Attachment(
-                    filename=att.filename,
-                    content_type=att.content_type,
-                    data=base64.b64decode(att.data),
+            try:
+                attachments = [
+                    Attachment(
+                        filename=att.filename,
+                        content_type=att.content_type,
+                        data=base64.b64decode(att.data),
+                    )
+                    for att in validated.attachments
+                ]
+            except (binascii.Error, ValueError) as e:
+                record_action_error(
+                    provider="microsoft", action="outlook.send", reason="validation_error_invalid_base64"
                 )
-                for att in validated.attachments
-            ]
+                error = self._create_structured_error(
+                    error_code="validation_error_invalid_attachment_data",
+                    message=f"Failed to decode attachment data: {str(e)}",
+                    field="attachments",
+                    details={"error": str(e)},
+                    remediation="Ensure attachment data is valid base64",
+                    retriable=False,
+                )
+                raise ValueError(json.dumps(error)) from e
 
         inline = None
         if validated.inline:
-            inline = [
-                InlineImage(
-                    cid=img.cid,
-                    filename=img.filename,
-                    content_type=img.content_type,
-                    data=base64.b64decode(img.data),
+            try:
+                inline = [
+                    InlineImage(
+                        cid=img.cid,
+                        filename=img.filename,
+                        content_type=img.content_type,
+                        data=base64.b64decode(img.data),
+                    )
+                    for img in validated.inline
+                ]
+            except (binascii.Error, ValueError) as e:
+                record_action_error(
+                    provider="microsoft", action="outlook.send", reason="validation_error_invalid_base64"
                 )
-                for img in validated.inline
-            ]
+                error = self._create_structured_error(
+                    error_code="validation_error_invalid_inline_data",
+                    message=f"Failed to decode inline image data: {str(e)}",
+                    field="inline",
+                    details={"error": str(e)},
+                    remediation="Ensure inline image data is valid base64",
+                    retriable=False,
+                )
+                raise ValueError(json.dumps(error)) from e
 
         # Check for large attachments (>3MB) - Sprint 55 Week 2 stub
         if should_use_upload_session(attachments, inline):

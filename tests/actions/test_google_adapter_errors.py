@@ -324,3 +324,79 @@ def test_structured_error_has_all_required_fields(adapter):
     assert "source" in error
     assert isinstance(error["source"], str)
     assert error["source"] == "gmail.adapter"
+
+
+def test_invalid_attachment_base64_returns_structured_error(adapter):
+    """Test that invalid base64 in attachment returns structured error.
+
+    Expected error_code: validation_error_invalid_attachment_data
+    Expected retriable: False
+    Sprint 54: Compliance Fix #5
+    """
+    params = {
+        "to": "test@example.com",
+        "subject": "Test",
+        "text": "Body",
+        "attachments": [
+            {
+                "filename": "test.txt",
+                "content_type": "text/plain",
+                "data": "NOT_VALID_BASE64!!!",
+            }
+        ],
+    }
+
+    with pytest.raises(ValueError) as exc_info:
+        adapter._preview_gmail_send(params)
+
+    error = json.loads(str(exc_info.value))
+
+    # Verify error structure
+    assert error["error_code"] == "validation_error_invalid_attachment_data"
+    assert "correlation_id" in error
+    assert error["retriable"] is False
+    assert error["source"] == "gmail.adapter"
+    assert "decode" in error["message"].lower() or "attachment" in error["message"].lower()
+    assert "field" in error
+    assert error["field"] == "attachments"
+    assert "remediation" in error
+    assert "valid base64" in error["remediation"].lower()
+
+
+def test_invalid_inline_base64_returns_structured_error(adapter):
+    """Test that invalid base64 in inline image returns structured error.
+
+    Expected error_code: validation_error_invalid_inline_data
+    Expected retriable: False
+    Sprint 54: Compliance Fix #5
+    """
+    params = {
+        "to": "test@example.com",
+        "subject": "Test",
+        "text": "Body",
+        "html": '<p>Logo: <img src="cid:logo"></p>',
+        "inline": [
+            {
+                "cid": "logo",
+                "filename": "logo.png",
+                "content_type": "image/png",
+                "data": "INVALID@BASE64#DATA",
+            }
+        ],
+    }
+
+    with pytest.raises(ValueError) as exc_info:
+        adapter._preview_gmail_send(params)
+
+    error = json.loads(str(exc_info.value))
+
+    # Verify error structure
+    assert error["error_code"] == "validation_error_invalid_inline_data"
+    assert "correlation_id" in error
+    assert error["retriable"] is False
+    assert error["source"] == "gmail.adapter"
+    assert "decode" in error["message"].lower() or "inline" in error["message"].lower()
+    assert "field" in error
+    assert error["field"] == "inline"
+    assert "remediation" in error
+    assert "valid base64" in error["remediation"].lower()

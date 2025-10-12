@@ -373,10 +373,12 @@ class GoogleAdapter:
         Raises:
             ValueError: With structured error payload (JSON string)
         """
+        # Convert input models to validation types
+        import binascii
+
         from src.actions.adapters.google_mime import MimeBuilder
         from src.validation.attachments import Attachment, InlineImage
 
-        # Convert input models to validation types
         attachments_validated = None
         if attachments:
             try:
@@ -388,7 +390,7 @@ class GoogleAdapter:
                     )
                     for att in attachments
                 ]
-            except Exception as e:
+            except (binascii.Error, ValueError) as e:
                 error = self._create_structured_error(
                     error_code="validation_error_invalid_attachment_data",
                     message=f"Failed to decode attachment data: {str(e)}",
@@ -411,7 +413,7 @@ class GoogleAdapter:
                     )
                     for img in inline
                 ]
-            except Exception as e:
+            except (binascii.Error, ValueError) as e:
                 error = self._create_structured_error(
                     error_code="validation_error_invalid_inline_data",
                     message=f"Failed to decode inline image data: {str(e)}",
