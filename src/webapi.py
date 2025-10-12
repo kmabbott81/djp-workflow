@@ -1100,7 +1100,6 @@ async def oauth_google_callback(
     """
     import httpx
 
-    from src.auth.oauth.state import OAuthStateManager
     from src.auth.oauth.tokens import OAuthTokenCache
 
     # Check for OAuth error
@@ -1110,17 +1109,21 @@ async def oauth_google_callback(
         oauth_events.labels(provider="google", event="callback_error").inc()
         raise HTTPException(status_code=400, detail=f"OAuth error: {error}")
 
-    # ISSUE: Google doesn't preserve custom query params, so workspace_id is not in the URL
-    # The state token is a random nonce, and workspace_id is stored in Redis with key: oauth:state:{workspace_id}:{state}
-    # We need to try looking up the state with our known test workspace
-    state_mgr = OAuthStateManager()
-    workspace_id = "test-workspace-e2e"  # Known test workspace for E2E testing
-    state_data = state_mgr.validate_state(workspace_id=workspace_id, state=state)
-    if not state_data:
+    # Sprint 54: Validate state and retrieve context
+    from src.auth.oauth.state import validate_and_retrieve_context
+
+    state_context = validate_and_retrieve_context(state)
+    if not state_context:
         from src.telemetry import oauth_events
 
         oauth_events.labels(provider="google", event="invalid_state").inc()
         raise HTTPException(status_code=400, detail="Invalid or expired state token")
+
+    # Extract workspace_id, actor_id, pkce_verifier from state context
+    workspace_id = state_context["workspace_id"]
+    actor_id = state_context["actor_id"]
+    pkce_verifier = state_context["pkce_verifier"]
+    state_data = state_context.get("extra", {})
 
     # Get environment variables
     client_id = os.getenv("GOOGLE_CLIENT_ID")
@@ -1134,9 +1137,9 @@ async def oauth_google_callback(
         "code": code,
         "client_id": client_id,
         "client_secret": client_secret,
-        "redirect_uri": state_data["redirect_uri"],
+        "redirect_uri": state_data.get("redirect_uri", ""),
         "grant_type": "authorization_code",
-        "code_verifier": state_data.get("code_verifier"),  # PKCE
+        "code_verifier": pkce_verifier,  # PKCE from state context
     }
 
     try:
@@ -1169,10 +1172,7 @@ async def oauth_google_callback(
         oauth_events.labels(provider="google", event="missing_access_token").inc()
         raise HTTPException(status_code=502, detail="No access token in response")
 
-    # Store tokens (encrypted)
-    # TODO: Get actor_id from request context (for now using placeholder)
-    actor_id = "user_temp_001"  # Will be replaced with actual user ID from auth context
-
+    # Store tokens (encrypted) - actor_id from state context
     token_cache = OAuthTokenCache()
     await token_cache.store_tokens(
         provider="google",

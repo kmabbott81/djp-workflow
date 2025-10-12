@@ -221,3 +221,96 @@ class OAuthStateManager:
             self._memory_store.pop(state, None)
 
         return len(expired)
+
+
+# Sprint 54: Simpler API for deriving workspace/actor from state
+def store_context(
+    workspace_id: str,
+    actor_id: str,
+    pkce_verifier: str,
+    extra: Optional[dict] = None,
+    ttl_seconds: int = 600,
+) -> str:
+    """Store OAuth state context in Redis with TTL and replay protection.
+
+    Args:
+        workspace_id: Workspace ID for token storage
+        actor_id: Actor (user) ID for token storage
+        pkce_verifier: PKCE code verifier for token exchange
+        extra: Optional additional context (e.g., provider, redirect_uri)
+        ttl_seconds: Time-to-live in seconds (default 10 minutes)
+
+    Returns:
+        Random URL-safe state string
+    """
+    import json
+    import time
+
+    import redis
+
+    state = secrets.token_urlsafe(32)
+
+    context = {
+        "workspace_id": workspace_id,
+        "actor_id": actor_id,
+        "pkce_verifier": pkce_verifier,
+        "used": False,
+        "created_at": int(time.time()),
+    }
+
+    if extra:
+        context["extra"] = extra
+
+    redis_url = os.getenv("REDIS_URL")
+    if not redis_url:
+        raise RuntimeError("REDIS_URL environment variable not set")
+
+    redis_client = redis.from_url(redis_url, decode_responses=True, socket_connect_timeout=2)
+    key = f"oauth:state:{state}"
+    redis_client.setex(key, ttl_seconds, json.dumps(context))
+
+    return state
+
+
+def validate_and_retrieve_context(state: str) -> Optional[dict]:
+    """Atomically validate state and retrieve context with replay protection.
+
+    Checks if state exists, not expired, and not already used.
+    Marks state as used (deletes) to prevent replay attacks.
+
+    Args:
+        state: OAuth state string from callback
+
+    Returns:
+        Context dict with workspace_id, actor_id, pkce_verifier, etc.
+        None if state is invalid, expired, or already used.
+    """
+    import json
+
+    import redis
+
+    redis_url = os.getenv("REDIS_URL")
+    if not redis_url:
+        raise RuntimeError("REDIS_URL environment variable not set")
+
+    redis_client = redis.from_url(redis_url, decode_responses=True, socket_connect_timeout=2)
+    key = f"oauth:state:{state}"
+
+    # Fetch context
+    context_json = redis_client.get(key)
+    if not context_json:
+        return None
+
+    try:
+        context = json.loads(context_json)
+    except json.JSONDecodeError:
+        return None
+
+    # Check if already used
+    if context.get("used", False):
+        return None
+
+    # Delete to prevent replay
+    redis_client.delete(key)
+
+    return context

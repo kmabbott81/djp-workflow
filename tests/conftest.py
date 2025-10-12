@@ -65,6 +65,9 @@ def _enable_rbac_and_budgets(monkeypatch):
     # Disable audit logging to disk during tests (can log to memory/mock)
     monkeypatch.setenv("AUDIT_LOG_DIR", "/tmp/test-audit-logs")
 
+    # Sprint 54: Set Redis URL for OAuth state tests
+    monkeypatch.setenv("REDIS_URL", "redis://default:zhtagqDujRcWQzETQOgHYLYYtiVduGTe@crossover.proxy.rlwy.net:22070")
+
     # Reinitialize metadata database after setting env vars
     from src.metadata import init_metadata_db
 
