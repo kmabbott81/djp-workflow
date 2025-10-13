@@ -1340,59 +1340,144 @@ async def execute_ai_plan(
     body: dict[str, Any],
 ):
     """
-    Execute an approved AI-generated action plan.
+    AI Orchestrator v0.1: Enqueue planned actions for async execution.
 
     Args:
-        plan_id: ID of plan from /ai/plan
-        steps: List of step indices to execute (defaults to all)
+        actions: List of PlannedAction from /ai/plan2
+        workspace_id: Optional workspace ID (defaults to request context)
+        actor_id: Optional actor ID (defaults to request context)
 
     Returns:
-        Execution results for each step
+        {
+          "job_ids": ["job-uuid-1", "job-uuid-2"],
+          "queue_depth": 5
+        }
 
     Requires scope: actions:execute
     """
-    from src.actions import get_executor
+    from src.queue.simple_queue import SimpleQueue
+    from src.security.permissions import can_execute
+    from src.telemetry.prom import ai_jobs_total
 
     if not ACTIONS_ENABLED:
         raise HTTPException(status_code=404, detail="Actions feature not enabled")
 
-    # TODO: Implement plan storage and retrieval
-    # For now, require full plan in request body
+    # Parse request
+    actions = body.get("actions")
+    if not actions:
+        raise HTTPException(status_code=400, detail="Missing 'actions' field")
 
-    steps = body.get("steps")
-    if not steps:
-        raise HTTPException(status_code=400, detail="steps required")
+    # Get context
+    workspace_id = body.get("workspace_id") or (
+        request.state.workspace_id if hasattr(request.state, "workspace_id") else "default"
+    )
+    actor_id = body.get("actor_id") or (request.state.actor_id if hasattr(request.state, "actor_id") else "system")
 
-    executor = get_executor()
-    workspace_id = request.state.workspace_id if hasattr(request.state, "workspace_id") else "default"
-    actor_id = request.state.actor_id if hasattr(request.state, "actor_id") else "system"
-    request_id = request.state.request_id if hasattr(request.state, "request_id") else str(uuid4())
+    # Initialize queue
+    try:
+        queue = SimpleQueue()
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail=f"Queue unavailable: {str(e)}") from e
 
-    results = []
-    for step in steps:
-        # Preview
-        preview = executor.preview(step["action_id"], step["params"])
+    # Enqueue each action
+    job_ids = []
+    for action in actions:
+        action_name = action.get("action")
+        action_provider = action.get("provider")
+        params = action.get("params", {})
+        client_request_id = action.get("client_request_id")
 
-        # Execute
-        result = await executor.execute(
-            preview_id=preview.preview_id,
-            idempotency_key=None,
+        # Check permissions
+        if not can_execute(action_name):
+            raise HTTPException(status_code=403, detail=f"Action '{action_name}' not allowed")
+
+        # Generate job ID
+        job_id = str(uuid4())
+
+        # Enqueue
+        was_enqueued = queue.enqueue(
+            job_id=job_id,
+            action_provider=action_provider,
+            action_name=action_name,
+            params=params,
             workspace_id=workspace_id,
             actor_id=actor_id,
-            request_id=request_id,
+            client_request_id=client_request_id,
         )
 
-        results.append(
-            {
-                "step": step,
-                "preview_id": preview.preview_id,
-                "result": result.model_dump(),
-            }
-        )
+        if was_enqueued:
+            job_ids.append(job_id)
+            ai_jobs_total.labels(status="pending").inc()
+        else:
+            # Idempotency hit - return existing job_id
+            # (SimpleQueue.enqueue returns False on duplicate)
+            pass
 
     return {
-        "results": results,
-        "request_id": request_id,
+        "job_ids": job_ids,
+        "queue_depth": queue.get_queue_depth(),
+    }
+
+
+@app.get("/ai/jobs/{job_id}")
+@require_scopes(["actions:preview"])
+async def get_ai_job_status(
+    request: Request,
+    job_id: str,
+):
+    """
+    AI Orchestrator v0.1: Get job status and result.
+
+    Args:
+        job_id: Job identifier from /ai/execute
+
+    Returns:
+        {
+          "job_id": "uuid",
+          "status": "pending|running|completed|error",
+          "result": {...},
+          "error": null,
+          "duration_ms": 1234
+        }
+
+    Requires scope: actions:preview
+    """
+    from src.queue.simple_queue import SimpleQueue
+
+    if not ACTIONS_ENABLED:
+        raise HTTPException(status_code=404, detail="Actions feature not enabled")
+
+    # Initialize queue
+    try:
+        queue = SimpleQueue()
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail=f"Queue unavailable: {str(e)}") from e
+
+    # Get job data
+    job_data = queue.get_job(job_id)
+
+    if not job_data:
+        raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found")
+
+    # Calculate duration if finished
+    duration_ms = None
+    if job_data.get("finished_at") and job_data.get("started_at"):
+        from datetime import datetime
+
+        started = datetime.fromisoformat(job_data["started_at"])
+        finished = datetime.fromisoformat(job_data["finished_at"])
+        duration_ms = int((finished - started).total_seconds() * 1000)
+
+    return {
+        "job_id": job_id,
+        "status": job_data.get("status"),
+        "action": f"{job_data.get('action_provider')}.{job_data.get('action_name')}",
+        "result": job_data.get("result"),
+        "error": job_data.get("error"),
+        "duration_ms": duration_ms,
+        "enqueued_at": job_data.get("enqueued_at"),
+        "started_at": job_data.get("started_at"),
+        "finished_at": job_data.get("finished_at"),
     }
 
 
