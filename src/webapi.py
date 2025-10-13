@@ -1285,6 +1285,54 @@ async def plan_with_ai(
     }
 
 
+@app.post("/ai/plan2")
+@require_scopes(["actions:preview"])
+async def plan_with_ai_v2(
+    request: Request,
+    body: dict[str, Any],
+):
+    """
+    AI Orchestrator v0.1: Generate action plan with strict JSON schema and cost control.
+
+    Args:
+        prompt: Natural language description (e.g., "Send email to john@example.com thanking him for the meeting")
+
+    Returns:
+        {
+          "plan": PlanResult with strict schema,
+          "meta": {"model": "gpt-4o-mini", "duration": 1.23, "tokens_in": 150, "tokens_out": 200}
+        }
+
+    Recommended over /ai/plan for production use.
+    Requires scope: actions:preview
+    """
+    from src.ai.planner_v2 import plan_actions
+
+    if not ACTIONS_ENABLED:
+        raise HTTPException(status_code=404, detail="Actions feature not enabled")
+
+    prompt = body.get("prompt")
+    if not prompt:
+        raise HTTPException(status_code=400, detail="Missing 'prompt' field")
+
+    try:
+        # Plan with v2 planner (strict JSON + cost control)
+        plan, meta = plan_actions(prompt)
+
+        return {
+            "plan": plan.model_dump(),
+            "meta": meta,
+        }
+
+    except ValueError as e:
+        # Configuration or validation error
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    except Exception as e:
+        # Unexpected error
+        raise HTTPException(status_code=500, detail=f"Planning failed: {str(e)}") from e
+
+
 @app.post("/ai/execute")
 @require_scopes(["actions:execute"])
 async def execute_ai_plan(
