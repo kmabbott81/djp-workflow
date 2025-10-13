@@ -1,0 +1,78 @@
+name: Monthly Integration Docs Audit
+
+on:
+  schedule:
+    - cron: '0 15 1 * *'  # 1st of month at 15:00 UTC
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate audit report
+        run: |
+          python3 scripts/gen_integration_audit.py > audit_report.md
+          cat audit_report.md
+
+      - name: Create or update audit issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const date = new Date();
+            const monthYear = date.toISOString().slice(0, 7);  // YYYY-MM
+            const title = `Monthly Integrations Audit – ${monthYear}`;
+            const body = fs.readFileSync('audit_report.md', 'utf8');
+
+            // Check for existing open audit issue
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'integrations-audit'
+            });
+
+            // Find issue for current month or most recent audit
+            const existing = issues.find(i =>
+              i.title.includes(monthYear) ||
+              i.labels.some(l => l.name === 'integrations-audit')
+            );
+
+            if (existing && existing.title.includes(monthYear)) {
+              // Update existing issue for this month
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                title: title,
+                body: body
+              });
+              console.log(`Updated existing issue #${existing.number}`);
+            } else {
+              // Create new issue
+              const issue = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['integrations-audit', 'documentation']
+              });
+              console.log(`Created new issue #${issue.data.number}`);
+
+              // Close any older audit issues
+              if (existing) {
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: existing.number,
+                  state: 'closed'
+                });
+                console.log(`Closed previous audit issue #${existing.number}`);
+              }
+            }

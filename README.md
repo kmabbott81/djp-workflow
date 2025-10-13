@@ -58,6 +58,41 @@ streamlit run dashboards/observability_app.py
 
 For detailed operational guidance, see [docs/OPERATIONS.md](docs/OPERATIONS.md).
 
+## 🚀 Deployment Architecture
+
+The project uses a **single-service Railway deployment** connected directly to GitHub for continuous deployment:
+
+```
+GitHub (main branch)
+    ↓ (automatic on every push)
+Railway Relay Service
+    ↓ (builds Docker image)
+Production API
+    ↓
+https://relay-production-f2a6.up.railway.app
+```
+
+### Key Features:
+- ✅ **Automatic Deployments**: Every push to `main` triggers a new build
+- ✅ **Docker-based**: Uses multi-stage Dockerfile for optimized builds
+- ✅ **Health Monitoring**: `/_stcore/health` endpoint for uptime checks
+- ✅ **GPT-4 AI Planning**: Natural language to structured action planning
+- ✅ **Environment Variables**: Encrypted secrets (OPENAI_API_KEY, DATABASE_URL, etc.)
+
+### Quick Deploy:
+```bash
+# Push to main branch triggers automatic deployment
+git push origin main
+
+# OR manually trigger deployment
+railway up
+```
+
+For detailed deployment documentation, see:
+- [docs/ops/INTEGRATIONS.md](docs/ops/INTEGRATIONS.md) - External systems integration overview
+- [docs/ops/RAILWAY-SINGLE-SERVICE.md](docs/ops/RAILWAY-SINGLE-SERVICE.md) - Complete Railway setup guide
+- [docs/ops/DEPLOYMENT-FAQ.md](docs/ops/DEPLOYMENT-FAQ.md) - Common deployment questions
+
 ---
 
 # OpenAI Agents Workflows Project

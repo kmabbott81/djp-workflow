@@ -1,0 +1,59 @@
+name: Integration Docs Drift Detection
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Dockerfile'
+      - '.github/workflows/**'
+      - 'src/webapi.py'
+      - 'src/telemetry/**'
+      - 'src/actions/adapters/**'
+      - 'src/db/**'
+      - 'src/auth/**'
+      - 'requirements*.txt'
+      - 'requirements*.in'
+      - 'pyproject.toml'
+      - 'observability/**'
+      - 'prometheus*.yml'
+
+jobs:
+  detect-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Need previous commit for diff
+
+      - name: Check if docs also changed
+        id: check_docs
+        run: |
+          DOCS_CHANGED=$(git diff --name-only HEAD~1 | grep -E '^docs/ops/(INTEGRATIONS|integrations/)' || true)
+          if [ -n "$DOCS_CHANGED" ]; then
+            echo "docs_updated=true" >> $GITHUB_OUTPUT
+          else
+            echo "docs_updated=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: List changed integration-related files
+        run: |
+          echo "### Integration-Related Files Changed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          git diff --name-only HEAD~1 | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
+
+      - name: Reminder to update docs
+        if: steps.check_docs.outputs.docs_updated == 'false'
+        run: |
+          echo "::notice::Integration-related files changed without doc updates. Please review docs/ops/INTEGRATIONS.md and relevant one-pagers."
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ **Reminder:** Integration docs may need updates" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Review these docs:" >> $GITHUB_STEP_SUMMARY
+          echo "- [INTEGRATIONS.md](../blob/main/docs/ops/INTEGRATIONS.md)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Integration one-pagers](../tree/main/docs/ops/integrations)" >> $GITHUB_STEP_SUMMARY
+
+      - name: Docs updated confirmation
+        if: steps.check_docs.outputs.docs_updated == 'true'
+        run: |
+          echo "::notice::Integration docs were also updated. Good practice!"
+          echo "✅ **Docs Updated:** Integration documentation was updated alongside code changes." >> $GITHUB_STEP_SUMMARY
