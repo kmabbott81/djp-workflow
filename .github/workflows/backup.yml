@@ -8,7 +8,15 @@ on:
 
 jobs:
   backup:
+    if: ${{ github.ref == 'refs/heads/main' && vars.BACKUP_ENABLED == 'true' }}
     runs-on: ubuntu-latest
+
+    concurrency:
+      group: backups
+      cancel-in-progress: false
+
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout code
@@ -52,10 +60,16 @@ jobs:
           echo "::error::Database backup failed. Check logs."
 
   restore-drill:
+    if: ${{ github.ref == 'refs/heads/main' && vars.BACKUP_ENABLED == 'true' && (github.event_name == 'workflow_dispatch' || (github.event.schedule == '0 9 * * *' && github.run_number % 30 == 1)) }}
     runs-on: ubuntu-latest
-    # Run monthly on the 1st
-    if: github.event_name == 'workflow_dispatch' || (github.event.schedule == '0 9 * * *' && github.run_number % 30 == 1)
     needs: backup
+
+    concurrency:
+      group: backups
+      cancel-in-progress: false
+
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout code

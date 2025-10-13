@@ -1,15 +1,16 @@
 """Google action adapter (Gmail Send).
 
 Sprint 53 Phase B: Gmail send action with OAuth token refresh.
+Sprint 54 Phase C: Rich email with MIME builder, attachments, inline images.
 """
 
 import base64
 import hashlib
+import json
 import os
 import re
 import time
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+import uuid
 from typing import Any, Optional
 
 import httpx
@@ -20,6 +21,26 @@ from ..contracts import ActionDefinition, Provider
 # Simple email regex (RFC 5322 simplified)
 EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
 
+# Recipient limits
+MAX_TOTAL_RECIPIENTS = 100
+
+
+class AttachmentInput(BaseModel):
+    """Attachment input (base64-encoded)."""
+
+    filename: str = Field(..., description="Filename")
+    content_type: str = Field(..., description="MIME type")
+    data: str = Field(..., description="Base64-encoded file data")
+
+
+class InlineImageInput(BaseModel):
+    """Inline image input (base64-encoded)."""
+
+    cid: str = Field(..., description="Content-ID for HTML reference")
+    filename: str = Field(..., description="Filename")
+    content_type: str = Field(..., description="MIME type (image/*)")
+    data: str = Field(..., description="Base64-encoded image data")
+
 
 class GmailSendParams(BaseModel):
     """Parameters for gmail.send action."""
@@ -27,8 +48,11 @@ class GmailSendParams(BaseModel):
     to: str = Field(..., description="Recipient email address")
     subject: str = Field(..., description="Email subject")
     text: str = Field(..., description="Email body (plain text)")
+    html: Optional[str] = Field(None, description="HTML body (optional)")
     cc: Optional[list[str]] = Field(None, description="CC recipients")
     bcc: Optional[list[str]] = Field(None, description="BCC recipients")
+    attachments: Optional[list[AttachmentInput]] = Field(None, description="Attachments")
+    inline: Optional[list[InlineImageInput]] = Field(None, description="Inline images")
 
     @field_validator("to")
     @classmethod
@@ -46,6 +70,17 @@ class GmailSendParams(BaseModel):
                     raise ValueError(f"Invalid email address in list: {email}")
         return v
 
+    def validate_recipient_count(self) -> None:
+        """Validate total recipient count."""
+        total = 1  # 'to' is required
+        if self.cc:
+            total += len(self.cc)
+        if self.bcc:
+            total += len(self.bcc)
+
+        if total > MAX_TOTAL_RECIPIENTS:
+            raise ValueError(f"Total recipients ({total}) exceeds limit of {MAX_TOTAL_RECIPIENTS}")
+
 
 class GoogleAdapter:
     """Adapter for Google actions (Gmail)."""
@@ -60,6 +95,94 @@ class GoogleAdapter:
         self.client_id = os.getenv("GOOGLE_CLIENT_ID")
         self.client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
         self.rollout_gate = rollout_gate
+
+        # Internal-only configuration
+        self.internal_only = os.getenv("GOOGLE_INTERNAL_ONLY", "true").lower() == "true"
+        allowed_domains = os.getenv("GOOGLE_INTERNAL_ALLOWED_DOMAINS", "")
+        self.internal_allowed_domains = [d.strip() for d in allowed_domains.split(",") if d.strip()]
+        test_recipients = os.getenv("GOOGLE_INTERNAL_TEST_RECIPIENTS", "")
+        self.internal_test_recipients = [e.strip() for e in test_recipients.split(",") if e.strip()]
+
+    def _create_structured_error(
+        self,
+        error_code: str,
+        message: str,
+        field: Optional[str] = None,
+        details: Optional[dict] = None,
+        remediation: str = "",
+        retriable: bool = False,
+    ) -> dict:
+        """Create structured error payload.
+
+        Args:
+            error_code: Error code from spec (e.g., validation_error_attachment_too_large)
+            message: Human-readable message
+            field: Field that failed (e.g., "attachments[0]")
+            details: Additional context
+            remediation: How to fix
+            retriable: Whether the operation can be retried
+
+        Returns:
+            Structured error dict
+        """
+        # Record structured error metric
+        from src.telemetry.prom import record_structured_error
+
+        record_structured_error(provider="google", action="gmail.send", code=error_code, source="gmail.adapter")
+
+        return {
+            "error_code": error_code,
+            "message": message,
+            "field": field,
+            "details": details or {},
+            "remediation": remediation,
+            "retriable": retriable,
+            "correlation_id": str(uuid.uuid4()),
+            "source": "gmail.adapter",
+        }
+
+    def _check_internal_only_recipients(self, to: str, cc: Optional[list[str]], bcc: Optional[list[str]]) -> None:
+        """Check if all recipients are allowed under internal-only mode.
+
+        Args:
+            to: Primary recipient
+            cc: CC recipients
+            bcc: BCC recipients
+
+        Raises:
+            ValueError: If any recipient is not allowed
+        """
+        if not self.internal_only:
+            return  # Not in internal-only mode
+
+        all_recipients = [to]
+        if cc:
+            all_recipients.extend(cc)
+        if bcc:
+            all_recipients.extend(bcc)
+
+        # Check test recipients bypass
+        for recipient in all_recipients:
+            if recipient in self.internal_test_recipients:
+                continue  # Bypass for test recipient
+
+            # Check domain allowlist
+            domain_allowed = any(recipient.endswith(f"@{domain}") for domain in self.internal_allowed_domains)
+
+            if not domain_allowed:
+                error = self._create_structured_error(
+                    error_code="internal_only_recipient_blocked",
+                    message=f"Recipient '{recipient}' not allowed in internal-only mode",
+                    field="recipients",
+                    details={
+                        "blocked_recipient": recipient,
+                        "allowed_domains": self.internal_allowed_domains,
+                        "test_recipients": self.internal_test_recipients,
+                    },
+                    remediation=f"Use recipient from allowed domains: {', '.join(self.internal_allowed_domains)}",
+                    retriable=False,
+                )
+                raise ValueError(json.dumps(error))
 
     def list_actions(self) -> list[ActionDefinition]:
         """List available Google actions."""
@@ -85,6 +208,10 @@ class GoogleAdapter:
                             "type": "string",
                             "description": "Email body (plain text)",
                         },
+                        "html": {
+                            "type": "string",
+                            "description": "HTML body (optional, will be sanitized)",
+                        },
                         "cc": {
                             "type": "array",
                             "items": {"type": "string", "format": "email"},
@@ -94,6 +221,33 @@ class GoogleAdapter:
                             "type": "array",
                             "items": {"type": "string", "format": "email"},
                             "description": "BCC recipients",
+                        },
+                        "attachments": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "filename": {"type": "string"},
+                                    "content_type": {"type": "string"},
+                                    "data": {"type": "string", "description": "Base64-encoded"},
+                                },
+                                "required": ["filename", "content_type", "data"],
+                            },
+                            "description": "Attachments (max 10, 25MB each)",
+                        },
+                        "inline": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "cid": {"type": "string"},
+                                    "filename": {"type": "string"},
+                                    "content_type": {"type": "string"},
+                                    "data": {"type": "string", "description": "Base64-encoded"},
+                                },
+                                "required": ["cid", "filename", "content_type", "data"],
+                            },
+                            "description": "Inline images (max 20, 5MB each)",
                         },
                     },
                     "required": ["to", "subject", "text"],
@@ -123,13 +277,22 @@ class GoogleAdapter:
         except ValidationError as e:
             raise ValueError(f"Validation error: {e}") from e
 
-        # Build MIME message
-        mime_message = self._build_mime_message(
+        # Validate recipient count
+        validated.validate_recipient_count()
+
+        # Check internal-only recipients
+        self._check_internal_only_recipients(validated.to, validated.cc, validated.bcc)
+
+        # Build MIME message (returns tuple with sanitization summary)
+        mime_message, sanitization_summary = self._build_mime_message(
             to=validated.to,
             subject=validated.subject,
             text=validated.text,
+            html=validated.html,
             cc=validated.cc,
             bcc=validated.bcc,
+            attachments=validated.attachments,
+            inline=validated.inline,
         )
 
         # Base64URL encode (no padding)
@@ -146,6 +309,12 @@ class GoogleAdapter:
             summary += f"\nCC: {', '.join(validated.cc)}"
         if validated.bcc:
             summary += f"\nBCC: {', '.join(validated.bcc)}"
+        if validated.html:
+            summary += "\nFormat: HTML + plain text"
+        if validated.attachments:
+            summary += f"\nAttachments: {len(validated.attachments)}"
+        if validated.inline:
+            summary += f"\nInline images: {len(validated.inline)}"
 
         warnings = []
         if not self.enabled:
@@ -153,13 +322,26 @@ class GoogleAdapter:
         if not self.client_id or not self.client_secret:
             warnings.append("Google OAuth credentials not configured")
 
-        return {
+        result = {
             "summary": summary,
             "params": params,
             "warnings": warnings,
             "digest": digest,
             "raw_message_length": len(raw_message),
         }
+
+        # Add sanitization summary if HTML was sanitized
+        if sanitization_summary:
+            result["sanitization_summary"] = sanitization_summary
+
+            # Include sanitized HTML for preview
+            if validated.html:
+                from src.validation.html_sanitization import sanitize_html
+
+                sanitized_html, _ = sanitize_html(validated.html)
+                result["sanitized_html"] = sanitized_html
+
+        return result
 
     def _build_mime_message(
         self,
@@ -168,22 +350,148 @@ class GoogleAdapter:
         text: str,
         cc: Optional[list[str]] = None,
         bcc: Optional[list[str]] = None,
-    ) -> str:
-        """Build RFC822 MIME message."""
-        message = MIMEMultipart()
-        message["To"] = to
-        message["Subject"] = subject
+        html: Optional[str] = None,
+        attachments: Optional[list[AttachmentInput]] = None,
+        inline: Optional[list[InlineImageInput]] = None,
+    ) -> tuple[str, Optional[dict]]:
+        """Build RFC822 MIME message using MimeBuilder.
 
-        if cc:
-            message["Cc"] = ", ".join(cc)
-        if bcc:
-            message["Bcc"] = ", ".join(bcc)
+        Args:
+            to: Recipient email
+            subject: Email subject
+            text: Plain text body
+            cc: CC recipients
+            bcc: BCC recipients
+            html: HTML body (optional)
+            attachments: Attachments (optional)
+            inline: Inline images (optional)
 
-        # Attach plain text body
-        message.attach(MIMEText(text, "plain"))
+        Returns:
+            Tuple of (mime_message_string, sanitization_summary)
+            sanitization_summary is None if no HTML provided
 
-        # Return as string
-        return message.as_string()
+        Raises:
+            ValueError: With structured error payload (JSON string)
+        """
+        # Convert input models to validation types
+        import binascii
+
+        from src.actions.adapters.google_mime import MimeBuilder
+        from src.validation.attachments import Attachment, InlineImage
+
+        attachments_validated = None
+        if attachments:
+            try:
+                attachments_validated = [
+                    Attachment(
+                        filename=att.filename,
+                        content_type=att.content_type,
+                        data=base64.b64decode(att.data),
+                    )
+                    for att in attachments
+                ]
+            except (binascii.Error, ValueError) as e:
+                error = self._create_structured_error(
+                    error_code="validation_error_invalid_attachment_data",
+                    message=f"Failed to decode attachment data: {str(e)}",
+                    field="attachments",
+                    details={"error": str(e)},
+                    remediation="Ensure attachment data is valid base64",
+                    retriable=False,
+                )
+                raise ValueError(json.dumps(error)) from e
+
+        inline_validated = None
+        if inline:
+            try:
+                inline_validated = [
+                    InlineImage(
+                        cid=img.cid,
+                        filename=img.filename,
+                        content_type=img.content_type,
+                        data=base64.b64decode(img.data),
+                    )
+                    for img in inline
+                ]
+            except (binascii.Error, ValueError) as e:
+                error = self._create_structured_error(
+                    error_code="validation_error_invalid_inline_data",
+                    message=f"Failed to decode inline image data: {str(e)}",
+                    field="inline",
+                    details={"error": str(e)},
+                    remediation="Ensure inline image data is valid base64",
+                    retriable=False,
+                )
+                raise ValueError(json.dumps(error)) from e
+
+        # Build MIME message
+        builder = MimeBuilder()
+
+        try:
+            mime_message = builder.build_message(
+                to=to,
+                subject=subject,
+                text=text,
+                html=html,
+                cc=cc,
+                bcc=bcc,
+                attachments=attachments_validated,
+                inline=inline_validated,
+            )
+
+            # Extract sanitization summary if HTML was provided
+            sanitization_summary = None
+            if html:
+                from src.validation.html_sanitization import sanitize_html
+
+                _, changes = sanitize_html(html)
+                if any(count > 0 for count in changes.values()):
+                    sanitization_summary = {
+                        "sanitized": True,
+                        "changes": changes,
+                    }
+
+            return mime_message, sanitization_summary
+
+        except ValueError as e:
+            # Parse validation error from MimeBuilder/validator
+            error_msg = str(e)
+
+            # Check if it's already a structured error
+            if "validation_error_" in error_msg or "cid" in error_msg.lower():
+                # Extract error code and details
+                error_code = "validation_error_mime_build"
+                if "validation_error_attachment_too_large" in error_msg:
+                    error_code = "validation_error_attachment_too_large"
+                elif "validation_error_blocked_mime_type" in error_msg:
+                    error_code = "validation_error_blocked_mime_type"
+                elif "validation_error_missing_inline_image" in error_msg:
+                    error_code = "validation_error_missing_inline_image"
+                elif "validation_error_cid_not_referenced" in error_msg:
+                    error_code = "validation_error_cid_not_referenced"
+                elif "validation_error_total_size_exceeded" in error_msg:
+                    error_code = "validation_error_total_size_exceeded"
+
+                error = self._create_structured_error(
+                    error_code=error_code,
+                    message=error_msg,
+                    field="mime",
+                    details={"original_error": error_msg},
+                    remediation="Check validation requirements in error message",
+                    retriable=False,
+                )
+                raise ValueError(json.dumps(error)) from e
+            else:
+                # Unknown error
+                error = self._create_structured_error(
+                    error_code="unknown_mime_error",
+                    message=f"MIME build failed: {error_msg}",
+                    field="mime",
+                    details={"error": error_msg},
+                    remediation="Contact support if issue persists",
+                    retriable=False,
+                )
+                raise ValueError(json.dumps(error)) from e
 
     async def execute(self, action: str, params: dict[str, Any], workspace_id: str, actor_id: str) -> dict[str, Any]:
         """Execute a Google action.
@@ -241,6 +549,12 @@ class GoogleAdapter:
             record_action_error(provider="google", action="gmail.send", reason="validation_error")
             raise ValueError(f"Validation error: {e}") from e
 
+        # Validate recipient count
+        validated.validate_recipient_count()
+
+        # Check internal-only recipients
+        self._check_internal_only_recipients(validated.to, validated.cc, validated.bcc)
+
         # Fetch OAuth tokens (with auto-refresh)
         from src.auth.oauth.tokens import OAuthTokenCache
 
@@ -262,14 +576,56 @@ class GoogleAdapter:
             record_action_error(provider="google", action="gmail.send", reason="oauth_token_missing")
             raise ValueError("Access token missing from token cache")
 
-        # Build MIME message
-        mime_message = self._build_mime_message(
-            to=validated.to,
-            subject=validated.subject,
-            text=validated.text,
-            cc=validated.cc,
-            bcc=validated.bcc,
-        )
+        # Build MIME message with correlation_id for tracing
+        correlation_id = str(uuid.uuid4())
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        try:
+            mime_message, _ = self._build_mime_message(
+                to=validated.to,
+                subject=validated.subject,
+                text=validated.text,
+                html=validated.html,
+                cc=validated.cc,
+                bcc=validated.bcc,
+                attachments=validated.attachments,
+                inline=validated.inline,
+            )
+        except ValueError as e:
+            # Parse structured error from MIME builder
+            try:
+                error_payload = json.loads(str(e))
+                # Override correlation_id with our tracking ID
+                error_payload["correlation_id"] = correlation_id
+            except json.JSONDecodeError:
+                # Fallback for non-JSON errors
+                error_payload = self._create_structured_error(
+                    error_code="unknown_error",
+                    message=str(e),
+                    retriable=False,
+                )
+                error_payload["correlation_id"] = correlation_id
+
+            # Record metrics
+            record_action_error(provider="google", action="gmail.send", reason=error_payload["error_code"])
+            duration = time.perf_counter() - start_time
+            record_action_execution(provider="google", action="gmail.send", status="error", duration_seconds=duration)
+
+            # Log for ops with correlation_id
+            logger.error(
+                f"Gmail send failed: {error_payload['error_code']}",
+                extra={
+                    "correlation_id": correlation_id,
+                    "error_code": error_payload["error_code"],
+                    "workspace_id": workspace_id,
+                    "actor_id": actor_id,
+                },
+            )
+
+            # Return structured error to caller
+            raise ValueError(json.dumps(error_payload)) from e
 
         # Base64URL encode (no padding)
         raw_message = base64.urlsafe_b64encode(mime_message.encode("utf-8"))
@@ -327,6 +683,18 @@ class GoogleAdapter:
                 duration = time.perf_counter() - start_time
                 record_action_execution(provider="google", action="gmail.send", status="ok", duration_seconds=duration)
 
+                # Log success with correlation_id
+                logger.info(
+                    "Gmail sent successfully",
+                    extra={
+                        "correlation_id": correlation_id,
+                        "message_id": response_data.get("id"),
+                        "workspace_id": workspace_id,
+                        "actor_id": actor_id,
+                    },
+                )
+
+                # NOTE: correlation_id is NOT included in API response (only in logs)
                 return {
                     "status": "sent",
                     "message_id": response_data.get("id"),

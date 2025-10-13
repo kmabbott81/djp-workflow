@@ -65,6 +65,9 @@ def _enable_rbac_and_budgets(monkeypatch):
     # Disable audit logging to disk during tests (can log to memory/mock)
     monkeypatch.setenv("AUDIT_LOG_DIR", "/tmp/test-audit-logs")
 
+    # Sprint 54: Set Redis URL for OAuth state tests
+    monkeypatch.setenv("REDIS_URL", "redis://default:zhtagqDujRcWQzETQOgHYLYYtiVduGTe@crossover.proxy.rlwy.net:22070")
+
     # Reinitialize metadata database after setting env vars
     from src.metadata import init_metadata_db
 
@@ -409,6 +412,21 @@ def clean_graph_env(tmp_path, monkeypatch):
 
     # Cleanup after test
     reset_index()
+
+
+# Sprint 54 fixtures for OAuth tests with FakeRedis
+
+
+@pytest.fixture
+def fake_redis():
+    """Provide FakeRedis instance for OAuth token cache tests.
+
+    FakeRedis supports set, get, setnx, expire, delete, setex, ping
+    matching production Redis calls in OAuthTokenCache.
+    """
+    import fakeredis
+
+    return fakeredis.FakeStrictRedis(decode_responses=True)
 
 
 # Sprint 42 fixtures for network blocking (Issue #15)

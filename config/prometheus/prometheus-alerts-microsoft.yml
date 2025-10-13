@@ -1,0 +1,185 @@
+# Prometheus Alert Rules for Microsoft Outlook Integration
+# Sprint 55 Phase 1: Microsoft Graph API Scaffolding
+#
+# Alert structure follows Gmail patterns:
+# 1. Traffic-guarded (only fire when exec_rate > 0.1 req/s)
+# 2. Multi-window SLO burn detection (fast: 5m+1h, slow: 1h+6h)
+# 3. Result-split latency analysis
+# 4. Standardized labels (severity, service, component, provider, action, slo_type)
+
+groups:
+- name: outlook_send_slo_alerts
+  rules:
+  # Fast burn: 5% budget consumed in 1 hour (page immediately)
+  - alert: OutlookSendErrorBudgetFastBurn
+    expr: |
+      (job:outlook_send_exec_rate:5m > 0.1)
+      and
+      (
+        sum(rate(action_error_total{provider="microsoft",action="outlook.send"}[5m]))
+        / clamp_min(sum(rate(action_exec_total{provider="microsoft",action="outlook.send"}[5m])), 1)
+      ) > 0.01
+      and
+      (
+        sum(rate(action_error_total{provider="microsoft",action="outlook.send"}[1h]))
+        / clamp_min(sum(rate(action_exec_total{provider="microsoft",action="outlook.send"}[1h])), 1)
+      ) > 0.01
+    for: 5m
+    labels:
+      severity: critical
+      service: relay
+      component: outlook
+      provider: microsoft
+      action: outlook.send
+      slo_type: error_rate
+    annotations:
+      summary: "Outlook send error budget burning fast (>1% error rate)"
+      description: |
+        Outlook send action is experiencing elevated error rate (>1%) across both 5m and 1h windows.
+        This indicates a fast SLO burn that requires immediate attention.
+
+        Current error rate (5m): {{ printf "%.2f" $value }}%
+        Current exec rate: {{ printf "%.2f" (query "job:outlook_send_exec_rate:5m" | first | value) }} req/s
+
+        Runbook: docs/runbooks/outlook-send-high-error-rate.md
+      runbook_url: https://github.com/yourorg/yourrepo/blob/main/docs/runbooks/outlook-send-high-error-rate.md
+
+  # Slow burn: 1% budget consumed in 6 hours (page during business hours)
+  - alert: OutlookSendErrorBudgetSlowBurn
+    expr: |
+      (job:outlook_send_exec_rate:5m > 0.1)
+      and
+      (
+        sum(rate(action_error_total{provider="microsoft",action="outlook.send"}[1h]))
+        / clamp_min(sum(rate(action_exec_total{provider="microsoft",action="outlook.send"}[1h])), 1)
+      ) > 0.005
+      and
+      (
+        sum(rate(action_error_total{provider="microsoft",action="outlook.send"}[6h]))
+        / clamp_min(sum(rate(action_exec_total{provider="microsoft",action="outlook.send"}[6h])), 1)
+      ) > 0.005
+    for: 30m
+    labels:
+      severity: warning
+      service: relay
+      component: outlook
+      provider: microsoft
+      action: outlook.send
+      slo_type: error_rate
+    annotations:
+      summary: "Outlook send error budget burning slowly (>0.5% error rate)"
+      description: |
+        Outlook send action is experiencing sustained error rate (>0.5%) across 1h and 6h windows.
+        This indicates a slow SLO burn that should be investigated during business hours.
+
+        Current error rate (1h): {{ printf "%.2f" $value }}%
+        Current exec rate: {{ printf "%.2f" (query "job:outlook_send_exec_rate:5m" | first | value) }} req/s
+
+        Runbook: docs/runbooks/outlook-send-high-error-rate.md
+
+  # Latency SLO violation (P95 > 2s)
+  - alert: OutlookSendHighLatency
+    expr: |
+      (job:outlook_send_exec_rate:5m > 0.1)
+      and
+      (job:outlook_send_latency_p95:5m > 2.0)
+    for: 10m
+    labels:
+      severity: warning
+      service: relay
+      component: outlook
+      provider: microsoft
+      action: outlook.send
+      slo_type: latency
+    annotations:
+      summary: "Outlook send P95 latency > 2s"
+      description: |
+        Outlook send action P95 latency exceeds 2 seconds.
+
+        Current P95 latency: {{ printf "%.2f" $value }}s
+        Current exec rate: {{ printf "%.2f" (query "job:outlook_send_exec_rate:5m" | first | value) }} req/s
+
+        Runbook: docs/runbooks/outlook-send-high-latency.md
+
+  # Critical latency violation (P95 > 5s)
+  - alert: OutlookSendCriticalLatency
+    expr: |
+      (job:outlook_send_exec_rate:5m > 0.1)
+      and
+      (job:outlook_send_latency_p95:5m > 5.0)
+    for: 5m
+    labels:
+      severity: critical
+      service: relay
+      component: outlook
+      provider: microsoft
+      action: outlook.send
+      slo_type: latency
+    annotations:
+      summary: "Outlook send P95 latency > 5s (critical)"
+      description: |
+        Outlook send action P95 latency critically elevated (>5s).
+
+        Current P95 latency: {{ printf "%.2f" $value }}s
+        Current exec rate: {{ printf "%.2f" (query "job:outlook_send_exec_rate:5m" | first | value) }} req/s
+
+        Immediate actions:
+        1. Check Graph API status: https://status.microsoft365.com/
+        2. Review recent deployments
+        3. Check OAuth token refresh rates
+
+        Runbook: docs/runbooks/outlook-send-high-latency.md
+
+- name: microsoft_oauth_alerts
+  rules:
+  # OAuth refresh failures (>5% failure rate with traffic guard)
+  - alert: MicrosoftOAuthRefreshHighFailureRate
+    expr: |
+      (sum(rate(oauth_events_total{provider="microsoft",event=~"refresh_.*"}[5m])) > 0.01)
+      and
+      (job:microsoft_oauth_refresh_failure_rate:5m > 0.05)
+    for: 10m
+    labels:
+      severity: warning
+      service: relay
+      component: oauth
+      provider: microsoft
+    annotations:
+      summary: "Microsoft OAuth refresh failure rate >5%"
+      description: |
+        Microsoft OAuth token refresh is experiencing elevated failure rate (>5%).
+        This may indicate Azure AD issues or configuration problems.
+
+        Current failure rate: {{ printf "%.2f" $value }}%
+        Refresh rate: {{ printf "%.2f" (query "sum(rate(oauth_events_total{provider=\"microsoft\",event=~\"refresh_.*\"}[5m]))" | first | value) }} req/s
+
+        Common causes:
+        - Azure AD service degradation
+        - Expired client secret
+        - Revoked permissions
+        - Network connectivity issues
+
+  # Metrics missing sentinel (catches scrape failures)
+  - alert: OutlookMetricsMissing
+    expr: |
+      absent_over_time(action_exec_total{provider="microsoft",action="outlook.send"}[10m])
+      and
+      (
+        (time() - ignoring(provider, action) max(timestamp(action_exec_total))) < 3600
+      )
+    for: 5m
+    labels:
+      severity: critical
+      service: relay
+      component: outlook
+      provider: microsoft
+    annotations:
+      summary: "Outlook send metrics missing (scrape failure or app down)"
+      description: |
+        Core Outlook send metrics have disappeared, indicating either:
+        1. Prometheus scrape failure
+        2. Application restart/crash
+        3. Telemetry system failure
+
+        This alert uses absent_over_time to avoid false positives on initial deployment.
+        Only fires if metric existed recently (within 1h) then disappeared.

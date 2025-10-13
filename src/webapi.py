@@ -14,6 +14,7 @@ from uuid import uuid4
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .auth.security import require_scopes
@@ -240,6 +241,26 @@ class TriageResponse(BaseModel):
 
 # Sprint 49 Phase B: Actions feature flag
 ACTIONS_ENABLED = os.getenv("ACTIONS_ENABLED", "false").lower() == "true"
+
+# Mount static files for dev UI (Sprint 55 Week 3)
+# Try multiple possible locations for static files
+static_paths = [
+    Path(__file__).parent.parent / "static",  # Development: repo root
+    Path("/app/static"),  # Railway/Nixpacks: /app/static
+    Path.cwd() / "static",  # Current working directory
+]
+
+static_dir = None
+for path in static_paths:
+    if path.exists() and path.is_dir():
+        static_dir = path
+        break
+
+if static_dir:
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+    print(f"[OK] Mounted static files from: {static_dir}")
+else:
+    print(f"[WARN] No static directory found. Tried: {[str(p) for p in static_paths]}")
 
 
 @app.get("/")
@@ -1057,12 +1078,12 @@ async def oauth_google_authorize(
         "client_id": client_id,
         "redirect_uri": redirect_uri,
         "response_type": "code",
-        "scope": "https://www.googleapis.com/auth/gmail.send",
+        "scope": "https://www.googleapis.com/auth/gmail.send openid email profile",
         "state": state_data["state"],
         "code_challenge": state_data["code_challenge"],
         "code_challenge_method": "S256",
         "access_type": "offline",  # Request refresh token
-        "prompt": "consent",  # Force consent screen to get refresh token
+        # Note: prompt=consent not compatible with OAuth apps in test mode
     }
 
     authorize_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urllib.parse.urlencode(auth_params)}"
@@ -1084,7 +1105,6 @@ async def oauth_google_callback(
     request: Request,
     code: str,
     state: str,
-    workspace_id: str,
     error: Optional[str] = None,
 ):
     """
@@ -1092,8 +1112,7 @@ async def oauth_google_callback(
 
     Args:
         code: Authorization code from Google
-        state: State token for CSRF protection
-        workspace_id: Workspace UUID
+        state: State token for CSRF protection (contains workspace_id)
         error: Optional error from Google
 
     Returns:
@@ -1102,7 +1121,6 @@ async def oauth_google_callback(
     """
     import httpx
 
-    from src.auth.oauth.state import OAuthStateManager
     from src.auth.oauth.tokens import OAuthTokenCache
 
     # Check for OAuth error
@@ -1112,14 +1130,21 @@ async def oauth_google_callback(
         oauth_events.labels(provider="google", event="callback_error").inc()
         raise HTTPException(status_code=400, detail=f"OAuth error: {error}")
 
-    # Validate state
-    state_mgr = OAuthStateManager()
-    state_data = state_mgr.validate_state(workspace_id=workspace_id, state=state)
-    if not state_data:
+    # Sprint 54: Validate state and retrieve context
+    from src.auth.oauth.state import validate_and_retrieve_context
+
+    state_context = validate_and_retrieve_context(state)
+    if not state_context:
         from src.telemetry import oauth_events
 
         oauth_events.labels(provider="google", event="invalid_state").inc()
         raise HTTPException(status_code=400, detail="Invalid or expired state token")
+
+    # Extract workspace_id, actor_id, pkce_verifier from state context
+    workspace_id = state_context["workspace_id"]
+    actor_id = state_context["actor_id"]
+    pkce_verifier = state_context["pkce_verifier"]
+    state_data = state_context.get("extra", {})
 
     # Get environment variables
     client_id = os.getenv("GOOGLE_CLIENT_ID")
@@ -1133,9 +1158,9 @@ async def oauth_google_callback(
         "code": code,
         "client_id": client_id,
         "client_secret": client_secret,
-        "redirect_uri": state_data["redirect_uri"],
+        "redirect_uri": state_data.get("redirect_uri", ""),
         "grant_type": "authorization_code",
-        "code_verifier": state_data.get("code_verifier"),  # PKCE
+        "code_verifier": pkce_verifier,  # PKCE from state context
     }
 
     try:
@@ -1168,10 +1193,7 @@ async def oauth_google_callback(
         oauth_events.labels(provider="google", event="missing_access_token").inc()
         raise HTTPException(status_code=502, detail="No access token in response")
 
-    # Store tokens (encrypted)
-    # TODO: Get actor_id from request context (for now using placeholder)
-    actor_id = "user_temp_001"  # Will be replaced with actual user ID from auth context
-
+    # Store tokens (encrypted) - actor_id from state context
     token_cache = OAuthTokenCache()
     await token_cache.store_tokens(
         provider="google",
@@ -1218,6 +1240,141 @@ async def oauth_google_status(
         return {"linked": True, "scopes": tokens.get("scope", "")}
     else:
         return {"linked": False, "scopes": None}
+
+
+# ============================================================================
+# Sprint 55 Week 3: AI Agent Endpoints
+# ============================================================================
+
+
+@app.post("/ai/plan")
+@require_scopes(["actions:preview"])
+async def plan_with_ai(
+    request: Request,
+    body: dict[str, Any],
+):
+    """
+    Generate action plan from natural language prompt.
+
+    Args:
+        prompt: Natural language description of what to do
+        context: Optional context (calendar, email history, etc.)
+
+    Returns:
+        Structured action plan with steps
+
+    Requires scope: actions:preview
+    """
+    from src.ai import ActionPlanner
+
+    if not ACTIONS_ENABLED:
+        raise HTTPException(status_code=404, detail="Actions feature not enabled")
+
+    prompt = body.get("prompt")
+    context = body.get("context")
+
+    if not prompt:
+        raise HTTPException(status_code=400, detail="prompt required")
+
+    planner = ActionPlanner()
+    plan = await planner.plan(prompt, context)
+
+    return {
+        **plan.model_dump(),
+        "request_id": request.state.request_id if hasattr(request.state, "request_id") else str(uuid4()),
+    }
+
+
+@app.post("/ai/execute")
+@require_scopes(["actions:execute"])
+async def execute_ai_plan(
+    request: Request,
+    body: dict[str, Any],
+):
+    """
+    Execute an approved AI-generated action plan.
+
+    Args:
+        plan_id: ID of plan from /ai/plan
+        steps: List of step indices to execute (defaults to all)
+
+    Returns:
+        Execution results for each step
+
+    Requires scope: actions:execute
+    """
+    from src.actions import get_executor
+
+    if not ACTIONS_ENABLED:
+        raise HTTPException(status_code=404, detail="Actions feature not enabled")
+
+    # TODO: Implement plan storage and retrieval
+    # For now, require full plan in request body
+
+    steps = body.get("steps")
+    if not steps:
+        raise HTTPException(status_code=400, detail="steps required")
+
+    executor = get_executor()
+    workspace_id = request.state.workspace_id if hasattr(request.state, "workspace_id") else "default"
+    actor_id = request.state.actor_id if hasattr(request.state, "actor_id") else "system"
+    request_id = request.state.request_id if hasattr(request.state, "request_id") else str(uuid4())
+
+    results = []
+    for step in steps:
+        # Preview
+        preview = executor.preview(step["action_id"], step["params"])
+
+        # Execute
+        result = await executor.execute(
+            preview_id=preview.preview_id,
+            idempotency_key=None,
+            workspace_id=workspace_id,
+            actor_id=actor_id,
+            request_id=request_id,
+        )
+
+        results.append(
+            {
+                "step": step,
+                "preview_id": preview.preview_id,
+                "result": result.model_dump(),
+            }
+        )
+
+    return {
+        "results": results,
+        "request_id": request_id,
+    }
+
+
+# ============================================================================
+# Dev Mode Endpoints - Sprint 55 Week 3
+# ============================================================================
+
+
+@app.get("/dev/outbox")
+def get_demo_outbox():
+    """
+    List demo mode outbox (emails saved instead of sent).
+
+    Returns list of saved email artifacts for testing.
+    """
+    outbox_dir = Path("runs/dev/outbox")
+    if not outbox_dir.exists():
+        return {"items": []}
+
+    import json
+
+    items = []
+    for file_path in sorted(outbox_dir.glob("*.json"), reverse=True):
+        try:
+            data = json.loads(file_path.read_text())
+            items.append(data)
+        except Exception:
+            pass
+
+    return {"items": items, "count": len(items)}
 
 
 if __name__ == "__main__":

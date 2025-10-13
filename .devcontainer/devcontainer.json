@@ -1,0 +1,57 @@
+{
+  "name": "OpenAI Agents Workflows Dev",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+
+  "postCreateCommand": "pip install --no-cache-dir -r requirements.txt && pip install --no-cache-dir -e .",
+
+  "postStartCommand": "bash .devcontainer/startup.sh",
+
+  "postAttachCommand": "echo '🚀 Dev UI ready at: https://${CODESPACE_NAME}-8000.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}/static/dev/action-runner.html'",
+
+  "forwardPorts": [8000, 6379],
+
+  "portsAttributes": {
+    "8000": {
+      "label": "Action Runner Dev UI",
+      "onAutoForward": "openBrowser",
+      "visibility": "public",
+      "protocol": "https"
+    },
+    "6379": {
+      "label": "Redis",
+      "onAutoForward": "silent",
+      "visibility": "private"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.linting.enabled": true,
+        "python.linting.ruffEnabled": true,
+        "python.formatting.provider": "black",
+        "[python]": {
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.organizeImports": true
+          }
+        }
+      }
+    }
+  },
+
+  "remoteEnv": {
+    "REDIS_URL": "redis://localhost:6379",
+    "ACTIONS_ENABLED": "true",
+    "TELEMETRY_ENABLED": "true",
+    "PROVIDER_GOOGLE_ENABLED": "false",
+    "PROVIDER_MICROSOFT_ENABLED": "false",
+    "DEV_MODE": "true"
+  }
+}

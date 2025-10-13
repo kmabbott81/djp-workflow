@@ -39,9 +39,13 @@ COPY presets/ ./presets/
 COPY styles/ ./styles/
 COPY config/ ./config/
 COPY scripts/ ./scripts/
+COPY static/ ./static/
 COPY pyproject.toml ./
 COPY README.md ./
 COPY LICENSE ./
+
+# Verify static files were copied (fail build if not present)
+RUN ls -la static/ && test -f static/dev/action-runner.html || (echo "ERROR: static files missing!" && exit 1)
 
 # Make start script executable
 RUN chmod +x scripts/start-server.sh

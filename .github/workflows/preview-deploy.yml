@@ -1,0 +1,78 @@
+name: Railway Preview Deploy
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  deploy-preview:
+    # Only run if RAILWAY_TOKEN secret exists
+    if: ${{ secrets.RAILWAY_TOKEN != '' }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write  # To comment with preview URL
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: |
+          curl -fsSL https://railway.app/install.sh | sh
+          echo "$HOME/.railway/bin" >> $GITHUB_PATH
+
+      - name: Deploy to Railway Preview
+        id: deploy
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          # Create preview environment (Railway automatically links to PR)
+          railway up --detach
+
+          # Get the deployment URL
+          PREVIEW_URL=$(railway status --json | jq -r '.deployments[0].url')
+
+          # Set output for PR comment
+          echo "preview_url=$PREVIEW_URL" >> $GITHUB_OUTPUT
+
+      - name: Comment on PR with preview URL
+        if: steps.deploy.outputs.preview_url != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const previewUrl = '${{ steps.deploy.outputs.preview_url }}';
+
+            const comment = `## 🚀 Preview Deployment Ready
+
+            Your preview environment is deployed and ready for testing!
+
+            **Preview URL:** ${previewUrl}
+            **Dev UI:** ${previewUrl}/static/dev/action-runner.html
+
+            ### Quick Test:
+            1. Visit the Dev UI link above
+            2. Select an action (gmail.send or outlook.send)
+            3. Fill in email fields
+            4. Click "Preview" to see email rendering
+            5. Click "Execute (Demo Mode)" to save to outbox
+
+            **Note:** OAuth not configured in preview - demo mode automatically enabled.
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Railway preview deployment failed. Check logs above."

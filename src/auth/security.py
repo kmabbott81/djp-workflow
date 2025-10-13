@@ -151,6 +151,26 @@ def require_scopes(required_scopes: list[str]):
             # Try API key authentication
             token = parse_bearer_token(request)
             if token:
+                # Special case: Allow demo preview key for dev UI (Sprint 55 Week 3)
+                # This bypasses database authentication for the action-runner.html dev UI
+                if token == "relay_sk_demo_preview_key":
+                    # Grant preview-only scopes for demo mode
+                    request.state.actor_type = "demo"
+                    request.state.actor_id = "demo-user"
+                    request.state.workspace_id = "demo-workspace-001"
+                    request.state.scopes = ["actions:preview"]
+
+                    # Check if demo key has required scope
+                    if not any(scope in ["actions:preview"] for scope in required_scopes):
+                        raise HTTPException(
+                            status_code=403,
+                            detail=f"Demo key only has preview scope. Required: {required_scopes}",
+                        )
+
+                    # Authorized - proceed with demo auth
+                    return await func(*args, **kwargs)
+
+                # Normal API key authentication
                 result = await load_api_key(token)
                 if not result:
                     raise HTTPException(
