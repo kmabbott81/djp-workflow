@@ -39,6 +39,7 @@ COPY presets/ ./presets/
 COPY styles/ ./styles/
 COPY config/ ./config/
 COPY scripts/ ./scripts/
+COPY static/ ./static/
 COPY pyproject.toml ./
 COPY README.md ./
 COPY LICENSE ./
