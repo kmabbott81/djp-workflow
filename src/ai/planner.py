@@ -2,6 +2,8 @@
 
 Converts natural language prompts into structured action plans.
 Uses LLM to extract intent, parameters, and action sequences.
+
+Pipeline test: Verifying GitHub → djp-workflow → Relay deployment flow.
 """
 
 from typing import Any, Optional
