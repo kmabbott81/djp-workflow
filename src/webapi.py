@@ -243,9 +243,24 @@ class TriageResponse(BaseModel):
 ACTIONS_ENABLED = os.getenv("ACTIONS_ENABLED", "false").lower() == "true"
 
 # Mount static files for dev UI (Sprint 55 Week 3)
-static_dir = Path(__file__).parent.parent / "static"
-if static_dir.exists():
+# Try multiple possible locations for static files
+static_paths = [
+    Path(__file__).parent.parent / "static",  # Development: repo root
+    Path("/app/static"),  # Railway/Nixpacks: /app/static
+    Path.cwd() / "static",  # Current working directory
+]
+
+static_dir = None
+for path in static_paths:
+    if path.exists() and path.is_dir():
+        static_dir = path
+        break
+
+if static_dir:
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+    print(f"✓ Mounted static files from: {static_dir}")
+else:
+    print(f"✗ No static directory found. Tried: {[str(p) for p in static_paths]}")
 
 
 @app.get("/")
