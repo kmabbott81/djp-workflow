@@ -1419,6 +1419,110 @@ async def execute_ai_plan(
     }
 
 
+@app.get("/ai/jobs")
+@require_scopes(["actions:preview"])
+async def list_ai_jobs(
+    request: Request,
+    limit: int = 50,
+):
+    """
+    AI Orchestrator v0.1: List recent jobs.
+
+    Args:
+        limit: Maximum number of jobs to return (1-100, default 50)
+
+    Returns:
+        {
+          "jobs": [{"job_id": "uuid", "status": "completed", ...}],
+          "count": 10,
+          "queue_depth": 5
+        }
+
+    Requires scope: actions:preview
+    """
+    if not ACTIONS_ENABLED:
+        raise HTTPException(status_code=404, detail="Actions feature not enabled")
+
+    # Validate limit
+    if limit < 1 or limit > 100:
+        raise HTTPException(status_code=400, detail="limit must be between 1 and 100")
+
+    # Initialize queue
+    try:
+        from src.queue.simple_queue import SimpleQueue
+
+        queue = SimpleQueue()
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail=f"Queue unavailable: {str(e)}") from e
+
+    # Get all job keys from Redis (sorted by enqueue time)
+    # Note: In v0.1, we scan for all job keys. For production, use a sorted set.
+    try:
+        # Get all job keys matching pattern
+        job_keys = queue.redis.keys("ai:job:*")
+
+        # Fetch job data for each key
+        jobs = []
+        for job_key in job_keys[:limit]:  # Limit to requested number
+            job_data = queue.redis.hgetall(job_key)
+            if job_data:
+                # Parse job_id from key
+                job_id = job_key.split(":")[-1]
+
+                # Deserialize JSON fields
+                import json
+
+                params = job_data.get("params")
+                result = job_data.get("result")
+
+                try:
+                    if params:
+                        params = json.loads(params)
+                except json.JSONDecodeError:
+                    pass
+
+                try:
+                    if result:
+                        result = json.loads(result)
+                except json.JSONDecodeError:
+                    pass
+
+                # Calculate duration if finished
+                duration_ms = None
+                if job_data.get("finished_at") and job_data.get("started_at"):
+                    from datetime import datetime
+
+                    started = datetime.fromisoformat(job_data["started_at"])
+                    finished = datetime.fromisoformat(job_data["finished_at"])
+                    duration_ms = int((finished - started).total_seconds() * 1000)
+
+                jobs.append(
+                    {
+                        "job_id": job_id,
+                        "status": job_data.get("status"),
+                        "action": f"{job_data.get('action_provider')}.{job_data.get('action_name')}",
+                        "result": result,
+                        "error": job_data.get("error"),
+                        "duration_ms": duration_ms,
+                        "enqueued_at": job_data.get("enqueued_at"),
+                        "started_at": job_data.get("started_at"),
+                        "finished_at": job_data.get("finished_at"),
+                    }
+                )
+
+        # Sort by enqueued_at descending (most recent first)
+        jobs.sort(key=lambda j: j.get("enqueued_at") or "", reverse=True)
+
+        return {
+            "jobs": jobs[:limit],
+            "count": len(jobs),
+            "queue_depth": queue.get_queue_depth(),
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to list jobs: {str(e)}") from e
+
+
 @app.get("/ai/jobs/{job_id}")
 @require_scopes(["actions:preview"])
 async def get_ai_job_status(
