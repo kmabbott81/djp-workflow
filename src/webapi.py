@@ -258,9 +258,9 @@ for path in static_paths:
 
 if static_dir:
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
-    print(f"✓ Mounted static files from: {static_dir}")
+    print(f"[OK] Mounted static files from: {static_dir}")
 else:
-    print(f"✗ No static directory found. Tried: {[str(p) for p in static_paths]}")
+    print(f"[WARN] No static directory found. Tried: {[str(p) for p in static_paths]}")
 
 
 @app.get("/")
