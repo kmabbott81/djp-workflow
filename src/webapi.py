@@ -1243,6 +1243,112 @@ async def oauth_google_status(
 
 
 # ============================================================================
+# Sprint 55 Week 3: AI Agent Endpoints
+# ============================================================================
+
+
+@app.post("/ai/plan")
+@require_scopes(["actions:preview"])
+async def plan_with_ai(
+    request: Request,
+    body: dict[str, Any],
+):
+    """
+    Generate action plan from natural language prompt.
+
+    Args:
+        prompt: Natural language description of what to do
+        context: Optional context (calendar, email history, etc.)
+
+    Returns:
+        Structured action plan with steps
+
+    Requires scope: actions:preview
+    """
+    from src.ai import ActionPlanner
+
+    if not ACTIONS_ENABLED:
+        raise HTTPException(status_code=404, detail="Actions feature not enabled")
+
+    prompt = body.get("prompt")
+    context = body.get("context")
+
+    if not prompt:
+        raise HTTPException(status_code=400, detail="prompt required")
+
+    planner = ActionPlanner()
+    plan = await planner.plan(prompt, context)
+
+    return {
+        **plan.model_dump(),
+        "request_id": request.state.request_id if hasattr(request.state, "request_id") else str(uuid4()),
+    }
+
+
+@app.post("/ai/execute")
+@require_scopes(["actions:execute"])
+async def execute_ai_plan(
+    request: Request,
+    body: dict[str, Any],
+):
+    """
+    Execute an approved AI-generated action plan.
+
+    Args:
+        plan_id: ID of plan from /ai/plan
+        steps: List of step indices to execute (defaults to all)
+
+    Returns:
+        Execution results for each step
+
+    Requires scope: actions:execute
+    """
+    from src.actions import get_executor
+
+    if not ACTIONS_ENABLED:
+        raise HTTPException(status_code=404, detail="Actions feature not enabled")
+
+    # TODO: Implement plan storage and retrieval
+    # For now, require full plan in request body
+
+    steps = body.get("steps")
+    if not steps:
+        raise HTTPException(status_code=400, detail="steps required")
+
+    executor = get_executor()
+    workspace_id = request.state.workspace_id if hasattr(request.state, "workspace_id") else "default"
+    actor_id = request.state.actor_id if hasattr(request.state, "actor_id") else "system"
+    request_id = request.state.request_id if hasattr(request.state, "request_id") else str(uuid4())
+
+    results = []
+    for step in steps:
+        # Preview
+        preview = executor.preview(step["action_id"], step["params"])
+
+        # Execute
+        result = await executor.execute(
+            preview_id=preview.preview_id,
+            idempotency_key=None,
+            workspace_id=workspace_id,
+            actor_id=actor_id,
+            request_id=request_id,
+        )
+
+        results.append(
+            {
+                "step": step,
+                "preview_id": preview.preview_id,
+                "result": result.model_dump(),
+            }
+        )
+
+    return {
+        "results": results,
+        "request_id": request_id,
+    }
+
+
+# ============================================================================
 # Dev Mode Endpoints - Sprint 55 Week 3
 # ============================================================================
 
