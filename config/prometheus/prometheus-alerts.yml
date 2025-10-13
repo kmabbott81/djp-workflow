@@ -160,3 +160,189 @@ groups:
       description: "No Gmail send execution rate metrics for 15+ minutes (Prometheus scrape failure or app down)"
       runbook_url: "docs/observability/PHASE-4-OBSERVABILITY-SETUP.md#metrics-missing"
       dashboard_url: "https://grafana/d/gmail-integration/overview"
+
+- name: ai_orchestrator_alerts
+  rules:
+  # ========================================
+  # AI Planner Health
+  # ========================================
+
+  - alert: AIPlannerHighErrorRateWarning
+    expr: (job:ai_planner_exec_rate:5m > 0.1) and (job:ai_planner_error_rate:5m > 0.05)
+    for: 10m
+    labels:
+      severity: warning
+      service: relay
+      component: ai_planner
+    annotations:
+      summary: "AI planner error rate >5% (warn)"
+      description: "Planner error rate is {{ $value | humanizePercentage }} over the last 5 minutes (threshold: 5%, traffic: {{ query `job:ai_planner_exec_rate:5m` | first | value | humanize }}req/s)"
+      runbook_url: "docs/observability/AI-ORCHESTRATOR-OBSERVABILITY.md#planner-errors"
+      dashboard_url: "https://grafana/d/ai-orchestrator/overview"
+
+  - alert: AIPlannerHighErrorRateCritical
+    expr: (job:ai_planner_exec_rate:5m > 0.1) and (job:ai_planner_error_rate:5m > 0.20)
+    for: 10m
+    labels:
+      severity: critical
+      service: relay
+      component: ai_planner
+    annotations:
+      summary: "AI planner error rate >20% (critical)"
+      description: "Planner error rate is {{ $value | humanizePercentage }} over the last 5 minutes (threshold: 20%, traffic: {{ query `job:ai_planner_exec_rate:5m` | first | value | humanize }}req/s)"
+      runbook_url: "docs/observability/AI-ORCHESTRATOR-OBSERVABILITY.md#planner-errors"
+      dashboard_url: "https://grafana/d/ai-orchestrator/overview"
+
+  - alert: AIPlannerHighLatencyWarning
+    expr: job:ai_planner_latency_p95:5m > 3.0
+    for: 10m
+    labels:
+      severity: warning
+      component: ai_planner
+    annotations:
+      summary: "AI planner P95 > 3s (warn)"
+      description: "P95 planning latency is {{ $value }}s (threshold: 3.0s)"
+      runbook_url: "docs/observability/AI-ORCHESTRATOR-OBSERVABILITY.md#planner-latency"
+      dashboard_url: "https://grafana/d/ai-orchestrator/overview"
+
+  - alert: AIPlannerHighLatencyCritical
+    expr: job:ai_planner_latency_p95:5m > 10.0
+    for: 10m
+    labels:
+      severity: critical
+      component: ai_planner
+    annotations:
+      summary: "AI planner P95 > 10s (critical)"
+      description: "P95 planning latency is {{ $value }}s (threshold: 10.0s)"
+      runbook_url: "docs/observability/AI-ORCHESTRATOR-OBSERVABILITY.md#planner-latency"
+      dashboard_url: "https://grafana/d/ai-orchestrator/overview"
+
+  # ========================================
+  # AI Job Execution Health
+  # ========================================
+
+  - alert: AIJobHighErrorRateWarning
+    expr: (job:ai_jobs_total_rate:5m > 0.1) and (job:ai_jobs_error_rate:5m > 0.05)
+    for: 10m
+    labels:
+      severity: warning
+      service: relay
+      component: ai_worker
+    annotations:
+      summary: "AI job error rate >5% (warn)"
+      description: "Job error rate is {{ $value | humanizePercentage }} over the last 5 minutes (threshold: 5%, traffic: {{ query `job:ai_jobs_total_rate:5m` | first | value | humanize }}jobs/s)"
+      runbook_url: "docs/observability/AI-ORCHESTRATOR-OBSERVABILITY.md#job-errors"
+      dashboard_url: "https://grafana/d/ai-orchestrator/overview"
+
+  - alert: AIJobHighErrorRateCritical
+    expr: (job:ai_jobs_total_rate:5m > 0.1) and (job:ai_jobs_error_rate:5m > 0.20)
+    for: 10m
+    labels:
+      severity: critical
+      service: relay
+      component: ai_worker
+    annotations:
+      summary: "AI job error rate >20% (critical)"
+      description: "Job error rate is {{ $value | humanizePercentage }} over the last 5 minutes (threshold: 20%, traffic: {{ query `job:ai_jobs_total_rate:5m` | first | value | humanize }}jobs/s)"
+      runbook_url: "docs/observability/AI-ORCHESTRATOR-OBSERVABILITY.md#job-errors"
+      dashboard_url: "https://grafana/d/ai-orchestrator/overview"
+
+  - alert: AIJobHighLatencyWarning
+    expr: job:ai_job_latency_p95:5m > 5.0
+    for: 10m
+    labels:
+      severity: warning
+      component: ai_worker
+    annotations:
+      summary: "AI job P95 > 5s (warn)"
+      description: "P95 job latency is {{ $value }}s (threshold: 5.0s)"
+      runbook_url: "docs/observability/AI-ORCHESTRATOR-OBSERVABILITY.md#job-latency"
+      dashboard_url: "https://grafana/d/ai-orchestrator/overview"
+
+  - alert: AIJobHighLatencyCritical
+    expr: job:ai_job_latency_p95:5m > 15.0
+    for: 10m
+    labels:
+      severity: critical
+      component: ai_worker
+    annotations:
+      summary: "AI job P95 > 15s (critical)"
+      description: "P95 job latency is {{ $value }}s (threshold: 15.0s)"
+      runbook_url: "docs/observability/AI-ORCHESTRATOR-OBSERVABILITY.md#job-latency"
+      dashboard_url: "https://grafana/d/ai-orchestrator/overview"
+
+  # ========================================
+  # AI Queue Health
+  # ========================================
+
+  - alert: AIQueueDepthHigh
+    expr: job:ai_queue_depth:instant > 100
+    for: 15m
+    labels:
+      severity: warning
+      component: ai_queue
+    annotations:
+      summary: "AI job queue depth >100 for 15m"
+      description: "Current queue depth is {{ $value }} jobs (threshold: 100, sustained for 15m)"
+      runbook_url: "docs/observability/AI-ORCHESTRATOR-OBSERVABILITY.md#queue-depth"
+      dashboard_url: "https://grafana/d/ai-orchestrator/overview"
+
+  - alert: AIQueueDepthCritical
+    expr: job:ai_queue_depth:instant > 500
+    for: 15m
+    labels:
+      severity: critical
+      component: ai_queue
+    annotations:
+      summary: "AI job queue depth >500 for 15m"
+      description: "Current queue depth is {{ $value }} jobs (threshold: 500, sustained for 15m, possible worker failure)"
+      runbook_url: "docs/observability/AI-ORCHESTRATOR-OBSERVABILITY.md#queue-depth"
+      dashboard_url: "https://grafana/d/ai-orchestrator/overview"
+
+  # ========================================
+  # Token Usage Monitoring
+  # ========================================
+
+  - alert: AITokenUsageSpike
+    expr: job:ai_tokens_output_rate:1m > 1000
+    for: 5m
+    labels:
+      severity: info
+      component: ai_planner
+    annotations:
+      summary: "AI output token rate >1000/s for 5m"
+      description: "Output token rate is {{ $value }} tokens/s (threshold: 1000/s, may indicate cost spike)"
+      runbook_url: "docs/observability/AI-ORCHESTRATOR-OBSERVABILITY.md#token-usage"
+      dashboard_url: "https://grafana/d/ai-orchestrator/overview"
+
+  # ========================================
+  # Security Policy Monitoring
+  # ========================================
+
+  - alert: SecurityDenyRateHigh
+    expr: job:security_deny_ratio:5m > 0.10
+    for: 10m
+    labels:
+      severity: info
+      component: security
+    annotations:
+      summary: "Security deny rate >10% for 10m"
+      description: "{{ $value | humanizePercentage }} of actions are being denied (threshold: 10%, may indicate policy misconfiguration)"
+      runbook_url: "docs/observability/AI-ORCHESTRATOR-OBSERVABILITY.md#security"
+      dashboard_url: "https://grafana/d/ai-orchestrator/overview"
+
+  # ========================================
+  # Metrics Collection Health
+  # ========================================
+
+  - alert: AIOrchestratorMetricsMissing
+    expr: absent(job:ai_planner_exec_rate:5m)
+    for: 15m
+    labels:
+      severity: critical
+      component: metrics_collection
+    annotations:
+      summary: "AI Orchestrator metrics not being collected"
+      description: "No AI planner metrics for 15+ minutes (Prometheus scrape failure or app down)"
+      runbook_url: "docs/observability/AI-ORCHESTRATOR-OBSERVABILITY.md#metrics-missing"
+      dashboard_url: "https://grafana/d/ai-orchestrator/overview"

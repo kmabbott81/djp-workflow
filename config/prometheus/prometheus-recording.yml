@@ -102,3 +102,92 @@ groups:
     expr: |
       sum(rate(rollout_controller_runs_total{status!="ok"}[5m]))
       / clamp_min(sum(rate(rollout_controller_runs_total[5m])), 1)
+
+- name: ai_orchestrator_recording
+  interval: 30s
+  rules:
+  # AI Planner execution rate
+  - record: job:ai_planner_exec_rate:5m
+    expr: sum(rate(ai_planner_seconds_count[5m]))
+
+  # AI Planner P50 latency
+  - record: job:ai_planner_latency_p50:5m
+    expr: histogram_quantile(0.50, sum(rate(ai_planner_seconds_bucket[5m])) by (le))
+
+  # AI Planner P95 latency
+  - record: job:ai_planner_latency_p95:5m
+    expr: histogram_quantile(0.95, sum(rate(ai_planner_seconds_bucket[5m])) by (le))
+
+  # AI Planner P99 latency
+  - record: job:ai_planner_latency_p99:5m
+    expr: histogram_quantile(0.99, sum(rate(ai_planner_seconds_bucket[5m])) by (le))
+
+  # AI Planner error rate
+  - record: job:ai_planner_error_rate:5m
+    expr: |
+      sum(rate(ai_planner_seconds_count{status="error"}[5m]))
+      / clamp_min(job:ai_planner_exec_rate:5m, 1)
+
+  # AI Planner success rate
+  - record: job:ai_planner_success_rate:5m
+    expr: |
+      sum(rate(ai_planner_seconds_count{status="ok"}[5m]))
+      / clamp_min(job:ai_planner_exec_rate:5m, 1)
+
+  # AI Token usage rate (input tokens per second)
+  - record: job:ai_tokens_input_rate:1m
+    expr: sum(rate(ai_tokens_total{type="input"}[1m]))
+
+  # AI Token usage rate (output tokens per second)
+  - record: job:ai_tokens_output_rate:1m
+    expr: sum(rate(ai_tokens_total{type="output"}[1m]))
+
+  # AI Job execution rate by status
+  - record: job:ai_jobs_exec_rate:5m
+    expr: sum(rate(ai_jobs_total[5m])) by (status)
+
+  # AI Job total rate
+  - record: job:ai_jobs_total_rate:5m
+    expr: sum(rate(ai_jobs_total[5m]))
+
+  # AI Job error rate
+  - record: job:ai_jobs_error_rate:5m
+    expr: |
+      sum(rate(ai_jobs_total{status="error"}[5m]))
+      / clamp_min(job:ai_jobs_total_rate:5m, 1)
+
+  # AI Job completion rate
+  - record: job:ai_jobs_completed_rate:5m
+    expr: |
+      sum(rate(ai_jobs_total{status="completed"}[5m]))
+      / clamp_min(job:ai_jobs_total_rate:5m, 1)
+
+  # AI Job latency P50
+  - record: job:ai_job_latency_p50:5m
+    expr: histogram_quantile(0.50, sum(rate(ai_job_latency_seconds_bucket[5m])) by (le))
+
+  # AI Job latency P95
+  - record: job:ai_job_latency_p95:5m
+    expr: histogram_quantile(0.95, sum(rate(ai_job_latency_seconds_bucket[5m])) by (le))
+
+  # AI Job latency P99
+  - record: job:ai_job_latency_p99:5m
+    expr: histogram_quantile(0.99, sum(rate(ai_job_latency_seconds_bucket[5m])) by (le))
+
+  # AI Queue depth (current value)
+  - record: job:ai_queue_depth:instant
+    expr: ai_queue_depth
+
+  # Security permission allow rate
+  - record: job:security_allow_rate:5m
+    expr: sum(rate(security_decisions_total{result="allow"}[5m]))
+
+  # Security permission deny rate
+  - record: job:security_deny_rate:5m
+    expr: sum(rate(security_decisions_total{result="deny"}[5m]))
+
+  # Security deny ratio
+  - record: job:security_deny_ratio:5m
+    expr: |
+      sum(rate(security_decisions_total{result="deny"}[5m]))
+      / clamp_min(sum(rate(security_decisions_total[5m])), 1)
