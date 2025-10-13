@@ -48,6 +48,8 @@ markupsafe==3.0.3
     # via mako
 numpy==2.3.3
     # via pandas
+openai==1.61.0
+    # via -r requirements.in
 pandas==2.3.3
     # via -r requirements.in
 psycopg2-binary==2.9.10
