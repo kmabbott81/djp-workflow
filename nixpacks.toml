@@ -1,0 +1,12 @@
+[phases.setup]
+nixPkgs = ["python311", "pip"]
+
+[phases.install]
+cmds = ["pip install --no-cache-dir -r requirements.txt", "pip install --no-cache-dir -e ."]
+
+[start]
+cmd = "uvicorn src.webapi:app --host 0.0.0.0 --port ${PORT:-8080}"
+
+[staticAssets]
+# Ensure static files are included in deployment
+"/static" = "static"
