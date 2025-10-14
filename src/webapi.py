@@ -1348,6 +1348,48 @@ async def execute_ai_plan(
     }
 
 
+@app.get("/ai/jobs")
+@require_scopes(["actions:preview"])
+async def list_ai_jobs(
+    request: Request,
+    status: Optional[str] = None,
+    limit: int = 100,
+):
+    """
+    List AI agent jobs with optional status filter.
+
+    Args:
+        status: Filter by status (pending, running, completed, failed)
+        limit: Maximum number of jobs to return (1-100, default 100)
+
+    Returns:
+        List of jobs with status, timestamps, and results
+
+    Requires scope: actions:preview
+    """
+    from src.queue.simple_queue import SimpleQueue
+
+    if not ACTIONS_ENABLED:
+        raise HTTPException(status_code=404, detail="Actions feature not enabled")
+
+    # Validate limit
+    if limit < 1 or limit > 100:
+        raise HTTPException(status_code=400, detail="limit must be between 1 and 100")
+
+    # Get workspace_id from auth context
+    workspace_id = request.state.workspace_id if hasattr(request.state, "workspace_id") else None
+
+    # List jobs
+    queue = SimpleQueue()
+    jobs = queue.list_jobs(workspace_id=workspace_id, status=status, limit=limit)
+
+    return {
+        "jobs": jobs,
+        "count": len(jobs),
+        "request_id": request.state.request_id if hasattr(request.state, "request_id") else str(uuid4()),
+    }
+
+
 # ============================================================================
 # Dev Mode Endpoints - Sprint 55 Week 3
 # ============================================================================
