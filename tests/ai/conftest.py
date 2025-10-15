@@ -99,7 +99,7 @@ def reset_env():
     orig_env = os.environ.copy()
 
     # Set test defaults
-    os.environ["ALLOW_ACTIONS_DEFAULT"] = "gmail.send,outlook.send,task.create"
+    os.environ["ACTION_ALLOWLIST"] = "gmail.send,outlook.send,task.create"
     os.environ["AI_MODEL"] = "gpt-4o-mini"
     os.environ["AI_MAX_OUTPUT_TOKENS"] = "800"
 
