@@ -12,6 +12,9 @@ jobs:
       FEATURE_RBAC_ENFORCE: "true"
       FEATURE_BUDGETS: "true"
       PYTHONUNBUFFERED: "1"
+      # Sprint 57: Production-safe defaults for CI
+      DEV_AUTH_MODE: "false"
+      RELAY_ENV: "test"
     strategy:
       matrix:
         python-version: ['3.9', '3.10', '3.11', '3.12']
