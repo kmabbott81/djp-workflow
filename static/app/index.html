@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Orchestrator • Minimal Test UI</title>
+  <!-- Tailwind via CDN (no build) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Lightweight extras */
+    :root { --ok:#16a34a; --warn:#d97706; --bad:#dc2626; }
+    .kbd { @apply px-1.5 py-0.5 rounded border text-xs font-mono; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .card { @apply bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm; }
+    .btn { @apply inline-flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-medium border; }
+    .btn-primary { @apply bg-black text-white border-black hover:bg-zinc-800; }
+    .btn-ghost { @apply bg-white border-zinc-300 hover:bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-700 dark:hover:bg-zinc-800; }
+    .badge { @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs border; }
+  </style>
+</head>
+<body class="bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+  <div class="max-w-7xl mx-auto p-4 md:p-8">
+    <header class="mb-6 flex items-center justify-between">
+      <h1 class="text-2xl md:text-3xl font-semibold">AI Orchestrator — Minimal Test UI</h1>
+      <div class="hidden md:flex items-center gap-2 text-xs text-zinc-500">
+        <span class="kbd">⌘</span>+<span class="kbd">↩︎</span> to Plan
+      </div>
+    </header>
+
+    <!-- Planner / Executor Panel -->
+    <section class="grid md:grid-cols-2 gap-6">
+      <div class="card p-4 md:p-6">
+        <form id="planForm" class="space-y-4" onsubmit="return false;">
+          <label class="block text-sm font-medium">Prompt</label>
+          <textarea id="prompt" class="w-full h-36 p-3 rounded-xl border border-zinc-300 bg-white dark:bg-zinc-900 dark:border-zinc-700" placeholder="e.g., Send a weekly summary email to ops@company.com">Send an email to ops@company.com with subject "Test from AI Orchestrator" and body "Hello! This is a test."</textarea>
+          <div class="flex flex-wrap items-center gap-3">
+            <button id="btnPlan" class="btn btn-primary" title="Plan (⌘/Ctrl + Enter)">Plan</button>
+            <button id="btnExecute" class="btn btn-ghost" title="Execute current plan">Execute</button>
+            <button id="btnClear" class="btn btn-ghost" title="Clear">Clear</button>
+            <span id="actionsState" class="badge border-zinc-300 text-zinc-600 dark:text-zinc-300">Actions: <span id="actionsFlag" class="ml-1 font-semibold">unknown</span></span>
+          </div>
+        </form>
+
+        <div class="mt-6">
+          <h2 class="text-sm font-medium mb-2">Plan (read-only)</h2>
+          <pre id="planOut" class="mono text-sm p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 overflow-auto max-h-64">—</pre>
+        </div>
+      </div>
+
+      <!-- Jobs panel -->
+      <div class="card p-4 md:p-6">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-medium">Jobs</h2>
+          <div class="flex items-center gap-2">
+            <button id="btnRefresh" class="btn btn-ghost">Refresh</button>
+            <span id="queueMeta" class="text-xs text-zinc-500">queue: —</span>
+          </div>
+        </div>
+        <div id="jobsList" class="space-y-2 max-h-[28rem] overflow-auto"></div>
+      </div>
+    </section>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-4 right-4 hidden card px-4 py-3"></div>
+  </div>
+
+  <script>
+    // ===== Config =====
+    const API_BASE = ""; // same origin
+    const PLAN_EP = "/ai/plan";
+    const EXEC_EP = "/ai/execute";
+    const JOBS_EP = "/ai/jobs"; // supports ?limit= & status=
+
+    // ===== State =====
+    let lastPlan = null;
+    let pollTimer = null;
+
+    // ===== Helpers =====
+    const $ = (sel) => document.querySelector(sel);
+    const toast = (msg, kind = "info") => {
+      const el = $("#toast");
+      el.textContent = msg;
+      el.classList.remove("hidden");
+      el.style.borderColor = kind === "error" ? "var(--bad)" : kind === "warn" ? "var(--warn)" : "#e5e7eb";
+      setTimeout(()=> el.classList.add("hidden"), 2200);
+    };
+    const pretty = (obj) => JSON.stringify(obj, null, 2);
+
+    const detectActions = async () => {
+      try {
+        const resp = await fetch("/", { method: "GET" });
+        const data = await resp.json();
+        $("#actionsFlag").textContent = data?.features?.actions ? "enabled" : "disabled";
+      } catch {
+        $("#actionsFlag").textContent = "unknown";
+      }
+    };
+
+    const plan = async () => {
+      const prompt = $("#prompt").value.trim();
+      if (!prompt) { toast("Enter a prompt first", "warn"); return; }
+      $("#btnPlan").disabled = true;
+      try {
+        const r = await fetch(API_BASE + PLAN_EP, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt })
+        });
+        if (!r.ok) {
+          const err = await r.json();
+          throw new Error(err.detail || `Plan failed: ${r.status}`);
+        }
+        lastPlan = await r.json();
+        $("#planOut").textContent = pretty(lastPlan);
+        toast("Plan ready");
+      } catch (e) {
+        $("#planOut").textContent = `Error: ${e.message}`;
+        toast(e.message || "Plan error", "error");
+      } finally {
+        $("#btnPlan").disabled = false;
+      }
+    };
+
+    const executePlan = async () => {
+      if (!lastPlan) { toast("Plan something first", "warn"); return; }
+      $("#btnExecute").disabled = true;
+      try {
+        const steps = (lastPlan.actions || []).map(a => ({
+          action_id: a.action,
+          params: a.params
+        }));
+        const r = await fetch(API_BASE + EXEC_EP, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ steps })
+        });
+        if (!r.ok) {
+          const err = await r.json();
+          throw new Error(err.detail || `Execute failed: ${r.status}`);
+        }
+        const data = await r.json();
+        toast(`Enqueued ${data.results?.length || 0} job(s)`);
+        setTimeout(refreshJobs, 500);
+      } catch (e) {
+        toast(e.message || "Execute error", "error");
+      } finally {
+        $("#btnExecute").disabled = false;
+      }
+    };
+
+    const renderJobs = (payload) => {
+      const c = $("#jobsList");
+      c.innerHTML = "";
+      const jobs = payload?.jobs || [];
+      $("#queueMeta").textContent = `count: ${payload?.count ?? 0}`;
+      if (!jobs.length) {
+        c.innerHTML = `<div class="text-sm text-zinc-500">No jobs yet</div>`;
+        return;
+      }
+      for (const j of jobs) {
+        const statusColor = j.status === "completed" ? "bg-green-100 text-green-800 border-green-200" :
+                            j.status === "running" ? "bg-amber-100 text-amber-800 border-amber-200" :
+                            j.status === "failed" ? "bg-red-100 text-red-800 border-red-200" :
+                            "bg-zinc-100 text-zinc-800 border-zinc-200";
+        const div = document.createElement("div");
+        div.className = "p-3 rounded-xl border bg-white dark:bg-zinc-900 dark:border-zinc-800";
+        div.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="font-medium mono text-sm">${j.job_id || "(no-id)"}</div>
+            <span class="badge ${statusColor}">${j.status || "unknown"}</span>
+          </div>
+          <div class="mt-1 text-xs font-medium">${j.action_provider}.${j.action_name}</div>
+          <div class="mt-2 text-xs text-zinc-500">enqueued: ${new Date(j.enqueued_at).toLocaleString()}</div>
+          ${j.started_at ? `<div class="text-xs text-zinc-500">started: ${new Date(j.started_at).toLocaleString()}</div>` : ''}
+          ${j.finished_at ? `<div class="text-xs text-zinc-500">finished: ${new Date(j.finished_at).toLocaleString()}</div>` : ''}
+          <details class="mt-2">
+            <summary class="text-sm cursor-pointer text-blue-600 hover:text-blue-800">Details</summary>
+            <pre class="mono text-xs mt-2 p-2 bg-zinc-50 dark:bg-zinc-950 rounded overflow-auto max-h-48">${pretty(j)}</pre>
+          </details>
+        `;
+        c.appendChild(div);
+      }
+    };
+
+    const refreshJobs = async () => {
+      try {
+        const r = await fetch(API_BASE + JOBS_EP + "?limit=25");
+        if (!r.ok) {
+          if (r.status === 401) {
+            $("#jobsList").innerHTML = `<div class="text-sm text-amber-600">⚠️ Auth required for /ai/jobs</div>`;
+            return;
+          }
+          throw new Error(`Jobs failed: ${r.status}`);
+        }
+        const data = await r.json();
+        renderJobs(data);
+      } catch (e) {
+        $("#jobsList").innerHTML = `<div class="text-sm text-red-600">Error: ${e.message}</div>`;
+      }
+    };
+
+    // ===== Wireup =====
+    document.addEventListener("DOMContentLoaded", () => {
+      detectActions();
+      refreshJobs();
+      pollTimer = setInterval(refreshJobs, 2500);
+
+      $("#btnPlan").addEventListener("click", plan);
+      $("#btnExecute").addEventListener("click", executePlan);
+      $("#btnClear").addEventListener("click", () => { lastPlan = null; $("#planOut").textContent = "—"; });
+      $("#btnRefresh").addEventListener("click", refreshJobs);
+
+      // Keyboard: Cmd/Ctrl + Enter to Plan
+      document.addEventListener("keydown", (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+          e.preventDefault();
+          plan();
+        }
+      });
+    });
+
+    window.addEventListener("beforeunload", () => {
+      if (pollTimer) clearInterval(pollTimer);
+    });
+  </script>
+</body>
+</html>
