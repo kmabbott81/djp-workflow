@@ -1,14 +1,24 @@
-"""Pydantic schemas for DJP Workflow - Sprint 58 Slice 5 Foundations.
+"""Pydantic schemas for DJP Workflow.
 
-This module contains strict Pydantic schemas for AI orchestration and workflow management.
+Contains schemas for:
+- Debate → Judge → Publish workflow (Draft, Judgment, ScoredDraft)
+- AI Orchestration (PlannedAction, PlanResult) - Sprint 58 Slice 5
 """
 
+# AI Orchestration schemas (Sprint 58 Slice 5)
 from src.schemas.ai_plan import ActionPlan, ActionStep, PlannedAction, PlanResult
 
+# Debate workflow schemas (legacy)
+from src.schemas.debate import Draft, Judgment, ScoredDraft
+
 __all__ = [
+    # AI Orchestration
     "PlannedAction",
     "PlanResult",
-    # Legacy aliases
-    "ActionStep",
-    "ActionPlan",
+    "ActionStep",  # Legacy alias
+    "ActionPlan",  # Legacy alias
+    # Debate workflow
+    "Draft",
+    "Judgment",
+    "ScoredDraft",
 ]
