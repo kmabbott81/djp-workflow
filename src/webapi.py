@@ -1280,18 +1280,19 @@ async def plan_with_ai(
     body: dict[str, Any],
 ):
     """
-    Generate action plan from natural language prompt.
+    Generate action plan from natural language prompt with RBAC filtering.
 
     Args:
         prompt: Natural language description of what to do
         context: Optional context (calendar, email history, etc.)
 
     Returns:
-        Structured action plan with steps
+        Structured action plan with steps (filtered by user permissions)
 
     Requires scope: actions:preview
     """
     from src.ai import ActionPlanner
+    from src.ai.orchestrator import get_orchestrator
 
     if not ACTIONS_ENABLED:
         raise HTTPException(status_code=404, detail="Actions feature not enabled")
@@ -1302,11 +1303,17 @@ async def plan_with_ai(
     if not prompt:
         raise HTTPException(status_code=400, detail="prompt required")
 
-    planner = ActionPlanner()
-    plan = await planner.plan(prompt, context)
+    # Get user_id from auth context for RBAC filtering
+    user_id = request.state.actor_id if hasattr(request.state, "actor_id") else "system"
 
+    # Generate plan with orchestrator (applies RBAC guards)
+    planner = ActionPlanner()
+    orchestrator = get_orchestrator()
+    plan = await orchestrator.plan(user_id, prompt, planner, context)
+
+    # Return plan with sensitive data redacted
     return {
-        **plan.model_dump(),
+        **plan.safe_dict(),  # Uses safe_dict() for PII redaction
         "request_id": request.state.request_id if hasattr(request.state, "request_id") else str(uuid4()),
     }
 
