@@ -43,7 +43,7 @@ def isolated_metrics():
 
     # Save originals
     orig_jobs_total = job_metrics.relay_jobs_total
-    orig_jobs_action = job_metrics.relay_jobs_per_action_total
+    orig_jobs_provider = job_metrics.relay_jobs_per_provider_total
     orig_latency = job_metrics.relay_job_latency_seconds
 
     # Create fresh registry and metrics
@@ -51,16 +51,16 @@ def isolated_metrics():
     job_metrics.relay_jobs_total = Counter(
         "relay_jobs_total", "Total jobs completed", labelnames=["status"], registry=registry
     )
-    job_metrics.relay_jobs_per_action_total = Counter(
-        "relay_jobs_per_action_total",
-        "Total jobs per action",
-        labelnames=["action_id", "status"],
+    job_metrics.relay_jobs_per_provider_total = Counter(
+        "relay_jobs_per_provider_total",
+        "Total jobs per provider",
+        labelnames=["provider", "status"],
         registry=registry,
     )
     job_metrics.relay_job_latency_seconds = Histogram(
         "relay_job_latency_seconds",
         "Job execution latency in seconds",
-        labelnames=["action_id"],
+        labelnames=["provider"],
         registry=registry,
         buckets=(0.01, 0.05, 0.1, 0.5, 1.0, 2.5, 5.0, 10.0, 25.0, 100.0),
     )
@@ -69,7 +69,7 @@ def isolated_metrics():
 
     # Restore originals
     job_metrics.relay_jobs_total = orig_jobs_total
-    job_metrics.relay_jobs_per_action_total = orig_jobs_action
+    job_metrics.relay_jobs_per_provider_total = orig_jobs_provider
     job_metrics.relay_job_latency_seconds = orig_latency
 
 
@@ -205,5 +205,5 @@ async def test_execute_plan_emits_metrics(orchestrator: AIOrchestrator, job_stor
 
     # Confirm all three metrics exist (note: Counter adds _total suffix)
     assert "relay_jobs_total" in metric_names or "relay_jobs" in metric_names
-    assert "relay_jobs_per_action_total" in metric_names or "relay_jobs_per_action" in metric_names
+    assert "relay_jobs_per_provider_total" in metric_names or "relay_jobs_per_provider" in metric_names
     assert "relay_job_latency_seconds" in metric_names

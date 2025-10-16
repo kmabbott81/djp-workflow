@@ -149,10 +149,15 @@ class AIOrchestrator:
 
                 # Emit metrics
                 job_metrics.inc_job("success")
-                job_metrics.inc_job_by_action(step.action_id, "success")
-                if job.started_at and job.finished_at:
-                    latency = (job.finished_at - job.started_at).total_seconds()
-                    job_metrics.observe_job_latency(step.action_id, max(0.0, latency))
+                try:
+                    provider = job_metrics._provider_from_action_id(step.action_id)
+                    job_metrics.inc_job_by_provider(provider, "success")
+                    if job.started_at and job.finished_at:
+                        latency = (job.finished_at - job.started_at).total_seconds()
+                        job_metrics.observe_job_latency(provider, max(0.0, latency))
+                except ValueError:
+                    # Skip provider metrics if action_id format is invalid
+                    pass
 
                 results.append(
                     {
@@ -170,10 +175,15 @@ class AIOrchestrator:
 
                 # Emit metrics
                 job_metrics.inc_job("failed")
-                job_metrics.inc_job_by_action(step.action_id, "failed")
-                if job.started_at and job.finished_at:
-                    latency = (job.finished_at - job.started_at).total_seconds()
-                    job_metrics.observe_job_latency(step.action_id, max(0.0, latency))
+                try:
+                    provider = job_metrics._provider_from_action_id(step.action_id)
+                    job_metrics.inc_job_by_provider(provider, "failed")
+                    if job.started_at and job.finished_at:
+                        latency = (job.finished_at - job.started_at).total_seconds()
+                        job_metrics.observe_job_latency(provider, max(0.0, latency))
+                except ValueError:
+                    # Skip provider metrics if action_id format is invalid
+                    pass
 
                 results.append(
                     {
