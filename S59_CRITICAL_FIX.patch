@@ -1,0 +1,100 @@
+diff --git a/src/telemetry/prom.py b/src/telemetry/prom.py
+index 561ed5d..1234567 100644
+--- a/src/telemetry/prom.py
++++ b/src/telemetry/prom.py
+@@ -103,7 +103,7 @@ def canonical_workspace_id(workspace_id: str | None) -> str | None:
+         return None
+
+     # Check format
+-    if not _WORKSPACE_ID_PATTERN.match(workspace_id):
++    if not _WORKSPACE_ID_PATTERN.fullmatch(workspace_id):
+         _LOG.warning("Invalid workspace_id format (must match ^[a-z0-9][a-z0-9_-]{0,31}$): %s", workspace_id)
+         return None
+
+
+diff --git a/tests/test_workspace_metrics.py b/tests/test_workspace_metrics.py
+index d298c07..abcdef0 100644
+--- a/tests/test_workspace_metrics.py
++++ b/tests/test_workspace_metrics.py
+@@ -132,6 +132,31 @@ class TestWorkspaceIdValidation:
+         assert prom.canonical_workspace_id("workspace2") == "workspace2"
+         assert prom.canonical_workspace_id("any-valid-id") == "any-valid-id"
+
++    def test_invalid_newline_injection(self, monkeypatch):
++        """Newline characters should be rejected (Prometheus label cardinality attack)."""
++        monkeypatch.delenv("METRICS_WORKSPACE_ALLOWLIST", raising=False)
++        assert prom.canonical_workspace_id("workspace\n") is None
++        assert prom.canonical_workspace_id("workspace\r\n") is None
++
++    def test_invalid_null_byte_injection(self, monkeypatch):
++        """Null bytes should be rejected."""
++        monkeypatch.delenv("METRICS_WORKSPACE_ALLOWLIST", raising=False)
++        assert prom.canonical_workspace_id("workspace\x00") is None
++
++    def test_invalid_prometheus_special_chars(self, monkeypatch):
++        """Prometheus-specific characters should be rejected."""
++        monkeypatch.delenv("METRICS_WORKSPACE_ALLOWLIST", raising=False)
++        assert prom.canonical_workspace_id("workspace\"") is None
++        assert prom.canonical_workspace_id("workspace\\") is None
++
++    def test_invalid_control_characters(self, monkeypatch):
++        """Control characters should be rejected."""
++        monkeypatch.delenv("METRICS_WORKSPACE_ALLOWLIST", raising=False)
++        assert prom.canonical_workspace_id("workspace\t") is None
++        assert prom.canonical_workspace_id("workspace\x01") is None
++        assert prom.canonical_workspace_id("workspace\r") is None
++
+
+ class TestRecordQueueJobWithWorkspace:
+     """Test record_queue_job() with optional workspace_id parameter."""
+
+EXPLANATION OF CHANGES
+======================
+
+1. CRITICAL FIX (Line 106):
+   Changed: if not _WORKSPACE_ID_PATTERN.match(workspace_id):
+   To:      if not _WORKSPACE_ID_PATTERN.fullmatch(workspace_id):
+
+   Reason: .match() only validates the START of the string, allowing trailing
+           characters like newlines to bypass validation. .fullmatch() validates
+           the ENTIRE string, preventing label injection attacks.
+
+2. NEW TESTS (Added 4 test methods):
+   - test_invalid_newline_injection: Tests \n and \r\n injection
+   - test_invalid_null_byte_injection: Tests \x00 injection
+   - test_invalid_prometheus_special_chars: Tests " and \ injection
+   - test_invalid_control_characters: Tests \t, \x01, \r injection
+
+   Reason: These test cases ensure the regex fix actually prevents injection
+           attempts and provide regression testing for the security fix.
+
+VERIFICATION
+============
+
+Apply this patch:
+  git apply S59_CRITICAL_FIX.patch
+
+Run tests:
+  pytest tests/test_workspace_metrics.py -v
+
+Expected output:
+  tests/test_workspace_metrics.py ........................................  [100%]
+  32 passed in X.XXs
+
+All 32 tests should pass:
+- 28 existing tests (unchanged)
+- 4 new security tests (should all pass with fullmatch fix)
+
+Validation that fix works:
+  python3 -c "
+import re
+pattern = re.compile(r'^[a-z0-9][a-z0-9_-]{0,31}$')
+print('Before fix (match): workspace\\n =', bool(pattern.match('workspace\n')))  # True (WRONG)
+print('After fix (fullmatch): workspace\\n =', bool(pattern.fullmatch('workspace\n')))  # False (CORRECT)
+"
+
+Output should show:
+  Before fix (match): workspace\n = True
+  After fix (fullmatch): workspace\n = False
+
+This confirms the fix resolves the vulnerability.

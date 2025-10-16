@@ -1423,18 +1423,22 @@ async def execute_ai_plan(
 @require_scopes(["actions:preview"])
 async def list_ai_jobs(
     request: Request,
+    cursor: str | None = None,
     limit: int = 50,
 ):
     """
-    AI Orchestrator v0.1: List recent jobs.
+    AI Orchestrator v0.1: List recent jobs (workspace-scoped, cursor-paginated).
 
     Args:
+        cursor: Redis SCAN cursor for pagination (string, default None for fresh scan)
         limit: Maximum number of jobs to return (1-100, default 50)
 
     Returns:
         {
+          "workspace_id": "ws_id",
           "jobs": [{"job_id": "uuid", "status": "completed", ...}],
           "count": 10,
+          "next_cursor": "1234" | null,
           "queue_depth": 5
         }
 
@@ -1442,6 +1446,19 @@ async def list_ai_jobs(
     """
     if not ACTIONS_ENABLED:
         raise HTTPException(status_code=404, detail="Actions feature not enabled")
+
+    # Sprint 59-05: Enforce workspace scoping (security check)
+    workspace_id = getattr(request.state, "workspace_id", None)
+    if not workspace_id:
+        raise HTTPException(status_code=403, detail="workspace_id required")
+
+    # Validate workspace_id format if feature enabled
+    from src.telemetry.prom import canonical_workspace_id, is_workspace_label_enabled
+
+    if is_workspace_label_enabled():
+        validated_ws_id = canonical_workspace_id(workspace_id)
+        if not validated_ws_id:
+            raise HTTPException(status_code=403, detail="workspace_id invalid or not allowlisted")
 
     # Validate limit
     if limit < 1 or limit > 100:
@@ -1455,32 +1472,51 @@ async def list_ai_jobs(
     except ValueError as e:
         raise HTTPException(status_code=503, detail=f"Queue unavailable: {str(e)}") from e
 
-    # Get all job keys from Redis (sorted by enqueue time)
-    # Note: In v0.1, we scan for all job keys. For production, use a sorted set.
-    try:
-        # Get all job keys matching pattern
-        job_keys = queue.redis.keys("ai:job:*")
+    import time as time_module
 
-        # Fetch job data for each key
+    start_time = time_module.time()
+
+    # Sprint 59-05: Cursor-based pagination with workspace filtering (hotfix)
+    # Redis schema: ai:job:{job_id} (workspace_id in hash field, not key name)
+    # See Sprint 60 dual-write migration plan (SPRINT_HANDOFF_S59_S60.md) for permanent schema upgrade
+    # Scan all ai:job:* keys and filter by workspace_id in hash values
+    pattern = "ai:job:*"
+
+    # Validate and parse cursor (prevent injection/malformed input)
+    try:
+        cursor_int = int(cursor) if cursor else 0
+    except (ValueError, TypeError) as e:
+        raise HTTPException(status_code=400, detail="Invalid cursor format (must be integer)") from e
+
+    try:
+        import json
+        from datetime import datetime
+
         jobs = []
-        for job_key in job_keys[:limit]:  # Limit to requested number
-            job_data = queue.redis.hgetall(job_key)
-            if job_data:
-                # Parse job_id from key
+        # SCAN with larger count (limit * 2) to buffer for jobs skipped by workspace filter
+        # This accounts for approximately 50% cross-workspace jobs in mixed multi-tenant scanning
+        while True:
+            cursor_int, job_keys_batch = queue.redis.scan(cursor_int, match=pattern, count=limit * 2)
+
+            # Fetch job data for each key and filter by workspace_id
+            for job_key in job_keys_batch:
+                if len(jobs) >= limit:
+                    break  # Stop collecting once limit reached
+
+                job_data = queue.redis.hgetall(job_key)
+                if not job_data:
+                    continue
+
+                # Filter by workspace_id (security: prevent cross-workspace leakage)
+                job_ws_id = job_data.get("workspace_id")
+                if job_ws_id != workspace_id:
+                    continue  # Skip jobs from other workspaces
+
+                # Parse job_id from key (format: ai:job:{job_id})
                 job_id = job_key.split(":")[-1]
 
-                # Deserialize JSON fields
-                import json
-
-                params = job_data.get("params")
+                # Deserialize result field
                 result = job_data.get("result")
-
-                try:
-                    if params:
-                        params = json.loads(params)
-                except json.JSONDecodeError:
-                    pass
-
                 try:
                     if result:
                         result = json.loads(result)
@@ -1490,18 +1526,17 @@ async def list_ai_jobs(
                 # Calculate duration if finished
                 duration_ms = None
                 if job_data.get("finished_at") and job_data.get("started_at"):
-                    from datetime import datetime
-
                     started = datetime.fromisoformat(job_data["started_at"])
                     finished = datetime.fromisoformat(job_data["finished_at"])
                     duration_ms = int((finished - started).total_seconds() * 1000)
 
+                # Minimal job summary (no params for privacy/security)
                 jobs.append(
                     {
                         "job_id": job_id,
                         "status": job_data.get("status"),
                         "action": f"{job_data.get('action_provider')}.{job_data.get('action_name')}",
-                        "result": result,
+                        "result": result,  # Safe to include (output data)
                         "error": job_data.get("error"),
                         "duration_ms": duration_ms,
                         "enqueued_at": job_data.get("enqueued_at"),
@@ -1510,17 +1545,31 @@ async def list_ai_jobs(
                     }
                 )
 
-        # Sort by enqueued_at descending (most recent first)
-        jobs.sort(key=lambda j: j.get("enqueued_at") or "", reverse=True)
+            # Check if we have enough results or if SCAN is complete
+            if len(jobs) >= limit or cursor_int == 0:
+                break
+
+        # Emit telemetry (with workspace scoping)
+        duration_seconds = time_module.time() - start_time
+        from src.telemetry.prom import record_job_list_query
+
+        record_job_list_query(workspace_id=workspace_id, count=len(jobs), seconds=duration_seconds)
 
         return {
-            "jobs": jobs[:limit],
+            "workspace_id": workspace_id,
+            "jobs": jobs,
             "count": len(jobs),
+            "next_cursor": str(cursor_int) if cursor_int else None,
             "queue_depth": queue.get_queue_depth(),
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to list jobs: {str(e)}") from e
+        # Log full exception internally, return generic message to client (security: prevent info leak)
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.exception("Failed to list jobs")
+        raise HTTPException(status_code=500, detail="Failed to list jobs") from e
 
 
 @app.get("/ai/jobs/{job_id}")
@@ -1530,13 +1579,14 @@ async def get_ai_job_status(
     job_id: str,
 ):
     """
-    AI Orchestrator v0.1: Get job status and result.
+    AI Orchestrator v0.1: Get job status and result (workspace-scoped).
 
     Args:
         job_id: Job identifier from /ai/execute
 
     Returns:
         {
+          "workspace_id": "ws_id",
           "job_id": "uuid",
           "status": "pending|running|completed|error",
           "result": {...},
@@ -1551,17 +1601,27 @@ async def get_ai_job_status(
     if not ACTIONS_ENABLED:
         raise HTTPException(status_code=404, detail="Actions feature not enabled")
 
+    # Sprint 59-05: Enforce workspace scoping (security check)
+    workspace_id = getattr(request.state, "workspace_id", None)
+    if not workspace_id:
+        raise HTTPException(status_code=403, detail="workspace_id required")
+
     # Initialize queue
     try:
         queue = SimpleQueue()
     except ValueError as e:
         raise HTTPException(status_code=503, detail=f"Queue unavailable: {str(e)}") from e
 
-    # Get job data
+    # Sprint 59-05: Validate job belongs to workspace (security check)
     job_data = queue.get_job(job_id)
 
     if not job_data:
         raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found")
+
+    # Verify job belongs to workspace_id (cross-workspace access prevention)
+    job_workspace_id = job_data.get("workspace_id")
+    if job_workspace_id != workspace_id:
+        raise HTTPException(status_code=403, detail="Job does not belong to this workspace")
 
     # Calculate duration if finished
     duration_ms = None
@@ -1573,6 +1633,7 @@ async def get_ai_job_status(
         duration_ms = int((finished - started).total_seconds() * 1000)
 
     return {
+        "workspace_id": workspace_id,
         "job_id": job_id,
         "status": job_data.get("status"),
         "action": f"{job_data.get('action_provider')}.{job_data.get('action_name')}",

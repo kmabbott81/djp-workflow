@@ -1,0 +1,462 @@
+===============================================================================
+SECURITY REVIEW: Sprint 59 S59-01 Commit A - Metrics Workspace Label Plumbing
+===============================================================================
+
+Commit: 9daeadb
+Branch: sprint-59/s59-01-metrics-workspace
+Reviewer: Claude Code (Relay AI Orchestrator Security Reviewer)
+Date: 2025-10-16
+Status: CONDITIONAL PASS (Fix CRITICAL bug before merge)
+
+===============================================================================
+HEADLINE FINDINGS
+===============================================================================
+
+CRITICAL VULNERABILITY FOUND
+----------------------------
+Type: Input Validation Bypass - Regex uses .match() instead of .fullmatch()
+Location: /c/Users/kylem/openai-agents-workflows-2025.09.28-v1/src/telemetry/prom.py, line 106
+Severity: CRITICAL
+Impact: Label injection / unbounded cardinality explosion
+Fix: 1 line change (.match → .fullmatch)
+
+Risk Vector: Attacker can bypass workspace_id format validation by appending newline:
+  "workspace\n" passes .match() but contains newline for Prometheus label injection
+  Could lead to OOMKill via unbounded cardinality if Commit B wires up without fix
+
+SECURITY GAPS
+-------------
+1. HIGH: Missing injection test coverage (newline, null byte, control chars)
+2. MEDIUM: Allowlist parsing doesn't validate entries or warn on malformation
+3. MEDIUM: workspace_id parameter accepted but not used (deferred to Commit B)
+
+POSITIVE CONTROLS
+-----------------
++ Default-safe design (feature disabled by default)
++ Allowlist enforcement when configured
++ Backward compatible (optional parameter)
++ Format validation logic is sound (just needs fullmatch fix)
++ 28 existing tests passing
+
+===============================================================================
+FINDINGS SUMMARY (For PR Review)
+===============================================================================
+
+FINDING 1: CRITICAL - Regex Validation Bypass
+Severity: CRITICAL
+File: src/telemetry/prom.py (line 106)
+Category: Input Validation
+Code:
+  if not _WORKSPACE_ID_PATTERN.match(workspace_id):  # VULNERABLE
+      return None
+
+Issue:
+  - Uses .match() which only validates the START of the string
+  - Trailing characters (newlines, null bytes) bypass validation
+  - Example: "workspace\n" passes .match() but contains newline
+
+Attack:
+  - Attacker provides workspace_id="workspace\nmalicious"
+  - Format check passes (only "workspace" is validated)
+  - Newline reaches Prometheus label value
+  - Could create unbounded cardinality via label injection
+
+Fix (1 line):
+  if not _WORKSPACE_ID_PATTERN.fullmatch(workspace_id):  # FIXED
+      return None
+
+Proof of Concept:
+  python3 -c "
+import re
+pattern = re.compile(r'^[a-z0-9][a-z0-9_-]{0,31}$')
+print(pattern.match('workspace\n'))      # <Match> - VULNERABLE
+print(pattern.fullmatch('workspace\n'))  # None - CORRECT
+"
+
+Impact: DO NOT MERGE without this fix
+
+---
+
+FINDING 2: HIGH - Missing Security Test Coverage
+Severity: HIGH
+File: tests/test_workspace_metrics.py
+Category: Testing Gap
+Issue:
+  - Test suite missing newline/null byte/control char injection tests
+  - Regression risk if buggy code reintroduced
+
+Missing Tests:
+  def test_invalid_newline_injection(self, monkeypatch):
+      """Newline should be rejected (Prometheus label attack)."""
+      monkeypatch.delenv("METRICS_WORKSPACE_ALLOWLIST", raising=False)
+      assert prom.canonical_workspace_id("workspace\n") is None
+
+  def test_invalid_null_byte_injection(self, monkeypatch):
+      """Null bytes should be rejected."""
+      monkeypatch.delenv("METRICS_WORKSPACE_ALLOWLIST", raising=False)
+      assert prom.canonical_workspace_id("workspace\x00") is None
+
+  def test_invalid_prometheus_special_chars(self, monkeypatch):
+      """Prometheus special chars should be rejected."""
+      monkeypatch.delenv("METRICS_WORKSPACE_ALLOWLIST", raising=False)
+      assert prom.canonical_workspace_id("workspace\"") is None
+      assert prom.canonical_workspace_id("workspace\\") is None
+
+  def test_invalid_control_characters(self, monkeypatch):
+      """Control characters should be rejected."""
+      monkeypatch.delenv("METRICS_WORKSPACE_ALLOWLIST", raising=False)
+      assert prom.canonical_workspace_id("workspace\t") is None
+      assert prom.canonical_workspace_id("workspace\x01") is None
+
+Impact: Add these tests - will catch Finding 1 regression
+
+---
+
+FINDING 3: MEDIUM - Allowlist Configuration Validation
+Severity: MEDIUM
+File: src/telemetry/prom.py (line 117)
+Category: Operational Risk
+Code:
+  allowlist_str = os.getenv("METRICS_WORKSPACE_ALLOWLIST", "")
+  if allowlist_str:
+      allowlist = {s.strip() for s in allowlist_str.split(",") if s.strip()}
+      if workspace_id not in allowlist:
+          return None
+
+Issue:
+  - Silently accepts malformed allowlists
+  - No warning if allowlist is empty or contains invalid entries
+  - Example: "METRICS_WORKSPACE_ALLOWLIST=ws1,,,ws2" silently becomes {ws1, ws2}
+
+Recommendation:
+  Add validation and logging to catch configuration errors:
+  if allowlist_str:
+      raw_entries = allowlist_str.split(",")
+      allowlist = {s.strip() for s in raw_entries if s.strip()}
+      if not allowlist:
+          _LOG.warning(
+              "METRICS_WORKSPACE_ALLOWLIST set but empty. All workspace IDs rejected. Config: %s",
+              allowlist_str
+          )
+
+Impact: Improves operational visibility, not a security blocker
+
+---
+
+FINDING 4: MEDIUM - Parameter Wiring Deferred (Design Decision)
+Severity: MEDIUM (informational)
+File: src/telemetry/prom.py (lines 415-430)
+Category: Design/Implementation Gap
+Code:
+  def record_queue_job(job_type: str, duration_seconds: float, workspace_id: str | None = None):
+      # workspace_id parameter accepted but NOT USED
+      _queue_job_latency.labels(job_type=job_type).observe(duration_seconds)
+
+Context:
+  - Commit A only adds parameter plumbing
+  - Actual label attachment deferred to Commit B
+  - This is intentional for safety-first review
+
+Requirement for Commit B:
+  - Must validate workspace_id via canonical_workspace_id() BEFORE using in labels
+  - Must check is_workspace_label_enabled() BEFORE attaching labels
+  - Must fall back to no-label recording if validation fails (not error)
+
+Impact: Commit B review must verify these patterns
+
+===============================================================================
+POSITIVE FINDINGS (Passing Controls)
+===============================================================================
+
+PASS 1: Default-Safe Design
+Status: CONFIRMED SECURE
+Evidence:
+  - METRICS_WORKSPACE_LABEL=off by default (feature disabled)
+  - Workspace labels NOT attached unless explicitly enabled
+  - Prevents cardinality explosion in production
+Compliance: Sprint 57 security posture maintained
+
+PASS 2: Backward Compatibility
+Status: CONFIRMED
+Evidence:
+  - workspace_id parameter optional with None default
+  - Existing calls continue working unchanged
+  - No breaking changes to function signatures
+  - Graceful handling of None/invalid workspace_id
+Compliance: No regression risk to existing code
+
+PASS 3: Allowlist Enforcement
+Status: CONFIRMED
+Evidence:
+  - METRICS_WORKSPACE_ALLOWLIST env var properly enforced
+  - Comma-separated parsing with whitespace trimming
+  - Rejects non-allowlisted workspace IDs
+  - Optional (no allowlist = accept all valid-format IDs)
+Compliance: Cardinality control mechanism functional
+
+PASS 4: Format Validation (Design)
+Status: LOGIC SOUND (implementation has bug)
+Evidence:
+  - Regex pattern ^[a-z0-9][a-z0-9_-]{0,31}$ is correct
+  - 32 char max appropriate for Prometheus labels
+  - Alphanumeric + hyphen + underscore + leading digit reasonable
+  - Bug is in USE of regex (.match vs .fullmatch), not pattern itself
+Compliance: Fix will make this secure
+
+PASS 5: Logging
+Status: CONFIRMED
+Evidence:
+  - Invalid formats logged: _LOG.warning() with details
+  - Allowlist mismatches logged: _LOG.warning() with workspace_id
+  - Suitable for audit trails and debugging
+Compliance: Security event logging in place
+
+PASS 6: Test Coverage (Existing Tests)
+Status: 28/28 PASSING
+Evidence:
+  - TestWorkspaceLabelFlag: 5 tests (flag behavior)
+  - TestWorkspaceIdValidation: 13 tests (format validation)
+  - TestRecordQueueJobWithWorkspace: 4 tests (backward compatibility)
+  - TestRecordActionExecutionWithWorkspace: 6 tests (signature validation)
+Compliance: Core functionality tested
+
+===============================================================================
+CARDINALITY RISK ASSESSMENT
+===============================================================================
+
+Current Baseline (no workspace labels):
+  Time series: provider(5) × action(50) × status(2) ≈ 500
+             + job_type(10) ≈ 10
+             = ~510 total time series
+  Risk Level: ACCEPTABLE
+
+With Workspace Labels (feature enabled, allowlist=100 workspaces):
+  Time series: 500 × 100 = 50,000 time series
+  Prometheus Memory: ~50MB (typical per 10K time series)
+  Risk Level: ACCEPTABLE with allowlist
+
+Current Bug (if Commit B doesn't fix):
+  Injection: "workspace\nmalicious" bypasses validation
+  Time series: Unbounded (attacker can create infinite cardinality)
+  Prometheus Memory: UNBOUNDED → OOMKill
+  Risk Level: CRITICAL
+
+Post-Fix (fullmatch + validation):
+  Injection prevented: Only valid format accepted
+  Time series: Bounded by allowlist (10-100 workspaces)
+  Risk Level: LOW
+
+===============================================================================
+SPRINT 57 COMPLIANCE MATRIX
+===============================================================================
+
+Control                           Status   Evidence
+---------------------------------------------------
+AuthN/AuthZ: DEV_AUTH_MODE        N/A      Not authentication-related
+AuthN/AuthZ: Scope checks         N/A      Not authorization-related
+Input validation: strict          FAIL     Bug in regex (CRITICAL)
+Input validation: PII masked      N/A      Not applicable to metrics
+Rate limiting: enforced           N/A      Metrics not rate-limited
+Secrets: no hardcoded keys        PASS     No secrets in code
+Secrets: env vars safe            PASS     os.getenv() safe
+Transport: SSL required           N/A      Not web transport
+Webhooks: HMAC signing            N/A      Not webhook-related
+Error handling: global handler    PASS     Exceptions caught and logged
+Logging/Audit: security events    PASS     Invalid attempts logged
+CORS: origin allowlist            N/A      Not CORS-related
+CI & tests: comprehensive         PARTIAL  28 tests passing, but gap in injection tests
+
+===============================================================================
+TELEMETRY GUARDRAILS v0.1.2 COMPLIANCE
+===============================================================================
+
+Guardrail                           Status    Evidence
+------------------------------------------------------
+1. Bounded cardinality              FAIL      Regex bug allows unbounded
+2. Explicit opt-in only             PASS      off by default
+3. Allowlist restrictions           PASS      Enforced
+4. Strict format validation         FAIL      uses .match() not .fullmatch()
+5. No default enabling              PASS      Disabled by default
+6. Comprehensive test coverage      PARTIAL   Missing injection tests
+
+Blocker Issues (must fix before merge): 1, 4
+
+===============================================================================
+RECOMMENDED ACTIONS (Priority Order)
+===============================================================================
+
+ACTION 1 - CRITICAL (Mandatory before merge):
+Fix: Change line 106 in src/telemetry/prom.py
+From: if not _WORKSPACE_ID_PATTERN.match(workspace_id):
+To:   if not _WORKSPACE_ID_PATTERN.fullmatch(workspace_id):
+Why: Prevent label injection via trailing characters
+Time: 5 minutes
+Test: pytest tests/test_workspace_metrics.py -v (should still pass all 28)
+
+ACTION 2 - HIGH (Required before merge):
+Add: 4 injection test cases to tests/test_workspace_metrics.py
+Tests:
+  - test_invalid_newline_injection (newline + carriage return)
+  - test_invalid_null_byte_injection (null byte)
+  - test_invalid_prometheus_special_chars (quote + backslash)
+  - test_invalid_control_characters (tab, control, carriage return)
+Why: Regression prevention + attack surface verification
+Time: 15 minutes
+Test: pytest tests/test_workspace_metrics.py -v (expect 32 passing)
+
+ACTION 3 - MEDIUM (Before production):
+Review: Commit B implementation for validation patterns
+Verify:
+  - canonical_workspace_id() called before label attachment
+  - is_workspace_label_enabled() checked before attaching labels
+  - Fallback to no-label if validation fails (not error)
+  - Integration tests verify label behavior
+Time: 30 minutes
+
+ACTION 4 - MEDIUM (Before production):
+Improve: Allowlist validation logging
+Add: Warning if METRICS_WORKSPACE_ALLOWLIST is empty or malformed
+Time: 10 minutes
+
+ACTION 5 - LOW (Documentation):
+Clarify: Commit message / docstring
+Add: Note that workspace_id parameter is plumbing-only in Commit A
+Add: Reference to Commit B for label attachment implementation
+Time: 5 minutes
+
+===============================================================================
+PR REVIEW CHECKLIST
+===============================================================================
+
+Code Review:
+  [ ] Regex fix applied (.fullmatch instead of .match)
+  [ ] No logic changes besides regex
+  [ ] Allowlist parsing unchanged (will add validation logging in follow-up)
+  [ ] Backward compatibility maintained
+
+Testing:
+  [ ] All 28 existing tests passing
+  [ ] 4 new injection test cases added
+  [ ] 32 total tests passing
+  [ ] pytest -v output shows no failures
+  [ ] Linting clean (black, ruff)
+  [ ] No new security warnings
+
+Security:
+  [ ] CRITICAL regex fix verified
+  [ ] Parameter not used (confirmed intentional for Commit A)
+  [ ] Default-safe design confirmed
+  [ ] Allowlist enforcement works
+  [ ] Logging in place for invalid attempts
+
+Documentation:
+  [ ] Docstrings updated (yes, already done)
+  [ ] Test comments clear (yes, already done)
+  [ ] Commit message mentions scope (parameter plumbing for Commit B)
+  [ ] .env.example updated if needed (check)
+
+Merge Criteria:
+  [ ] CRITICAL bug fixed
+  [ ] Security tests added
+  [ ] All tests passing
+  [ ] Approval from security review
+  [ ] No regressions in telemetry tests
+
+===============================================================================
+TEST VERIFICATION COMMANDS
+===============================================================================
+
+Run all tests:
+  pytest tests/test_workspace_metrics.py -v
+
+Run specific test class:
+  pytest tests/test_workspace_metrics.py::TestWorkspaceIdValidation -v
+
+Run with coverage:
+  pytest tests/test_workspace_metrics.py --cov=src.telemetry.prom --cov-report=term-missing
+
+Verify regex fix:
+  python3 << 'EOF'
+import re
+pattern = re.compile(r"^[a-z0-9][a-z0-9_-]{0,31}$")
+tests = [
+    ("workspace", True),
+    ("workspace\n", False),  # Should be False with fullmatch
+    ("workspace\x00", False),
+    ("my-workspace", True),
+    ("my_workspace", True),
+]
+for val, expected in tests:
+    result = bool(pattern.fullmatch(val))
+    status = "PASS" if result == expected else "FAIL"
+    print(f"{status}: fullmatch({repr(val):20}) => {result} (expected {expected})")
+EOF
+
+Expected output (after fix):
+  PASS: fullmatch('workspace'          ) => True (expected True)
+  PASS: fullmatch('workspace\n'        ) => False (expected False)
+  PASS: fullmatch('workspace\x00'      ) => False (expected False)
+  PASS: fullmatch('my-workspace'       ) => True (expected True)
+  PASS: fullmatch('my_workspace'       ) => True (expected True)
+
+===============================================================================
+REFERENCE FILES & PATHS
+===============================================================================
+
+Vulnerable File:
+  /c/Users/kylem/openai-agents-workflows-2025.09.28-v1/src/telemetry/prom.py
+
+Test File:
+  /c/Users/kylem/openai-agents-workflows-2025.09.28-v1/tests/test_workspace_metrics.py
+
+Commit Details:
+  Hash: 9daeadb
+  Branch: sprint-59/s59-01-metrics-workspace
+  Author: kmabbott81 <kbmabb@gmail.com>
+  Date: Thu Oct 16 06:27:20 2025 -0700
+
+Review Documents (generated):
+  /c/Users/kylem/openai-agents-workflows-2025.09.28-v1/SECURITY_REVIEW_S59-01_COMMIT_A.md
+  /c/Users/kylem/openai-agents-workflows-2025.09.28-v1/S59_SECURITY_FINDINGS.txt
+  /c/Users/kylem/openai-agents-workflows-2025.09.28-v1/S59_CRITICAL_FIX.patch
+  /c/Users/kylem/openai-agents-workflows-2025.09.28-v1/SECURITY_REVIEW_OUTPUT.txt
+
+===============================================================================
+FINAL RECOMMENDATION
+===============================================================================
+
+VERDICT: CONDITIONAL PASS - Fix CRITICAL bug before merge
+
+Current Status: HIGH RISK (CRITICAL)
+  - Regex vulnerability allows label injection
+  - Could enable cardinality explosion if Commit B wires up
+  - Fix is trivial (1 LOC)
+
+Action Required:
+  1. Apply regex fix (.match → .fullmatch)
+  2. Add 4 injection test cases
+  3. Re-run tests (expect 32 passing)
+  4. Approve merge
+
+Timeline:
+  - Immediate: Fix CRITICAL bug (5 min)
+  - Today: Add tests (15 min)
+  - This week: Commit B implementation + integration testing
+
+Post-Fix Status: LOW RISK
+  - Injection vectors eliminated
+  - Cardinality bounded by allowlist
+  - Ready for production with Commit B integration
+
+Sign-Off:
+  [ ] Security Review Complete
+  [ ] CRITICAL fix applied
+  [ ] Security tests added
+  [ ] Ready for PR merge (pending fixes)
+  [ ] Ready for production (pending Commit B + integration testing)
+
+Reviewer: Claude Code (Relay AI Orchestrator Security)
+Date: 2025-10-16
+Confidence: HIGH (straightforward regex bug, clear fix path)
+
+===============================================================================
