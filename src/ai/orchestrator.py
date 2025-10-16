@@ -3,6 +3,7 @@
 Manages action plan execution with role-based permission filtering and job lifecycle tracking.
 """
 
+import re
 from collections.abc import Mapping
 from typing import Any, Optional
 from uuid import uuid4
@@ -228,7 +229,7 @@ def _normalize_result(raw: Any) -> dict[str, Any]:
 def _safe_error_str(e: Exception, max_len: int = 500) -> str:
     """Convert exception to safe error string.
 
-    Performs light scrubbing for common PII patterns (api_key, token, etc.)
+    Performs regex-based scrubbing for common PII patterns (credentials, tokens, keys, etc.)
     and caps length to prevent log injection. Caller remains responsible for
     full PII redaction if error originates from user input.
 
@@ -241,10 +242,33 @@ def _safe_error_str(e: Exception, max_len: int = 500) -> str:
     """
     s = str(e)
 
-    # Light scrub for obvious credential-like patterns
-    SUSPICIOUS = ("api_key", "token", "authorization", "password", "secret", "bearer")
-    for key in SUSPICIOUS:
-        s = s.replace(key, "***")
+    # Regex patterns for common credential formats (case-insensitive)
+    patterns = [
+        # Credential keys and values: api_key=..., token: ..., etc.
+        r"(?i)(api[_-]?key|auth[_-]?token|access[_-]?token|secret[_-]?key|authorization)[\s:=]+[^\s;,}]+",
+        # Bearer tokens (followed by token value)
+        r"(?i)bearer\s+[^\s;,}]+",
+        # JWT-like patterns (3+ base64 segments separated by dots)
+        r"eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+",
+        # AWS-like patterns (AKIA... or starts with A3T/AGPA etc)
+        r"(?i)A(?:KIA|3T|GPA|IDA|ROA|RPA)[A-Z0-9]{16}",
+        # Common UUID patterns in credentials context
+        r"(?i)(?:api_?key|secret|password|token)[\s:=]+[\w-]{8}-[\w-]{4}-[\w-]{4}-[\w-]{4}-[\w-]{12}",
+        # Base64-encoded strings that might be secrets (40+ chars)
+        r"(?i)(?:secret|password|token|key)[\s:=]+[A-Za-z0-9+/]{40,}[=]*",
+    ]
+
+    # Apply all patterns, replace matches with ***
+    for pattern in patterns:
+        s = re.sub(pattern, "***", s)
+
+    # Generic fallback: replace common sensitive keywords and their values
+    # Match patterns like: key: value, key=value, key: "value"
+    generic_patterns = [
+        r"(?i)(api_key|auth_token|access_token|secret|password|bearer|authorization)[\s:=]+[^\s;,}]+",
+    ]
+    for pattern in generic_patterns:
+        s = re.sub(pattern, r"\1=***", s)
 
     return s[:max_len]
 
