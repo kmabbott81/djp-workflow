@@ -1,0 +1,341 @@
+===============================================================================
+SECURITY REVIEW - DOCUMENT INDEX
+Sprint 59 S59-01 Commit A: Metrics Workspace Label Plumbing
+===============================================================================
+
+QUICK START
+===========
+
+1. Read This First:
+   File: SECURITY_REVIEW_OUTPUT.txt (comprehensive summary)
+   Time: 10 minutes
+   Format: Technical, structured findings
+
+2. Executive Summary:
+   File: S59_SECURITY_FINDINGS.txt (condensed version)
+   Time: 3 minutes
+   Format: High-level verdict and action items
+
+3. Implement Fixes:
+   File: IMPLEMENTATION_GUIDANCE.md
+   Time: 25 minutes
+   Format: Step-by-step with code examples
+
+4. Full Technical Review:
+   File: SECURITY_REVIEW_S59-01_COMMIT_A.md
+   Time: 30 minutes
+   Format: Detailed analysis with context
+
+===============================================================================
+DOCUMENT DESCRIPTIONS
+===============================================================================
+
+SECURITY_REVIEW_OUTPUT.txt (PRIMARY REFERENCE)
+-----------------------------------------------
+Comprehensive findings summary with:
+- All findings (1 CRITICAL, 2 HIGH, 2 MEDIUM, 3 LOW)
+- Detailed explanation of each issue
+- Code examples showing vulnerable vs fixed versions
+- Compliance matrices (Sprint 57, Telemetry Guardrails v0.1.2)
+- Cardinality risk assessment
+- PR review checklist
+- Test verification commands
+- Reference paths
+
+Purpose: Primary document for security decision makers
+Time: 20 minutes to read
+Audience: Tech leads, security reviewers, PR approvers
+
+---
+
+SECURITY_REVIEW_S59-01_COMMIT_A.md (FULL FORENSIC ANALYSIS)
+-------------------------------------------------------------
+Complete technical analysis including:
+- Executive summary with risk levels
+- Detailed findings with attack vectors
+- Proof of concept code
+- Sprint 57 compliance check
+- Telemetry guardrails compliance matrix
+- Cardinality risk analysis
+- Recommendations with code snippets
+- Test execution results
+- Conclusion and sign-off criteria
+
+Purpose: Full forensic documentation for audit trail
+Time: 30 minutes to read
+Audience: Security architects, compliance auditors
+
+---
+
+S59_SECURITY_FINDINGS.txt (CONDENSED FINDINGS)
+-----------------------------------------------
+Bullet-point summary of all findings:
+- CRITICAL: Regex bug (1 line fix)
+- HIGH: Missing tests, allowlist validation
+- MEDIUM: Parameter deferred, implementation review needed
+- OPTIONAL: Allowlist logging
+- Positive findings: Default-safe design, backward compatible
+- Compliance status: FAIL on Sprint 57 (pending fix)
+- Cardinality risk analysis
+- Testing checklist
+- References
+
+Purpose: Quick reference for PR comments
+Time: 5 minutes to scan
+Audience: Everyone reviewing the PR
+
+---
+
+S59_CRITICAL_FIX.patch (EXECUTABLE PATCH)
+-------------------------------------------
+Ready-to-apply patch file with:
+- Exact line changes for .match() to .fullmatch()
+- 4 new test methods to add
+- Explanations of each change
+- Verification commands
+- Expected test output
+
+Purpose: Can be applied directly to fix code
+Usage: git apply S59_CRITICAL_FIX.patch
+Audience: Developers implementing the fix
+
+---
+
+IMPLEMENTATION_GUIDANCE.md (STEP-BY-STEP INSTRUCTIONS)
+-------------------------------------------------------
+Detailed implementation guide with:
+- Time estimates (5 min CRITICAL, 15 min HIGH, 10 min OPTIONAL)
+- File locations and line numbers
+- Current code vs fixed code side-by-side
+- New test code with explanations
+- Verification checklist
+- Commit message template
+- Validation script
+- Troubleshooting FAQ
+
+Purpose: Implement the security fixes
+Time: 25 minutes to execute
+Audience: Developers fixing the code
+
+---
+
+SECURITY_REVIEW_INDEX.txt (YOU ARE HERE)
+------------------------------------------
+This document - navigation guide for all security review materials
+Purpose: Help you find what you need
+Audience: Everyone
+
+===============================================================================
+READING PATHS BY ROLE
+===============================================================================
+
+SECURITY REVIEWER / TECH LEAD:
+1. Read: SECURITY_REVIEW_OUTPUT.txt (20 min)
+2. Review: SECURITY_REVIEW_S59-01_COMMIT_A.md (30 min)
+3. Verify: S59_SECURITY_FINDINGS.txt for checklist (5 min)
+4. Decision: Sign-off after fixes are applied
+
+Estimated Time: 55 minutes
+Action: Approve/reject PR based on fix completion
+
+---
+
+DEVELOPER IMPLEMENTING FIXES:
+1. Read: IMPLEMENTATION_GUIDANCE.md (10 min to understand)
+2. Follow: Step-by-step instructions (25 min to execute)
+3. Verify: Run test checklist (5 min)
+4. Commit: Use provided commit message template
+
+Estimated Time: 40 minutes
+Action: Apply all fixes, verify tests pass, push changes
+
+---
+
+PR REVIEWER:
+1. Scan: S59_SECURITY_FINDINGS.txt (5 min)
+2. Verify: Check fixes were applied to prom.py line 106 (2 min)
+3. Verify: Check 4 test cases added to test_workspace_metrics.py (3 min)
+4. Run: pytest tests/test_workspace_metrics.py -v (2 min)
+5. Check: Verify 32 tests passing (1 min)
+
+Estimated Time: 13 minutes
+Action: Comment on PR, approve if all fixes present and tests pass
+
+---
+
+PROJECT MANAGER / STAKEHOLDER:
+1. Read: Executive summary (3 min)
+2. Understand: CRITICAL = must fix before merge (1 min)
+3. Timeline: 25 minutes to fix, ~13 minutes to review (2 min)
+4. Risk: Goes from HIGH to LOW after fix (1 min)
+
+Estimated Time: 7 minutes
+Action: Ensure fixes are prioritized and completed
+
+===============================================================================
+KEY FINDINGS AT A GLANCE
+===============================================================================
+
+VERDICT: CONDITIONAL PASS (Fix 1 CRITICAL bug before merge)
+
+CRITICAL BUG:
+  Issue: Regex uses .match() instead of .fullmatch()
+  Risk: Label injection / cardinality explosion
+  Fix: 1 line change
+  Time: 5 minutes
+  Impact: HIGH to LOW risk after fix
+
+OTHER FINDINGS:
+  HIGH: Missing injection test coverage (15 min to fix)
+  MEDIUM: Allowlist validation logging (10 min, optional)
+  MEDIUM: Parameter integration in Commit B (for review only)
+  3 LOW: Minor recommendations
+
+POSITIVE:
+  + Default-safe design
+  + Backward compatible
+  + Allowlist enforcement works
+  + 28/28 tests passing
+
+TIMELINE:
+  Immediate: Apply CRITICAL fix (5 min)
+  Today: Add HIGH priority tests (15 min)
+  Review: Verify all 32 tests pass (5 min)
+  Decision: Approve merge after fixes
+
+COMPLIANCE:
+  Sprint 57: FAIL (pending regex fix)
+  Telemetry Guardrails v0.1.2: PARTIAL (pending fixes)
+  Post-Fix: PASS on all controls
+
+===============================================================================
+COMMIT METADATA
+===============================================================================
+
+Commit Hash: 9daeadb
+Branch: sprint-59/s59-01-metrics-workspace
+Author: kmabbott81 <kbmabb@gmail.com>
+Date: Thu Oct 16 06:27:20 2025 -0700
+
+Files Modified:
+  - src/telemetry/prom.py (added workspace label infrastructure)
+  - tests/test_workspace_metrics.py (new file with 28 tests)
+
+Changes Required:
+  - src/telemetry/prom.py: Line 106 (.match to .fullmatch) [CRITICAL]
+  - tests/test_workspace_metrics.py: Add 4 test methods [HIGH]
+
+===============================================================================
+FILE PATHS (ALL ABSOLUTE)
+===============================================================================
+
+/c/Users/kylem/openai-agents-workflows-2025.09.28-v1/src/telemetry/prom.py
+  - Location of regex bug (line 106)
+  - Target for CRITICAL fix
+
+/c/Users/kylem/openai-agents-workflows-2025.09.28-v1/tests/test_workspace_metrics.py
+  - Location for 4 new test methods
+  - Target for HIGH priority tests
+
+/c/Users/kylem/openai-agents-workflows-2025.09.28-v1/SECURITY_REVIEW_S59-01_COMMIT_A.md
+  - Full forensic security analysis
+
+/c/Users/kylem/openai-agents-workflows-2025.09.28-v1/SECURITY_REVIEW_OUTPUT.txt
+  - Primary reference document for findings
+
+/c/Users/kylem/openai-agents-workflows-2025.09.28-v1/S59_SECURITY_FINDINGS.txt
+  - Condensed bullet-point findings summary
+
+/c/Users/kylem/openai-agents-workflows-2025.09.28-v1/S59_CRITICAL_FIX.patch
+  - Executable patch file with all fixes
+
+/c/Users/kylem/openai-agents-workflows-2025.09.28-v1/IMPLEMENTATION_GUIDANCE.md
+  - Step-by-step implementation instructions
+
+/c/Users/kylem/openai-agents-workflows-2025.09.28-v1/SECURITY_REVIEW_INDEX.txt
+  - This file (document index)
+
+===============================================================================
+QUICK DECISION MATRIX
+===============================================================================
+
+Role               | Read First              | Purpose           | Then
+-------------------|-------------------------|-------------------|-----
+Security Lead      | SECURITY_REVIEW_OUTPUT  | Full analysis     | Approve post-fix
+Developer          | IMPLEMENTATION_GUIDANCE | How to fix         | Apply fixes
+PR Reviewer        | S59_SECURITY_FINDINGS   | Quick check       | Verify + approve
+Project Manager    | S59_SECURITY_FINDINGS   | Risk level        | Schedule work
+Auditor            | SECURITY_REVIEW_S59-01  | Compliance trail  | Review audit
+
+===============================================================================
+NEXT STEPS (ACTION ITEMS)
+===============================================================================
+
+IMMEDIATE:
+  1. Read SECURITY_REVIEW_OUTPUT.txt (20 min)
+  2. Understand CRITICAL regex bug (5 min)
+  3. Assign developer to apply fix (2 min)
+
+DEVELOPER WORK:
+  4. Follow IMPLEMENTATION_GUIDANCE.md (25 min)
+  5. Apply CRITICAL fix (.match to .fullmatch)
+  6. Add 4 injection test methods
+  7. Verify 32/32 tests passing
+  8. Commit and push
+
+REVIEW:
+  9. Verify regex fix applied (line 106)
+  10. Verify 4 new tests added
+  11. Run pytest (32/32 passing)
+  12. Approve PR
+
+MERGE & FOLLOW-UP:
+  13. Merge Commit A
+  14. Schedule Commit B review (label attachment)
+  15. Plan integration testing
+
+TOTAL TIME: 65 minutes
+
+===============================================================================
+SIGN-OFF CHECKLIST FOR MERGE GATE
+===============================================================================
+
+Code Quality:
+  [ ] Regex fix applied (.fullmatch used)
+  [ ] 4 new test methods added
+  [ ] No other code changes
+  [ ] Linting passes
+  [ ] No merge conflicts
+
+Testing:
+  [ ] 28 existing tests pass
+  [ ] 4 new security tests pass
+  [ ] 32 total tests passing
+  [ ] No test failures
+  [ ] Coverage maintained
+
+Security:
+  [ ] CRITICAL vulnerability fixed
+  [ ] Injection tests added
+  [ ] Security review completed
+  [ ] Risk: HIGH to LOW
+
+Documentation:
+  [ ] Commit message clear
+  [ ] Code comments updated
+  [ ] No doc debt
+
+Approval:
+  [ ] Security review sign-off
+  [ ] Tech lead approval
+  [ ] No blockers
+
+If ALL checked: APPROVED FOR MERGE
+
+===============================================================================
+
+For questions or clarifications, refer to specific review documents.
+
+Reviewer: Claude Code (Relay AI Orchestrator Security)
+Date: 2025-10-16
+Status: SECURITY REVIEW COMPLETE - AWAITING FIXES

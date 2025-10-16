@@ -71,6 +71,10 @@ _ai_tokens_total = None
 _ai_jobs_total = None
 _ai_job_latency_seconds = None
 _ai_queue_depth = None
+# Sprint 59-05: Job list query metrics
+_ai_job_list_queries_total = None
+_ai_job_list_duration_seconds = None
+_ai_job_list_results_total = None
 _security_decisions_total = None
 
 
@@ -147,6 +151,7 @@ def init_prometheus() -> None:
     global _outlook_draft_sent_total, _outlook_draft_send_seconds
     global _ai_planner_seconds, _ai_tokens_total, _ai_jobs_total
     global _ai_job_latency_seconds, _ai_queue_depth, _security_decisions_total
+    global _ai_job_list_queries_total, _ai_job_list_duration_seconds, _ai_job_list_results_total
 
     if not _is_enabled():
         _LOG.debug("Telemetry disabled, skipping Prometheus init")
@@ -203,17 +208,17 @@ def init_prometheus() -> None:
             buckets=[0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0],
         )
 
-        # Sprint 49 Phase B: Action metrics
+        # Sprint 49 Phase B: Action metrics (Sprint 59: workspace_id label added)
         _action_exec_total = Counter(
             "action_exec_total",
-            "Total action executions by provider, action, and status",
-            ["provider", "action", "status"],
+            "Total action executions by provider, action, status, and workspace",
+            ["provider", "action", "status", "workspace_id"],
         )
 
         _action_latency_seconds = Histogram(
             "action_latency_seconds",
-            "Action execution latency in seconds",
-            ["provider", "action"],
+            "Action execution latency in seconds by provider, action, and workspace",
+            ["provider", "action", "workspace_id"],
             buckets=[0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0],
         )
 
@@ -374,6 +379,26 @@ def init_prometheus() -> None:
             "Current AI job queue depth",
         )
 
+        # Sprint 59-05: Job list query metrics (workspace-scoped)
+        _ai_job_list_queries_total = Counter(
+            "ai_job_list_queries_total",
+            "Total /ai/jobs list queries by workspace",
+            ["workspace_id"],
+        )
+
+        _ai_job_list_duration_seconds = Histogram(
+            "ai_job_list_duration_seconds",
+            "Duration of /ai/jobs list queries in seconds",
+            ["workspace_id"],
+            buckets=[0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0],
+        )
+
+        _ai_job_list_results_total = Counter(
+            "ai_job_list_results_total",
+            "Total jobs returned by /ai/jobs list queries",
+            ["workspace_id"],
+        )
+
         _security_decisions_total = Counter(
             "security_decisions_total",
             "Security permission decisions",
@@ -520,8 +545,12 @@ def record_action_execution(
         return
 
     try:
-        _action_exec_total.labels(provider=provider, action=action, status=status).inc()
-        _action_latency_seconds.labels(provider=provider, action=action).observe(duration_seconds)
+        # Use "unscoped" as default when workspace_id is None/invalid (Sprint 59 Commit C)
+        ws_label = workspace_id if workspace_id else "unscoped"
+        _action_exec_total.labels(provider=provider, action=action, status=status, workspace_id=ws_label).inc()
+        _action_latency_seconds.labels(provider=provider, action=action, workspace_id=ws_label).observe(
+            duration_seconds
+        )
     except Exception as exc:
         _LOG.warning("Failed to record action execution metric: %s", exc)
 
@@ -673,3 +702,28 @@ def record_ai_tokens(tokens_input: int, tokens_output: int) -> None:
         _ai_tokens_total.labels(type="output").inc(tokens_output)
     except Exception as exc:
         _LOG.warning("Failed to record AI tokens metric: %s", exc)
+
+
+# Sprint 59-05: Job list query metrics recording
+
+
+def record_job_list_query(workspace_id: str | None, count: int, seconds: float) -> None:
+    """Record /ai/jobs list query metrics with workspace scoping.
+
+    Args:
+        workspace_id: Workspace identifier (or "unscoped" if None)
+        count: Number of jobs returned
+        seconds: Query duration in seconds
+    """
+    if not _PROM_AVAILABLE or not _METRICS_INITIALIZED:
+        return
+
+    try:
+        # Use "unscoped" as default when workspace_id is None (mirrors Commit C semantics)
+        ws_label = workspace_id if workspace_id else "unscoped"
+
+        _ai_job_list_queries_total.labels(workspace_id=ws_label).inc()
+        _ai_job_list_duration_seconds.labels(workspace_id=ws_label).observe(seconds)
+        _ai_job_list_results_total.labels(workspace_id=ws_label).inc(count)
+    except Exception as exc:
+        _LOG.warning("Failed to record job list query metric: %s", exc)

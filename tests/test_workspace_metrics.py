@@ -272,3 +272,114 @@ class TestOrchestratorIntegration:
             duration_seconds=1.5,
             workspace_id=ws_id,  # None
         )
+
+
+class TestWorkspaceLabelsInMetrics:
+    """Test workspace_id labels appear in exported Prometheus metrics (Commit C)."""
+
+    def test_workspace_label_appears_in_metrics_output(self, clean_metrics_registry, workspace_env, monkeypatch):
+        """workspace_id label should appear in metrics output when valid workspace provided."""
+        # Setup: enable telemetry and workspace labels
+        monkeypatch.setenv("TELEMETRY_ENABLED", "true")
+        workspace_env(label="on", allowlist="ws_demo")
+
+        # Re-initialize metrics with telemetry enabled
+        prom.init_prometheus()
+
+        # Emit metric with workspace_id
+        ws_id = prom.canonical_workspace_id("ws_demo")
+        prom.record_action_execution(
+            provider="google",
+            action="gmail.send",
+            status="success",
+            duration_seconds=1.5,
+            workspace_id=ws_id,
+        )
+
+        # Verify: workspace_id appears in exported metrics
+        metrics_text = prom.generate_metrics_text()
+        assert 'workspace_id="ws_demo"' in metrics_text
+        assert "action_exec_total{" in metrics_text
+        assert "action_latency_seconds_bucket{" in metrics_text
+
+    def test_unscoped_label_when_workspace_none(self, clean_metrics_registry, workspace_env, monkeypatch):
+        """workspace_id should be 'unscoped' when None is provided."""
+        # Setup: enable telemetry, disable workspace labels (default)
+        monkeypatch.setenv("TELEMETRY_ENABLED", "true")
+        workspace_env(label="off")
+
+        # Re-initialize metrics with telemetry enabled
+        prom.init_prometheus()
+
+        # Emit metric without workspace_id
+        prom.record_action_execution(
+            provider="google",
+            action="gmail.send",
+            status="success",
+            duration_seconds=1.5,
+            workspace_id=None,
+        )
+
+        # Verify: workspace_id="unscoped" appears in metrics
+        metrics_text = prom.generate_metrics_text()
+        assert 'workspace_id="unscoped"' in metrics_text
+
+    def test_multiple_workspaces_create_distinct_metrics(self, clean_metrics_registry, workspace_env, monkeypatch):
+        """Metrics with different workspace_ids should create distinct metric series."""
+        # Setup: enable telemetry and workspace labels, allowlist multiple workspaces
+        monkeypatch.setenv("TELEMETRY_ENABLED", "true")
+        workspace_env(label="on", allowlist="ws1, ws2, ws3")
+
+        # Re-initialize metrics with telemetry enabled
+        prom.init_prometheus()
+
+        # Emit metrics for different workspaces
+        for ws in ["ws1", "ws2", "ws3"]:
+            ws_id = prom.canonical_workspace_id(ws)
+            prom.record_action_execution(
+                provider="google",
+                action="gmail.send",
+                status="success",
+                duration_seconds=1.0,
+                workspace_id=ws_id,
+            )
+
+        # Verify: all three workspace_ids appear in metrics
+        metrics_text = prom.generate_metrics_text()
+        assert 'workspace_id="ws1"' in metrics_text
+        assert 'workspace_id="ws2"' in metrics_text
+        assert 'workspace_id="ws3"' in metrics_text
+
+    def test_workspace_label_in_histogram_and_counter(self, clean_metrics_registry, workspace_env, monkeypatch):
+        """workspace_id should appear in both counter and histogram metrics."""
+        # Setup: enable telemetry and workspace labels
+        monkeypatch.setenv("TELEMETRY_ENABLED", "true")
+        workspace_env(label="on", allowlist="ws_test")
+
+        # Re-initialize metrics with telemetry enabled
+        prom.init_prometheus()
+
+        # Emit metric with workspace_id
+        ws_id = prom.canonical_workspace_id("ws_test")
+        prom.record_action_execution(
+            provider="google",
+            action="gmail.send",
+            status="success",
+            duration_seconds=2.0,
+            workspace_id=ws_id,
+        )
+
+        # Verify: workspace_id appears in both metric types
+        metrics_text = prom.generate_metrics_text()
+
+        # Counter metric
+        assert "action_exec_total{" in metrics_text
+        assert 'provider="google"' in metrics_text
+        assert 'action="gmail.send"' in metrics_text
+        assert 'workspace_id="ws_test"' in metrics_text
+
+        # Histogram metric (check bucket lines)
+        assert "action_latency_seconds_bucket{" in metrics_text
+        # At least one histogram line should have workspace_id
+        histogram_lines = [line for line in metrics_text.split("\n") if "action_latency_seconds" in line]
+        assert any('workspace_id="ws_test"' in line for line in histogram_lines)
