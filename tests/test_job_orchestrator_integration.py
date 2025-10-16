@@ -71,12 +71,20 @@ async def test_execute_plan_tracks_jobs(orchestrator: AIOrchestrator, job_store:
     executor.execute = AsyncMock(side_effect=execute_wrapper)
     executor.preview = MagicMock(return_value=MagicMock(preview_id="test_preview"))
 
-    # Execute plan
-    plan = _make_plan(should_fail=should_fail)
+    # Generate plan with correlation ID
+    plan_result = _make_plan(should_fail=should_fail)
+    plan, plan_id = await orchestrator.plan(
+        user_id="user_123",
+        prompt="Test plan",
+        planner=MagicMock(plan=AsyncMock(return_value=plan_result)),
+    )
+
+    # Execute plan with explicit plan_id
     result = await orchestrator.execute_plan(
         user_id="user_123",
         plan=plan,
         executor=executor,
+        plan_id=plan_id,
     )
 
     # Verify plan_id present

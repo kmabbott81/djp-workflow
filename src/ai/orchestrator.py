@@ -3,6 +3,7 @@
 Manages action plan execution with role-based permission filtering and job lifecycle tracking.
 """
 
+from collections.abc import Mapping
 from typing import Any, Optional
 from uuid import uuid4
 
@@ -62,8 +63,8 @@ class AIOrchestrator:
         prompt: str,
         planner: Any,  # src.ai.planner.ActionPlanner
         context: Optional[dict[str, Any]] = None,
-    ) -> PlanResult:
-        """Generate and guard action plan with job correlation ID.
+    ) -> tuple[PlanResult, str]:
+        """Generate and guard action plan, returning (plan, plan_id) for correlation.
 
         Args:
             user_id: User UUID
@@ -72,27 +73,24 @@ class AIOrchestrator:
             context: Optional execution context
 
         Returns:
-            Filtered plan respecting user permissions (includes plan_id for correlation)
+            Tuple of (filtered_plan, plan_id) for job correlation
         """
-        # Assign correlation ID for job tracking (internal; no API change)
-        plan_id = str(uuid4())
-
         # Generate plan
         plan = await planner.plan(prompt, context)
 
         # Guard: filter disallowed steps
         guarded_plan = self._guard_plan_steps(user_id, plan)
 
-        # Stash plan_id on plan for downstream job tracking
-        guarded_plan._plan_id = plan_id  # type: ignore
-
-        return guarded_plan
+        # Return plan with explicit correlation ID (no hidden attributes)
+        plan_id = str(uuid4())
+        return guarded_plan, plan_id
 
     async def execute_plan(
         self,
         user_id: str,
         plan: PlanResult,
         executor: Any,  # src.actions.execution.ActionExecutor
+        plan_id: str,
         workspace_id: str = "default",
     ) -> dict[str, Any]:
         """Execute plan with pre-execute permission re-check + job tracking.
@@ -101,16 +99,14 @@ class AIOrchestrator:
             user_id: User UUID
             plan: Action plan (should be pre-guarded)
             executor: ActionExecutor instance
+            plan_id: Correlation ID from plan() tuple (required)
             workspace_id: Workspace UUID
 
         Returns:
-            Execution results per step with job IDs
+            Execution results per step with job IDs and plan_id
         """
         # Re-guard: final permission check before execute
         guarded_plan = self._guard_plan_steps(user_id, plan)
-
-        # Retrieve plan_id from plan (set in plan() method)
-        plan_id = getattr(plan, "_plan_id", str(uuid4()))
 
         # Check if plan is empty after filtering
         if not guarded_plan.steps:
@@ -138,29 +134,30 @@ class AIOrchestrator:
 
                 # Execute step
                 preview = executor.preview(step.action_id, step.params)
-                result = await executor.execute(
+                raw_result = await executor.execute(
                     preview_id=preview.preview_id,
                     workspace_id=workspace_id,
                     actor_id=user_id,
                 )
 
-                # Mark job as success (result should be pre-redacted by executor)
-                # Store result only if it's a dict; otherwise skip (will be redacted at API layer)
-                result_data = result if isinstance(result, dict) else None
-                await self.job_store.finish_ok(job.job_id, result=result_data)
+                # Normalize result to dict
+                normalized_result = _normalize_result(raw_result)
+
+                # Mark job as success with normalized result
+                await self.job_store.finish_ok(job.job_id, result=normalized_result)
 
                 results.append(
                     {
                         "step_index": idx,
                         "action_id": step.action_id,
                         "job_id": job.job_id,
-                        "status": result.status.value if hasattr(result, "status") else "success",
-                        "result": result.result if hasattr(result, "result") else result,
+                        "status": normalized_result.get("status", "success"),
+                        "result": normalized_result.get("result"),
                     }
                 )
             except Exception as e:
-                # Mark job as failed (error message should be redacted if it contains PII)
-                error_msg = str(e)
+                # Safe error string (basic PII scrub + length cap)
+                error_msg = _safe_error_str(e)
                 await self.job_store.finish_err(job.job_id, error=error_msg)
 
                 results.append(
@@ -179,6 +176,52 @@ class AIOrchestrator:
             "results": results,
             "plan_id": plan_id,
         }
+
+
+def _normalize_result(raw: Any) -> dict[str, Any]:
+    """Normalize executor result to dict.
+
+    Handles both dict and object-based results. Extracts standard fields:
+    status, result, error. Caller is responsible for PII redaction upstream.
+
+    Args:
+        raw: Executor result (dict or object with attributes)
+
+    Returns:
+        Normalized dict with status, result, error fields
+    """
+    if isinstance(raw, Mapping):
+        return dict(raw)
+
+    out = {}
+    for attr in ("status", "result", "error"):
+        if hasattr(raw, attr):
+            out[attr] = getattr(raw, attr)
+    return out
+
+
+def _safe_error_str(e: Exception, max_len: int = 500) -> str:
+    """Convert exception to safe error string.
+
+    Performs light scrubbing for common PII patterns (api_key, token, etc.)
+    and caps length to prevent log injection. Caller remains responsible for
+    full PII redaction if error originates from user input.
+
+    Args:
+        e: Exception to convert
+        max_len: Max length of error string (default 500)
+
+    Returns:
+        Scrubbed, length-capped error message
+    """
+    s = str(e)
+
+    # Light scrub for obvious credential-like patterns
+    SUSPICIOUS = ("api_key", "token", "authorization", "password", "secret", "bearer")
+    for key in SUSPICIOUS:
+        s = s.replace(key, "***")
+
+    return s[:max_len]
 
 
 # Global orchestrator instance
