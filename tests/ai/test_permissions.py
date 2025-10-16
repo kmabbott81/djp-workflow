@@ -10,13 +10,30 @@ Tests action allowlist enforcement with:
 import os
 from unittest.mock import patch
 
+import pytest
+
 from src.security.permissions import (
+    GLOBAL_ACTION_DENYLIST,
     add_to_denylist,
     can_execute,
     get_allowed_actions,
     is_action_globally_denied,
     remove_from_denylist,
 )
+
+
+@pytest.fixture(autouse=True)
+def reset_denylist():
+    """Reset global action denylist before and after each test to prevent isolation issues."""
+    # Save original state
+    original = GLOBAL_ACTION_DENYLIST.copy()
+    GLOBAL_ACTION_DENYLIST.clear()
+
+    yield
+
+    # Restore original state after test
+    GLOBAL_ACTION_DENYLIST.clear()
+    GLOBAL_ACTION_DENYLIST.extend(original)
 
 
 class TestPermissions:
