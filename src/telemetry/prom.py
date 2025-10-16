@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import time
 from typing import Any
 
@@ -76,6 +77,51 @@ _security_decisions_total = None
 def _is_enabled() -> bool:
     """Check if telemetry is enabled via environment variable."""
     return str(os.getenv("TELEMETRY_ENABLED", "false")).lower() in {"1", "true", "yes"}
+
+
+# Workspace label support (Sprint 59: Multi-tenant metrics)
+_WORKSPACE_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]{0,31}$")
+
+
+def is_workspace_label_enabled() -> bool:
+    """Check if workspace_id label should be attached to metrics.
+
+    Returns True only if METRICS_WORKSPACE_LABEL=on (default: off).
+    Workspace labels have higher cardinality (O(workspace_count × provider × status))
+    and must be explicitly enabled and allowlisted to prevent Prometheus OOMKill.
+    """
+    return str(os.getenv("METRICS_WORKSPACE_LABEL", "off")).lower() == "on"
+
+
+def canonical_workspace_id(workspace_id: str | None) -> str | None:
+    """Validate and canonicalize workspace_id for metrics labels.
+
+    Format validation: ^[a-z0-9][a-z0-9_-]{0,31}$ (32 char max)
+    Allowlist enforcement: Checked against METRICS_WORKSPACE_ALLOWLIST (comma-separated)
+
+    Args:
+        workspace_id: Workspace identifier to validate
+
+    Returns:
+        Canonical workspace_id if valid and allowed, None otherwise
+    """
+    if not workspace_id or not isinstance(workspace_id, str):
+        return None
+
+    # Check format (use fullmatch to prevent injection via trailing chars)
+    if not _WORKSPACE_ID_PATTERN.fullmatch(workspace_id):
+        _LOG.warning("Invalid workspace_id format (must match ^[a-z0-9][a-z0-9_-]{0,31}$): %s", workspace_id)
+        return None
+
+    # Check allowlist if configured
+    allowlist_str = os.getenv("METRICS_WORKSPACE_ALLOWLIST", "")
+    if allowlist_str:
+        allowlist = {s.strip() for s in allowlist_str.split(",") if s.strip()}
+        if workspace_id not in allowlist:
+            _LOG.warning("workspace_id not in allowlist: %s", workspace_id)
+            return None
+
+    return workspace_id
 
 
 def init_prometheus() -> None:
@@ -366,12 +412,14 @@ def record_http_request(method: str, endpoint: str, status_code: int, duration_s
         _LOG.warning("Failed to record HTTP request metric: %s", exc)
 
 
-def record_queue_job(job_type: str, duration_seconds: float) -> None:
+def record_queue_job(job_type: str, duration_seconds: float, workspace_id: str | None = None) -> None:
     """Record background job metrics.
 
     Args:
         job_type: Type of job (e.g., workflow_run, batch_publish)
         duration_seconds: Job processing time in seconds
+        workspace_id: Optional workspace identifier for multi-tenant scoping.
+                      Only used if METRICS_WORKSPACE_LABEL=on and workspace_id is valid.
     """
     if not _PROM_AVAILABLE or not _METRICS_INITIALIZED:
         return
@@ -455,7 +503,9 @@ def timer_context(label: str = "operation") -> TimerContext:
 # Sprint 49 Phase B: Action metrics recording
 
 
-def record_action_execution(provider: str, action: str, status: str, duration_seconds: float) -> None:
+def record_action_execution(
+    provider: str, action: str, status: str, duration_seconds: float, workspace_id: str | None = None
+) -> None:
     """Record action execution metrics.
 
     Args:
@@ -463,6 +513,8 @@ def record_action_execution(provider: str, action: str, status: str, duration_se
         action: Action ID (e.g., webhook.save)
         status: Execution status (success, failed)
         duration_seconds: Execution duration in seconds
+        workspace_id: Optional workspace identifier for multi-tenant scoping.
+                      Only used if METRICS_WORKSPACE_LABEL=on and workspace_id is valid.
     """
     if not _PROM_AVAILABLE or not _METRICS_INITIALIZED:
         return
