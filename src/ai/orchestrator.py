@@ -10,6 +10,7 @@ from uuid import uuid4
 from src.ai.job_store import JobStore, get_job_store
 from src.schemas.ai_plan import PlanResult
 from src.schemas.permissions import RBACRegistry, default_rbac
+from src.telemetry import jobs as job_metrics
 
 
 class AIOrchestrator:
@@ -146,6 +147,13 @@ class AIOrchestrator:
                 # Mark job as success with normalized result
                 await self.job_store.finish_ok(job.job_id, result=normalized_result)
 
+                # Emit metrics
+                job_metrics.inc_job("success")
+                job_metrics.inc_job_by_action(step.action_id, "success")
+                if job.started_at and job.finished_at:
+                    latency = (job.finished_at - job.started_at).total_seconds()
+                    job_metrics.observe_job_latency(step.action_id, max(0.0, latency))
+
                 results.append(
                     {
                         "step_index": idx,
@@ -159,6 +167,13 @@ class AIOrchestrator:
                 # Safe error string (basic PII scrub + length cap)
                 error_msg = _safe_error_str(e)
                 await self.job_store.finish_err(job.job_id, error=error_msg)
+
+                # Emit metrics
+                job_metrics.inc_job("failed")
+                job_metrics.inc_job_by_action(step.action_id, "failed")
+                if job.started_at and job.finished_at:
+                    latency = (job.finished_at - job.started_at).total_seconds()
+                    job_metrics.observe_job_latency(step.action_id, max(0.0, latency))
 
                 results.append(
                     {
