@@ -145,20 +145,22 @@ class AIOrchestrator:
                 # Normalize result to dict
                 normalized_result = _normalize_result(raw_result)
 
-                # Mark job as success with normalized result
-                await self.job_store.finish_ok(job.job_id, result=normalized_result)
-
-                # Emit metrics
+                # Emit metrics BEFORE job store mutation (for resilience)
                 job_metrics.inc_job("success")
                 try:
                     provider = job_metrics._provider_from_action_id(step.action_id)
                     job_metrics.inc_job_by_provider(provider, "success")
-                    if job.started_at and job.finished_at:
-                        latency = (job.finished_at - job.started_at).total_seconds()
-                        job_metrics.observe_job_latency(provider, max(0.0, latency))
                 except ValueError:
                     # Skip provider metrics if action_id format is invalid
-                    pass
+                    provider = None
+
+                # Mark job as success with normalized result
+                updated_job = await self.job_store.finish_ok(job.job_id, result=normalized_result)
+
+                # Record latency after job state updated
+                if provider and updated_job and updated_job.started_at and updated_job.finished_at:
+                    latency = (updated_job.finished_at - updated_job.started_at).total_seconds()
+                    job_metrics.observe_job_latency(provider, max(0.0, latency))
 
                 results.append(
                     {
@@ -170,21 +172,25 @@ class AIOrchestrator:
                     }
                 )
             except Exception as e:
-                # Safe error string (basic PII scrub + length cap)
+                # Safe error string (regex-based PII scrubbing)
                 error_msg = _safe_error_str(e)
-                await self.job_store.finish_err(job.job_id, error=error_msg)
 
-                # Emit metrics
+                # Emit metrics BEFORE job store mutation (for resilience)
                 job_metrics.inc_job("failed")
                 try:
                     provider = job_metrics._provider_from_action_id(step.action_id)
                     job_metrics.inc_job_by_provider(provider, "failed")
-                    if job.started_at and job.finished_at:
-                        latency = (job.finished_at - job.started_at).total_seconds()
-                        job_metrics.observe_job_latency(provider, max(0.0, latency))
                 except ValueError:
                     # Skip provider metrics if action_id format is invalid
-                    pass
+                    provider = None
+
+                # Mark job as failed
+                updated_job = await self.job_store.finish_err(job.job_id, error=error_msg)
+
+                # Record latency after job state updated
+                if provider and updated_job and updated_job.started_at and updated_job.finished_at:
+                    latency = (updated_job.finished_at - updated_job.started_at).total_seconds()
+                    job_metrics.observe_job_latency(provider, max(0.0, latency))
 
                 results.append(
                     {
