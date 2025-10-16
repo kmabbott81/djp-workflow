@@ -6,7 +6,7 @@ Designed to be swappable with DB implementation later.
 """
 
 import asyncio
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Optional
 from uuid import uuid4
 
@@ -48,7 +48,7 @@ class JobStore:
                 action_id=action_id,
                 plan_id=plan_id,
                 status=JobStatus.PENDING,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
             )
             self._jobs[job.job_id] = job
             return job
@@ -66,7 +66,7 @@ class JobStore:
             job = self._jobs.get(job_id)
             if job:
                 # Create updated record with started_at timestamp
-                job = JobRecord(**{**job.model_dump(), "status": JobStatus.RUNNING, "started_at": datetime.utcnow()})
+                job = JobRecord(**{**job.model_dump(), "status": JobStatus.RUNNING, "started_at": datetime.now(UTC)})
                 self._jobs[job_id] = job
             return job
 
@@ -87,7 +87,7 @@ class JobStore:
                     **{
                         **job.model_dump(),
                         "status": JobStatus.SUCCESS,
-                        "finished_at": datetime.utcnow(),
+                        "finished_at": datetime.now(UTC),
                         "result": result,
                     }
                 )
@@ -111,7 +111,7 @@ class JobStore:
                     **{
                         **job.model_dump(),
                         "status": JobStatus.FAILED,
-                        "finished_at": datetime.utcnow(),
+                        "finished_at": datetime.now(UTC),
                         "error": error,
                     }
                 )

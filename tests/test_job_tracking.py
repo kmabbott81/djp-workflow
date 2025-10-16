@@ -4,7 +4,7 @@ Tests JobStore lifecycle (create → start → finish_ok/err)
 and status transitions with timestamps.
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 
@@ -132,7 +132,7 @@ class TestJobStore:
                 user_id="user_123",
                 action_id="gmail.send",
                 status=JobStatus.PENDING,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
                 extra_field="should_fail",  # type: ignore
             )
 
