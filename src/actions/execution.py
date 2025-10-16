@@ -311,15 +311,24 @@ class ActionExecutor:
         duration_ms = int((time.time() - start_time) * 1000)
         duration_seconds = duration_ms / 1000.0
 
-        # Record metrics
+        # Record metrics (with optional workspace scoping - Sprint 59)
         try:
-            from ..telemetry.prom import record_action_error, record_action_execution
+            from ..telemetry.prom import (
+                canonical_workspace_id,
+                is_workspace_label_enabled,
+                record_action_error,
+                record_action_execution,
+            )
+
+            # Compute workspace_id label if feature enabled
+            ws_id = canonical_workspace_id(workspace_id) if is_workspace_label_enabled() else None
 
             record_action_execution(
                 provider=provider,
                 action=action,
                 status=status.value,
                 duration_seconds=duration_seconds,
+                workspace_id=ws_id,
             )
 
             if status == ActionStatus.FAILED and exception_type:

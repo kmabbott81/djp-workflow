@@ -224,3 +224,51 @@ class TestRecordActionExecutionWithWorkspace:
         prom.record_action_execution("google", "gmail.send", "success", 1.0, workspace_id="ws1")
         prom.record_action_execution("google", "gmail.send", "failed", 0.5, workspace_id="ws1")
         prom.record_action_execution("microsoft", "outlook.send", "success", 1.5, workspace_id="ws2")
+
+
+class TestOrchestratorIntegration:
+    """Integration tests for workspace_id in orchestrator metric emissions (Commit B)."""
+
+    def test_orchestrator_metrics_with_workspace_enabled(self, monkeypatch):
+        """Orchestrator should emit metrics with workspace_id when flag is on and ID is allowlisted."""
+        monkeypatch.setenv("METRICS_WORKSPACE_LABEL", "on")
+        monkeypatch.setenv("METRICS_WORKSPACE_ALLOWLIST", "ws_demo")
+
+        # Simulate orchestrator metric emission path (from src/actions/execution.py)
+        ws_enabled = prom.is_workspace_label_enabled()
+        workspace_id = "ws_demo"
+        ws_id = prom.canonical_workspace_id(workspace_id) if ws_enabled else None
+
+        # Verify workspace_id was properly validated
+        assert ws_enabled is True
+        assert ws_id == "ws_demo"
+
+        # Emit metric with workspace_id
+        prom.record_action_execution(
+            provider="google",
+            action="gmail.send",
+            status="success",
+            duration_seconds=1.5,
+            workspace_id=ws_id,
+        )
+
+    def test_orchestrator_metrics_workspace_invalid_omits_label(self, monkeypatch):
+        """Orchestrator should omit workspace label when ID is invalid or not allowlisted."""
+        monkeypatch.setenv("METRICS_WORKSPACE_LABEL", "on")
+        monkeypatch.setenv("METRICS_WORKSPACE_ALLOWLIST", "ws_demo")
+
+        # Invalid workspace_id should return None and result in label omission
+        invalid_workspace_id = "unauthorized-ws"
+        ws_id = prom.canonical_workspace_id(invalid_workspace_id)
+
+        # Verify workspace_id was rejected
+        assert ws_id is None
+
+        # Emit metric WITHOUT workspace_id (label omitted)
+        prom.record_action_execution(
+            provider="google",
+            action="gmail.send",
+            status="success",
+            duration_seconds=1.5,
+            workspace_id=ws_id,  # None
+        )
