@@ -12,10 +12,12 @@ from typing import Any, Optional
 from uuid import uuid4
 
 from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from starlette.responses import Response
 
 from .auth.security import require_scopes
 from .limits.limiter import RateLimitExceeded, get_rate_limiter
@@ -23,6 +25,27 @@ from .telemetry import init_telemetry
 from .telemetry.middleware import TelemetryMiddleware
 from .templates import list_templates
 from .templates import render_template as render_template_content
+
+# Sprint 58 Slice 5: Request body size limit (512 KiB for security hardening)
+MAX_BODY_BYTES = 512 * 1024
+
+
+class BodySizeLimitMiddleware(BaseHTTPMiddleware):
+    """Middleware to limit request body size (Sprint 58 hardening)."""
+
+    async def dispatch(self, request: Request, call_next):
+        """Check request body size before processing."""
+        body = await request.body()
+        if len(body) > MAX_BODY_BYTES:
+            return Response("Request body too large (max 512 KiB)", status_code=413)
+
+        # Re-inject body for downstream consumption
+        async def receive():
+            return {"type": "http.request", "body": body, "more_body": False}
+
+        request._receive = receive
+        return await call_next(request)
+
 
 app = FastAPI(
     title="DJP Workflow API",
@@ -113,6 +136,9 @@ app.openapi = custom_openapi
 # Sprint 46: Initialize telemetry and add middleware
 init_telemetry()
 app.add_middleware(TelemetryMiddleware)
+
+# Sprint 58 Slice 5: Add request body size limit middleware
+app.add_middleware(BodySizeLimitMiddleware)
 
 # CORS configuration (Sprint 50: Hardened headers + expose X-Request-ID/X-Trace-Link)
 allowed_origins = [
