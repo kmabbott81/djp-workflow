@@ -23,17 +23,28 @@ from src.security.permissions import (
 
 
 @pytest.fixture(autouse=True)
-def reset_denylist():
-    """Reset global action denylist before and after each test to prevent isolation issues."""
-    # Save original state
-    original = GLOBAL_ACTION_DENYLIST.copy()
+def reset_denylist_and_env():
+    """Reset global action denylist and environment before/after each test to prevent isolation issues."""
+    # Save original denylist state
+    original_denylist = GLOBAL_ACTION_DENYLIST.copy()
     GLOBAL_ACTION_DENYLIST.clear()
+
+    # Save and clear ACTION_ALLOWLIST env var
+    original_allowlist_env = os.environ.get("ACTION_ALLOWLIST")
+    if "ACTION_ALLOWLIST" in os.environ:
+        del os.environ["ACTION_ALLOWLIST"]
 
     yield
 
-    # Restore original state after test
+    # Restore original denylist
     GLOBAL_ACTION_DENYLIST.clear()
-    GLOBAL_ACTION_DENYLIST.extend(original)
+    GLOBAL_ACTION_DENYLIST.extend(original_denylist)
+
+    # Restore original environment
+    if original_allowlist_env is not None:
+        os.environ["ACTION_ALLOWLIST"] = original_allowlist_env
+    elif "ACTION_ALLOWLIST" in os.environ:
+        del os.environ["ACTION_ALLOWLIST"]
 
 
 class TestPermissions:

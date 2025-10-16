@@ -77,10 +77,17 @@ class TestPlannedAction:
         assert action.params["metadata"]["priority"] == "high"
 
     def test_action_id_format_validation(self):
-        """action_id must follow provider.action format."""
-        # Valid format
+        """action_id must follow provider.action format (can have multiple dots)."""
+        # Valid: simple format
         PlannedAction(
             action_id="gmail.send",
+            description="Send email",
+            params={},
+        )
+
+        # Valid: multiple dots are allowed (e.g., nested namespaces)
+        PlannedAction(
+            action_id="gmail.api.send",
             description="Send email",
             params={},
         )
@@ -95,10 +102,10 @@ class TestPlannedAction:
         errors = exc_info.value.errors()
         assert any(e["loc"] == ("action_id",) for e in errors)
 
-        # Invalid: multiple dots
+        # Invalid: uppercase not allowed
         with pytest.raises(ValidationError) as exc_info:
             PlannedAction(
-                action_id="gmail.api.send",
+                action_id="Gmail.Send",
                 description="Send email",
                 params={},
             )
