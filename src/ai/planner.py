@@ -8,26 +8,8 @@ Pipeline test: Verifying GitHub → djp-workflow → Relay deployment flow.
 
 from typing import Any, Optional
 
-from pydantic import BaseModel
-
-
-class ActionStep(BaseModel):
-    """Single action in a multi-step plan."""
-
-    action_id: str  # e.g., "gmail.send", "calendar.create_event"
-    description: str  # Human-readable explanation
-    params: dict[str, Any]  # Action parameters extracted from prompt
-    depends_on: Optional[list[int]] = None  # Step indices this depends on
-
-
-class ActionPlan(BaseModel):
-    """Structured plan generated from natural language prompt."""
-
-    prompt: str  # Original user prompt
-    intent: str  # Extracted intent (e.g., "send_email_and_schedule")
-    steps: list[ActionStep]  # Ordered action steps
-    confidence: float  # 0.0-1.0 confidence in plan accuracy
-    explanation: str  # Why the LLM chose this plan
+from src.schemas.ai_plan import ActionPlan
+from src.schemas.ai_plan import PlannedAction as ActionStep
 
 
 class ActionPlanner:

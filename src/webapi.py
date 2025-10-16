@@ -16,6 +16,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 
 from .auth.security import require_scopes
 from .limits.limiter import RateLimitExceeded, get_rate_limiter
@@ -23,6 +25,27 @@ from .telemetry import init_telemetry
 from .telemetry.middleware import TelemetryMiddleware
 from .templates import list_templates
 from .templates import render_template as render_template_content
+
+# Sprint 58 Slice 5: Request body size limit (512 KiB for security hardening)
+MAX_BODY_BYTES = 512 * 1024
+
+
+class BodySizeLimitMiddleware(BaseHTTPMiddleware):
+    """Middleware to limit request body size (Sprint 58 hardening)."""
+
+    async def dispatch(self, request: Request, call_next):
+        """Check request body size before processing."""
+        body = await request.body()
+        if len(body) > MAX_BODY_BYTES:
+            return Response("Request body too large (max 512 KiB)", status_code=413)
+
+        # Re-inject body for downstream consumption
+        async def receive():
+            return {"type": "http.request", "body": body, "more_body": False}
+
+        request._receive = receive
+        return await call_next(request)
+
 
 app = FastAPI(
     title="DJP Workflow API",
@@ -113,6 +136,9 @@ app.openapi = custom_openapi
 # Sprint 46: Initialize telemetry and add middleware
 init_telemetry()
 app.add_middleware(TelemetryMiddleware)
+
+# Sprint 58 Slice 5: Add request body size limit middleware
+app.add_middleware(BodySizeLimitMiddleware)
 
 # CORS configuration (Sprint 50: Hardened headers + expose X-Request-ID/X-Trace-Link)
 allowed_origins = [
@@ -1254,18 +1280,19 @@ async def plan_with_ai(
     body: dict[str, Any],
 ):
     """
-    Generate action plan from natural language prompt.
+    Generate action plan from natural language prompt with RBAC filtering.
 
     Args:
         prompt: Natural language description of what to do
         context: Optional context (calendar, email history, etc.)
 
     Returns:
-        Structured action plan with steps
+        Structured action plan with steps (filtered by user permissions)
 
     Requires scope: actions:preview
     """
     from src.ai import ActionPlanner
+    from src.ai.orchestrator import get_orchestrator
 
     if not ACTIONS_ENABLED:
         raise HTTPException(status_code=404, detail="Actions feature not enabled")
@@ -1276,11 +1303,17 @@ async def plan_with_ai(
     if not prompt:
         raise HTTPException(status_code=400, detail="prompt required")
 
-    planner = ActionPlanner()
-    plan = await planner.plan(prompt, context)
+    # Get user_id from auth context for RBAC filtering
+    user_id = request.state.actor_id if hasattr(request.state, "actor_id") else "system"
 
+    # Generate plan with orchestrator (applies RBAC guards)
+    planner = ActionPlanner()
+    orchestrator = get_orchestrator()
+    plan = await orchestrator.plan(user_id, prompt, planner, context)
+
+    # Return plan with sensitive data redacted
     return {
-        **plan.model_dump(),
+        **plan.safe_dict(),  # Uses safe_dict() for PII redaction
         "request_id": request.state.request_id if hasattr(request.state, "request_id") else str(uuid4()),
     }
 
@@ -1345,6 +1378,48 @@ async def execute_ai_plan(
     return {
         "results": results,
         "request_id": request_id,
+    }
+
+
+@app.get("/ai/jobs")
+@require_scopes(["actions:preview"])
+async def list_ai_jobs(
+    request: Request,
+    status: Optional[str] = None,
+    limit: int = 100,
+):
+    """
+    List AI agent jobs with optional status filter.
+
+    Args:
+        status: Filter by status (pending, running, completed, failed)
+        limit: Maximum number of jobs to return (1-100, default 100)
+
+    Returns:
+        List of jobs with status, timestamps, and results
+
+    Requires scope: actions:preview
+    """
+    from src.queue.simple_queue import SimpleQueue
+
+    if not ACTIONS_ENABLED:
+        raise HTTPException(status_code=404, detail="Actions feature not enabled")
+
+    # Validate limit
+    if limit < 1 or limit > 100:
+        raise HTTPException(status_code=400, detail="limit must be between 1 and 100")
+
+    # Get workspace_id from auth context
+    workspace_id = request.state.workspace_id if hasattr(request.state, "workspace_id") else None
+
+    # List jobs
+    queue = SimpleQueue()
+    jobs = queue.list_jobs(workspace_id=workspace_id, status=status, limit=limit)
+
+    return {
+        "jobs": jobs,
+        "count": len(jobs),
+        "request_id": request.state.request_id if hasattr(request.state, "request_id") else str(uuid4()),
     }
 
 

@@ -22,6 +22,10 @@ class TestGmailExecuteUnit:
         self.original_enabled = os.environ.get("PROVIDER_GOOGLE_ENABLED")
         self.original_client_id = os.environ.get("GOOGLE_CLIENT_ID")
         self.original_client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
+        self.original_internal_only = os.environ.get("GOOGLE_INTERNAL_ONLY")
+
+        # CI Stabilization: Disable internal-only mode for unit tests
+        os.environ["GOOGLE_INTERNAL_ONLY"] = "false"
 
     def teardown_method(self):
         """Restore original environment."""
@@ -39,6 +43,11 @@ class TestGmailExecuteUnit:
             os.environ["GOOGLE_CLIENT_SECRET"] = self.original_client_secret
         elif "GOOGLE_CLIENT_SECRET" in os.environ:
             del os.environ["GOOGLE_CLIENT_SECRET"]
+
+        if self.original_internal_only is not None:
+            os.environ["GOOGLE_INTERNAL_ONLY"] = self.original_internal_only
+        elif "GOOGLE_INTERNAL_ONLY" in os.environ:
+            del os.environ["GOOGLE_INTERNAL_ONLY"]
 
     @pytest.mark.anyio
     async def test_execute_feature_flag_disabled(self):
