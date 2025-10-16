@@ -229,10 +229,10 @@ class TestRecordActionExecutionWithWorkspace:
 class TestOrchestratorIntegration:
     """Integration tests for workspace_id in orchestrator metric emissions (Commit B)."""
 
-    def test_orchestrator_metrics_with_workspace_enabled(self, monkeypatch):
+    def test_orchestrator_metrics_with_workspace_enabled(self, clean_metrics_registry, workspace_env):
         """Orchestrator should emit metrics with workspace_id when flag is on and ID is allowlisted."""
-        monkeypatch.setenv("METRICS_WORKSPACE_LABEL", "on")
-        monkeypatch.setenv("METRICS_WORKSPACE_ALLOWLIST", "ws_demo")
+        # Use fixture to isolate workspace env and registry
+        workspace_env(label="on", allowlist="ws_demo")
 
         # Simulate orchestrator metric emission path (from src/actions/execution.py)
         ws_enabled = prom.is_workspace_label_enabled()
@@ -252,10 +252,10 @@ class TestOrchestratorIntegration:
             workspace_id=ws_id,
         )
 
-    def test_orchestrator_metrics_workspace_invalid_omits_label(self, monkeypatch):
+    def test_orchestrator_metrics_workspace_invalid_omits_label(self, clean_metrics_registry, workspace_env):
         """Orchestrator should omit workspace label when ID is invalid or not allowlisted."""
-        monkeypatch.setenv("METRICS_WORKSPACE_LABEL", "on")
-        monkeypatch.setenv("METRICS_WORKSPACE_ALLOWLIST", "ws_demo")
+        # Use fixture to isolate workspace env and registry
+        workspace_env(label="on", allowlist="ws_demo")
 
         # Invalid workspace_id should return None and result in label omission
         invalid_workspace_id = "unauthorized-ws"

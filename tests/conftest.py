@@ -573,3 +573,58 @@ def pytest_collection_modifyitems(config, items):
 
         if getattr(config, "_relay_skip_artifacts", False) and "needs_artifacts" in item.keywords:
             item.add_marker(skip_artifacts)
+
+
+# ==============================================================================
+# Sprint 59: S59-02 Metrics & Environment Isolation Fixtures
+# ==============================================================================
+# Fixtures for test isolation: Prometheus registry, workspace env vars, JobStore
+
+
+@pytest.fixture(autouse=False, scope="function")
+def clean_metrics_registry():
+    """Clean Prometheus registry for isolated telemetry tests.
+
+    Unregisters all collectors from the global Prometheus registry and
+    re-initializes telemetry with a clean state. Prevents metric re-registration
+    errors and cross-test pollution for metrics-related tests.
+
+    Should be used in tests that depend on metrics registry state.
+    Default: autouse=False (opt-in) to avoid overhead in non-telemetry tests.
+
+    Scope: function (per-test isolation)
+
+    Example:
+        def test_metrics_isolation(clean_metrics_registry):
+            # Prometheus registry is fresh; can re-register metrics
+            prom.record_action_execution(...)
+    """
+    from tests._utils import init_test_registry
+
+    init_test_registry()
+    yield
+    # pytest monkeypatch auto-reverts env changes after test
+
+
+@pytest.fixture(autouse=False, scope="function")
+def workspace_env(monkeypatch):
+    """Isolated workspace environment variables for telemetry tests.
+
+    Provides a helper to set METRICS_WORKSPACE_LABEL and METRICS_WORKSPACE_ALLOWLIST
+    with automatic cleanup per test. Prevents env var pollution between tests.
+
+    Should be used in conjunction with clean_metrics_registry for full isolation.
+
+    Scope: function (per-test isolation via monkeypatch)
+
+    Example:
+        def test_workspace_metrics(clean_metrics_registry, workspace_env):
+            workspace_env(label="on", allowlist="ws_demo")
+            # METRICS_WORKSPACE_LABEL=on, METRICS_WORKSPACE_ALLOWLIST=ws_demo
+    """
+    from tests._utils import set_workspace_env
+
+    def _set_env(label="off", allowlist=None):
+        set_workspace_env(monkeypatch, label=label, allowlist=allowlist)
+
+    return _set_env
