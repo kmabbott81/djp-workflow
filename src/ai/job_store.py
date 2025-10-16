@@ -129,3 +129,22 @@ class JobStore:
         """
         async with self._lock:
             return self._jobs.get(job_id)
+
+
+# Global job store singleton (lazy-initialized)
+_JOB_STORE: Optional[JobStore] = None
+
+
+def get_job_store() -> JobStore:
+    """Get or create the global job store singleton.
+
+    Lazy-initializes on first call. For testing, can be overridden
+    by passing job_store parameter to AIOrchestrator.__init__.
+
+    Returns:
+        Global JobStore instance
+    """
+    global _JOB_STORE
+    if _JOB_STORE is None:
+        _JOB_STORE = JobStore()
+    return _JOB_STORE
