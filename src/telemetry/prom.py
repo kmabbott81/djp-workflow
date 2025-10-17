@@ -314,24 +314,26 @@ def init_prometheus() -> None:
         _ai_jobs_total = Counter(
             "ai_jobs_total",
             "AI orchestrator job executions",
-            ["status"],  # pending | completed | error
+            ["workspace_id", "status"],  # workspace_id | pending | completed | error
         )
 
         _ai_job_latency_seconds = Histogram(
             "ai_job_latency_seconds",
             "AI job execution latency in seconds",
+            ["workspace_id"],  # workspace_id label
             buckets=[0.5, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0],
         )
 
         _ai_queue_depth = Gauge(
             "ai_queue_depth",
             "Current AI job queue depth",
+            ["workspace_id"],  # workspace_id label
         )
 
         _security_decisions_total = Counter(
             "security_decisions_total",
             "Security permission decisions",
-            ["result"],  # allowed | denied
+            ["workspace_id", "result"],  # workspace_id | allowed | denied
         )
 
         _METRICS_INITIALIZED = True
@@ -590,12 +592,13 @@ security_decisions_total = _security_decisions_total
 # Sprint 55 Week 3: AI Orchestrator v0.1 recording functions
 
 
-def record_ai_planner(status: str, duration_seconds: float) -> None:
+def record_ai_planner(status: str, duration_seconds: float, workspace_id: str = "unknown") -> None:
     """Record AI planner execution metrics.
 
     Args:
         status: Planning status (ok, error, budget_exceeded)
         duration_seconds: Planning duration in seconds
+        workspace_id: Workspace identifier (for S60 isolation)
     """
     if not _PROM_AVAILABLE or not _METRICS_INITIALIZED:
         return
@@ -621,3 +624,67 @@ def record_ai_tokens(tokens_input: int, tokens_output: int) -> None:
         _ai_tokens_total.labels(type="output").inc(tokens_output)
     except Exception as exc:
         _LOG.warning("Failed to record AI tokens metric: %s", exc)
+
+
+def record_ai_job(workspace_id: str, status: str) -> None:
+    """Record AI job execution metrics (workspace-scoped).
+
+    Args:
+        workspace_id: Workspace identifier
+        status: Job status (pending, completed, error)
+    """
+    if not _PROM_AVAILABLE or not _METRICS_INITIALIZED:
+        return
+
+    try:
+        _ai_jobs_total.labels(workspace_id=workspace_id, status=status).inc()
+    except Exception as exc:
+        _LOG.warning("Failed to record AI job metric: %s", exc)
+
+
+def record_ai_job_latency(workspace_id: str, duration_seconds: float) -> None:
+    """Record AI job execution latency (workspace-scoped).
+
+    Args:
+        workspace_id: Workspace identifier
+        duration_seconds: Job execution duration in seconds
+    """
+    if not _PROM_AVAILABLE or not _METRICS_INITIALIZED:
+        return
+
+    try:
+        _ai_job_latency_seconds.labels(workspace_id=workspace_id).observe(duration_seconds)
+    except Exception as exc:
+        _LOG.warning("Failed to record AI job latency metric: %s", exc)
+
+
+def set_ai_queue_depth(workspace_id: str, depth: int) -> None:
+    """Set AI job queue depth gauge (workspace-scoped).
+
+    Args:
+        workspace_id: Workspace identifier
+        depth: Current number of jobs in queue for workspace
+    """
+    if not _PROM_AVAILABLE or not _METRICS_INITIALIZED:
+        return
+
+    try:
+        _ai_queue_depth.labels(workspace_id=workspace_id).set(depth)
+    except Exception as exc:
+        _LOG.warning("Failed to set AI queue depth metric: %s", exc)
+
+
+def record_security_decision(workspace_id: str, result: str) -> None:
+    """Record security permission decision (workspace-scoped).
+
+    Args:
+        workspace_id: Workspace identifier
+        result: Decision result (allowed, denied)
+    """
+    if not _PROM_AVAILABLE or not _METRICS_INITIALIZED:
+        return
+
+    try:
+        _security_decisions_total.labels(workspace_id=workspace_id, result=result).inc()
+    except Exception as exc:
+        _LOG.warning("Failed to record security decision metric: %s", exc)
