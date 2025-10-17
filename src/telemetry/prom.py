@@ -71,6 +71,8 @@ _ai_jobs_total = None
 _ai_job_latency_seconds = None
 _ai_queue_depth = None
 _security_decisions_total = None
+# Sprint 60 Phase 1: Dual-write migration metrics
+_ai_jobs_dual_write_total = None
 
 
 def _is_enabled() -> bool:
@@ -101,6 +103,7 @@ def init_prometheus() -> None:
     global _outlook_draft_sent_total, _outlook_draft_send_seconds
     global _ai_planner_seconds, _ai_tokens_total, _ai_jobs_total
     global _ai_job_latency_seconds, _ai_queue_depth, _security_decisions_total
+    global _ai_jobs_dual_write_total
 
     if not _is_enabled():
         _LOG.debug("Telemetry disabled, skipping Prometheus init")
@@ -334,6 +337,13 @@ def init_prometheus() -> None:
             "security_decisions_total",
             "Security permission decisions",
             ["workspace_id", "result"],  # workspace_id | allowed | denied
+        )
+
+        # Sprint 60 Phase 1: Dual-write migration metrics
+        _ai_jobs_dual_write_total = Counter(
+            "ai_jobs_dual_write_total",
+            "AI job dual-write attempts for schema migration",
+            ["workspace_id", "result"],  # workspace_id | succeeded | failed
         )
 
         _METRICS_INITIALIZED = True
@@ -588,6 +598,9 @@ ai_job_latency_seconds = _ai_job_latency_seconds
 ai_queue_depth = _ai_queue_depth
 security_decisions_total = _security_decisions_total
 
+# Sprint 60 Phase 1: Dual-write migration metric exports
+ai_jobs_dual_write_total = _ai_jobs_dual_write_total
+
 
 # Sprint 55 Week 3: AI Orchestrator v0.1 recording functions
 
@@ -688,3 +701,22 @@ def record_security_decision(workspace_id: str, result: str) -> None:
         _security_decisions_total.labels(workspace_id=workspace_id, result=result).inc()
     except Exception as exc:
         _LOG.warning("Failed to record security decision metric: %s", exc)
+
+
+# Sprint 60 Phase 1: Dual-write migration recording function
+
+
+def record_dual_write_attempt(workspace_id: str, result: str) -> None:
+    """Record dual-write attempt for schema migration (Sprint 60 Phase 1).
+
+    Args:
+        workspace_id: Workspace identifier
+        result: Dual-write result (succeeded, failed)
+    """
+    if not _PROM_AVAILABLE or not _METRICS_INITIALIZED:
+        return
+
+    try:
+        _ai_jobs_dual_write_total.labels(workspace_id=workspace_id, result=result).inc()
+    except Exception as exc:
+        _LOG.warning("Failed to record dual-write attempt metric: %s", exc)

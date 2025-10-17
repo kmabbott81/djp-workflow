@@ -1,20 +1,30 @@
 """Simple job queue with idempotency for AI agent actions.
 
 Sprint 55 Week 3: Redis-backed queue for AI action execution with idempotency.
+Sprint 60 Phase 1: Dual-write migration for workspace-scoped keys.
 """
 
 import json
+import logging
 import os
 from datetime import datetime, timezone
 from typing import Any
 
 import redis
 
+# Sprint 60 Phase 1: Feature flag for dual-write migration
+# When enabled, writes to both old (ai:jobs:{job_id}) and new (ai:job:{workspace_id}:{job_id}) schemas
+ENABLE_NEW_SCHEMA = os.getenv("AI_JOBS_NEW_SCHEMA", "off").lower() == "on"
+
+_LOG = logging.getLogger(__name__)
+
 
 class SimpleQueue:
     """Job queue with idempotency support using Redis.
 
     Provides enqueue, dequeue, status updates, and idempotency checking.
+
+    Sprint 60 Phase 1: Supports dual-write migration with AI_JOBS_NEW_SCHEMA flag.
     """
 
     def __init__(self, redis_url: str | None = None):
@@ -28,6 +38,7 @@ class SimpleQueue:
         self._redis = redis.from_url(url, decode_responses=True)
         self._queue_key = "ai:queue:pending"
         self._jobs_key = "ai:jobs"
+        self._jobs_key_new = "ai:job"  # Sprint 60: New workspace-scoped prefix
         self._idempotency_prefix = "ai:idempotency:"
 
     def enqueue(
@@ -42,6 +53,8 @@ class SimpleQueue:
     ) -> bool:
         """
         Add job to queue with idempotency check.
+
+        Sprint 60 Phase 1: Dual-write to both old and new key schemas when flag enabled.
 
         Args:
             job_id: Unique job identifier
@@ -72,31 +85,83 @@ class SimpleQueue:
             "params": json.dumps(params),
             "workspace_id": workspace_id,
             "actor_id": actor_id,
-            "result": None,
+            "result": "",  # Empty string instead of None for Redis compatibility
             "enqueued_at": datetime.now(timezone.utc).isoformat(),
         }
 
-        # Store job data
-        job_key = f"{self._jobs_key}:{job_id}"
-        self._redis.hset(job_key, mapping=job_data)
+        # Sprint 60 Phase 1: Dual-write implementation
+        # Always write to old schema (backwards compatibility)
+        job_key_old = f"{self._jobs_key}:{job_id}"
 
-        # Add to queue
-        self._redis.rpush(self._queue_key, job_id)
+        try:
+            # Write to old key pattern
+            self._redis.hset(job_key_old, mapping=job_data)
 
-        return True
+            # Conditionally write to new schema if feature flag enabled
+            if ENABLE_NEW_SCHEMA:
+                job_key_new = f"{self._jobs_key_new}:{workspace_id}:{job_id}"
+                self._redis.hset(job_key_new, mapping=job_data)
 
-    def get_job(self, job_id: str) -> dict[str, Any] | None:
+                # Record telemetry for dual-write success
+                from src.telemetry.prom import record_dual_write_attempt
+
+                record_dual_write_attempt(workspace_id, "succeeded")
+
+            # Add to queue (only once, using job_id)
+            self._redis.rpush(self._queue_key, job_id)
+
+            return True
+
+        except Exception as exc:
+            # Dual-write failed - record telemetry and log error
+            _LOG.error(
+                "Failed to enqueue job %s for workspace %s: %s",
+                job_id,
+                workspace_id,
+                exc,
+                exc_info=True,
+            )
+
+            if ENABLE_NEW_SCHEMA:
+                from src.telemetry.prom import record_dual_write_attempt
+
+                record_dual_write_attempt(workspace_id, "failed")
+
+            # Attempt cleanup of partial write
+            try:
+                self._redis.delete(job_key_old)
+                if ENABLE_NEW_SCHEMA:
+                    job_key_new = f"{self._jobs_key_new}:{workspace_id}:{job_id}"
+                    self._redis.delete(job_key_new)
+            except Exception as cleanup_exc:
+                _LOG.warning("Failed to cleanup partial write: %s", cleanup_exc)
+
+            raise  # Re-raise to caller
+
+    def get_job(self, job_id: str, workspace_id: str | None = None) -> dict[str, Any] | None:
         """
         Get job data by ID.
 
+        Sprint 60 Phase 1: Falls back from new schema to old schema when flag enabled.
+
         Args:
             job_id: Job identifier
+            workspace_id: Workspace identifier (required if ENABLE_NEW_SCHEMA is True)
 
         Returns:
             Job data dict or None if not found
         """
-        job_key = f"{self._jobs_key}:{job_id}"
-        job_data = self._redis.hgetall(job_key)
+        job_data = None
+
+        # Sprint 60 Phase 1: Try new schema first if enabled and workspace_id provided
+        if ENABLE_NEW_SCHEMA and workspace_id:
+            job_key_new = f"{self._jobs_key_new}:{workspace_id}:{job_id}"
+            job_data = self._redis.hgetall(job_key_new)
+
+        # Fallback to old schema if not found in new schema (or flag disabled)
+        if not job_data:
+            job_key_old = f"{self._jobs_key}:{job_id}"
+            job_data = self._redis.hgetall(job_key_old)
 
         if not job_data:
             return None
@@ -114,16 +179,19 @@ class SimpleQueue:
         job_id: str,
         status: str,
         result: dict[str, Any] | None = None,
+        workspace_id: str | None = None,
     ) -> None:
         """
         Update job status.
+
+        Sprint 60 Phase 1: Dual-write status updates to both schemas when flag enabled.
 
         Args:
             job_id: Job identifier
             status: New status ('pending', 'running', 'completed', 'failed')
             result: Optional result data (for completed/failed status)
+            workspace_id: Workspace identifier (required if ENABLE_NEW_SCHEMA is True)
         """
-        job_key = f"{self._jobs_key}:{job_id}"
         updates = {"status": status}
 
         # Add timestamps based on status
@@ -134,7 +202,16 @@ class SimpleQueue:
             if result:
                 updates["result"] = json.dumps(result)
 
-        self._redis.hset(job_key, mapping=updates)
+        # Always update old schema
+        job_key_old = f"{self._jobs_key}:{job_id}"
+        self._redis.hset(job_key_old, mapping=updates)
+
+        # Conditionally update new schema if feature flag enabled
+        if ENABLE_NEW_SCHEMA and workspace_id:
+            job_key_new = f"{self._jobs_key_new}:{workspace_id}:{job_id}"
+            # Only update if key exists in new schema
+            if self._redis.exists(job_key_new):
+                self._redis.hset(job_key_new, mapping=updates)
 
     def get_queue_depth(self) -> int:
         """
