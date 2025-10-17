@@ -3,7 +3,8 @@
 
 # Note: agents package from OpenAI - not on PyPI, install separately:
 # pip install git+https://github.com/openai/swarm.git
-pandas>=2.0.0
+# CI Stabilization: Cap pandas to support Python 3.9+ (pandas 2.2+ requires Python >=3.11)
+pandas>=2.0.0,<2.2.0
 ujson>=5.0.0
 jsonschema>=4.0.0
 pydantic>=2.0.0

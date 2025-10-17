@@ -59,6 +59,15 @@ nul
 *.tmp
 *.log
 New Text Document.txt
+TODO.md
+temp_*.md
+review_packet_*/
+
+# Local dev artifacts
+.Rhistory
+Screenshot*.png
+run_dev_server.py
+start_server.bat
 
 # Observability data (binary artifacts, should be in CI artifacts or object storage)
 observability/results/**/prometheus-data/

@@ -1,5 +1,24 @@
-"""Schemas for AI Orchestrator v0.1."""
+"""Pydantic schemas for DJP Workflow.
 
-from src.schemas.ai_plan import PlannedAction, PlanResult
+Contains schemas for:
+- Debate → Judge → Publish workflow (Draft, Judgment, ScoredDraft)
+- AI Orchestration (PlannedAction, PlanResult) - Sprint 58 Slice 5
+"""
 
-__all__ = ["PlannedAction", "PlanResult"]
+# AI Orchestration schemas (Sprint 58 Slice 5)
+from src.schemas.ai_plan import ActionPlan, ActionStep, PlannedAction, PlanResult
+
+# Debate workflow schemas (legacy)
+from src.schemas.debate import Draft, Judgment, ScoredDraft
+
+__all__ = [
+    # AI Orchestration
+    "PlannedAction",
+    "PlanResult",
+    "ActionStep",  # Legacy alias
+    "ActionPlan",  # Legacy alias
+    # Debate workflow
+    "Draft",
+    "Judgment",
+    "ScoredDraft",
+]

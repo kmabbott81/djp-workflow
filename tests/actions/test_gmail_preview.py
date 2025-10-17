@@ -3,6 +3,7 @@
 Sprint 53 Phase B: Test MIME assembly, Base64URL encoding, digest generation, validation.
 """
 
+import os
 import re
 
 import pytest
@@ -15,7 +16,18 @@ class TestGmailPreview:
 
     def setup_method(self):
         """Set up test fixtures."""
+        # CI Stabilization: Disable internal-only mode for unit tests
+        self.original_internal_only = os.environ.get("GOOGLE_INTERNAL_ONLY")
+        os.environ["GOOGLE_INTERNAL_ONLY"] = "false"
+
         self.adapter = GoogleAdapter()
+
+    def teardown_method(self):
+        """Restore original environment."""
+        if self.original_internal_only is not None:
+            os.environ["GOOGLE_INTERNAL_ONLY"] = self.original_internal_only
+        elif "GOOGLE_INTERNAL_ONLY" in os.environ:
+            del os.environ["GOOGLE_INTERNAL_ONLY"]
 
     def test_preview_valid_payload_minimal(self):
         """Test preview with minimal valid payload (to, subject, text only)."""

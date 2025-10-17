@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Orchestrator • Chat</title>
+
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- DOMPurify for XSS sanitization -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+
+  <style>
+    /* Custom styles */
+    :root {
+      --ok:#16a34a;
+      --warn:#d97706;
+      --bad:#dc2626;
+      --user-bubble: #2563eb;
+      --ai-bubble: #f1f5f9;
+      --user-text: #ffffff;
+      --ai-text: #0f172a;
+    }
+
+    [data-theme="dark"] {
+      --user-bubble: #1e40af;
+      --ai-bubble: #1e293b;
+      --user-text: #ffffff;
+      --ai-text: #e2e8f0;
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    .chat-bubble {
+      max-width: 80%;
+      padding: 0.875rem 1rem;
+      border-radius: 1.25rem;
+      word-wrap: break-word;
+      animation: fadeIn 0.2s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .chat-bubble-user {
+      background-color: var(--user-bubble);
+      color: var(--user-text);
+      align-self: flex-end;
+      margin-left: auto;
+    }
+
+    .chat-bubble-ai {
+      background-color: var(--ai-bubble);
+      color: var(--ai-text);
+      align-self: flex-start;
+      border: 1px solid #e2e8f0;
+    }
+
+    [data-theme="dark"] .chat-bubble-ai {
+      border-color: #334155;
+    }
+
+    .chat-timestamp {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-top: 0.25rem;
+    }
+
+    #messages-area {
+      scroll-behavior: smooth;
+      scrollbar-width: thin;
+      scrollbar-color: #cbd5e1 transparent;
+    }
+
+    #messages-area::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #messages-area::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    #messages-area::-webkit-scrollbar-thumb {
+      background-color: #cbd5e1;
+      border-radius: 3px;
+    }
+
+    textarea#user-input {
+      resize: none;
+      min-height: 3rem;
+      max-height: 10rem;
+    }
+
+    .avatar {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .avatar-user {
+      background-color: #3b82f6;
+      color: white;
+    }
+
+    .avatar-ai {
+      background-color: #8b5cf6;
+      color: white;
+    }
+
+    .execute-btn {
+      margin-top: 0.75rem;
+      padding: 0.5rem 1rem;
+      background-color: #10b981;
+      color: white;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .execute-btn:hover {
+      background-color: #059669;
+    }
+
+    .execute-btn:disabled {
+      background-color: #9ca3af;
+      cursor: not-allowed;
+    }
+
+    .job-link {
+      color: #3b82f6;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    .job-link:hover {
+      color: #1d4ed8;
+    }
+
+    .warning-banner {
+      margin-top: 0.75rem;
+      padding: 0.75rem 1rem;
+      background-color: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      color: #92400e;
+    }
+
+    [data-theme="dark"] .warning-banner {
+      background-color: #451a03;
+      border-color: #d97706;
+      color: #fde68a;
+    }
+
+    .replan-btn {
+      margin-top: 0.5rem;
+      padding: 0.5rem 1rem;
+      background-color: #f59e0b;
+      color: white;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .replan-btn:hover {
+      background-color: #d97706;
+    }
+  </style>
+</head>
+<body class="bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+  <div class="flex flex-col h-screen">
+    <!-- Header -->
+    <header class="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3">
+      <div class="max-w-4xl mx-auto flex items-center justify-between">
+        <h1 class="text-xl font-semibold">AI Orchestrator</h1>
+        <div class="flex items-center gap-3">
+          <span id="status-indicator" class="text-xs text-zinc-500">
+            <span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>
+            Connected
+          </span>
+          <label class="flex items-center gap-2 text-sm text-zinc-500 cursor-pointer">
+            <input type="checkbox" id="streaming-toggle" checked class="w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500">
+            <span>Streaming</span>
+          </label>
+          <button id="clear-history" class="text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300">
+            Clear History
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Messages Area -->
+    <div id="messages-area" class="flex-1 overflow-y-auto px-4 py-6">
+      <div class="max-w-4xl mx-auto space-y-4" id="messages-container">
+        <!-- Welcome message -->
+        <div class="flex gap-3 items-start">
+          <div class="avatar avatar-ai">🤖</div>
+          <div class="chat-bubble chat-bubble-ai">
+            <div>Welcome to AI Orchestrator! I can help you plan and execute workflows. Try asking me to send an email, make an HTTP request, or process data.</div>
+            <div class="chat-timestamp">Just now</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-4">
+      <div class="max-w-4xl mx-auto">
+        <div class="flex gap-3 items-end">
+          <textarea
+            id="user-input"
+            class="flex-1 p-3 rounded-2xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Type a message... (⌘/Ctrl + Enter to send)"
+            rows="1"
+          ></textarea>
+          <button
+            id="send-btn"
+            class="px-6 py-3 rounded-2xl bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Send
+          </button>
+        </div>
+        <div class="mt-2 text-xs text-zinc-500">
+          Press <span class="px-1.5 py-0.5 rounded border border-zinc-300 dark:border-zinc-700 mono">⌘</span> + <span class="px-1.5 py-0.5 rounded border border-zinc-300 dark:border-zinc-700 mono">↩︎</span> to send
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div id="toast" class="fixed bottom-4 right-4 hidden px-4 py-3 rounded-xl border bg-white dark:bg-zinc-900 shadow-lg"></div>
+
+  <script>
+    // ===== Configuration =====
+    const API_BASE = "";
+    const PLAN_EP = "/ai/plan";
+    const EXECUTE_EP = "/ai/execute";
+    const ACTIONS_EP = "/ai/actions";
+    const STREAM_EP = "/chat/stream";  // Sprint 56 Week 2: SSE streaming endpoint
+
+    // ===== State =====
+    let conversation = [];
+    let isProcessing = false;
+    let lastPlan = null; // Store the last plan for execution
+    let enabledActionsSet = new Set(); // Set of enabled action IDs
+    let streamingEnabled = true;  // Sprint 56 Week 2: Streaming toggle state
+
+    // ===== DOM Elements =====
+    const $ = (sel) => document.querySelector(sel);
+    const messagesContainer = $("#messages-container");
+    const messagesArea = $("#messages-area");
+    const userInput = $("#user-input");
+    const sendBtn = $("#send-btn");
+    const clearHistoryBtn = $("#clear-history");
+    const statusIndicator = $("#status-indicator");
+    const streamingToggle = $("#streaming-toggle");
+
+    // ===== Helper Functions =====
+
+    function toast(msg, kind = "info") {
+      const el = $("#toast");
+      el.textContent = msg;
+      el.classList.remove("hidden");
+      el.style.borderColor = kind === "error" ? "var(--bad)" : kind === "warn" ? "var(--warn)" : "#e5e7eb";
+      setTimeout(() => el.classList.add("hidden"), 2200);
+    }
+
+    function sanitizeHTML(html) {
+      return DOMPurify.sanitize(html, {
+        ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'code', 'pre'],
+        ALLOWED_ATTR: ['href', 'target']
+      });
+    }
+
+    function formatTimestamp(date) {
+      const now = new Date();
+      const diff = now - date;
+
+      if (diff < 60000) return "Just now";
+      if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+      if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+
+      return date.toLocaleDateString() + " " + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function autoResizeTextarea() {
+      userInput.style.height = 'auto';
+      userInput.style.height = Math.min(userInput.scrollHeight, 160) + 'px';
+    }
+
+    function scrollToBottom() {
+      messagesArea.scrollTop = messagesArea.scrollHeight;
+    }
+
+    function addMessage(role, content, timestamp = new Date()) {
+      const messageData = { role, content, timestamp };
+      conversation.push(messageData);
+
+      const messageDiv = document.createElement("div");
+      messageDiv.className = "flex gap-3 items-start";
+
+      const isUser = role === "user";
+      const avatar = document.createElement("div");
+      avatar.className = `avatar avatar-${isUser ? 'user' : 'ai'}`;
+      avatar.textContent = isUser ? '👤' : '🤖';
+
+      const bubbleDiv = document.createElement("div");
+      bubbleDiv.className = `chat-bubble chat-bubble-${isUser ? 'user' : 'ai'}`;
+
+      const contentDiv = document.createElement("div");
+      // Sanitize content before setting innerHTML
+      contentDiv.innerHTML = sanitizeHTML(content.replace(/\n/g, '<br>'));
+
+      const timestampDiv = document.createElement("div");
+      timestampDiv.className = "chat-timestamp";
+      timestampDiv.textContent = formatTimestamp(timestamp);
+
+      bubbleDiv.appendChild(contentDiv);
+      bubbleDiv.appendChild(timestampDiv);
+
+      messageDiv.appendChild(avatar);
+      messageDiv.appendChild(bubbleDiv);
+
+      messagesContainer.appendChild(messageDiv);
+      scrollToBottom();
+
+      // Save to localStorage
+      saveConversation();
+
+      return bubbleDiv;
+    }
+
+    function saveConversation() {
+      try {
+        localStorage.setItem('ai-orchestrator-conversation', JSON.stringify(conversation));
+      } catch (e) {
+        console.error('Failed to save conversation:', e);
+      }
+    }
+
+    function loadConversation() {
+      try {
+        const saved = localStorage.getItem('ai-orchestrator-conversation');
+        if (saved) {
+          conversation = JSON.parse(saved);
+
+          // Clear existing messages (except welcome)
+          messagesContainer.innerHTML = '';
+
+          // Restore messages
+          conversation.forEach(msg => {
+            const timestamp = new Date(msg.timestamp);
+            addMessageWithoutSave(msg.role, msg.content, timestamp);
+          });
+
+          scrollToBottom();
+        }
+      } catch (e) {
+        console.error('Failed to load conversation:', e);
+      }
+    }
+
+    function addMessageWithoutSave(role, content, timestamp) {
+      const messageDiv = document.createElement("div");
+      messageDiv.className = "flex gap-3 items-start";
+
+      const isUser = role === "user";
+      const avatar = document.createElement("div");
+      avatar.className = `avatar avatar-${isUser ? 'user' : 'ai'}`;
+      avatar.textContent = isUser ? '👤' : '🤖';
+
+      const bubbleDiv = document.createElement("div");
+      bubbleDiv.className = `chat-bubble chat-bubble-${isUser ? 'user' : 'ai'}`;
+
+      const contentDiv = document.createElement("div");
+      contentDiv.innerHTML = sanitizeHTML(content.replace(/\n/g, '<br>'));
+
+      const timestampDiv = document.createElement("div");
+      timestampDiv.className = "chat-timestamp";
+      timestampDiv.textContent = formatTimestamp(timestamp);
+
+      bubbleDiv.appendChild(contentDiv);
+      bubbleDiv.appendChild(timestampDiv);
+
+      messageDiv.appendChild(avatar);
+      messageDiv.appendChild(bubbleDiv);
+
+      messagesContainer.appendChild(messageDiv);
+    }
+
+    function clearHistory() {
+      if (confirm('Clear all conversation history?')) {
+        conversation = [];
+        localStorage.removeItem('ai-orchestrator-conversation');
+        messagesContainer.innerHTML = '';
+
+        // Re-add welcome message
+        addMessageWithoutSave('assistant',
+          'Welcome to AI Orchestrator! I can help you plan and execute workflows. Try asking me to send an email, make an HTTP request, or process data.',
+          new Date()
+        );
+
+        toast('History cleared');
+      }
+    }
+
+    async function fetchEnabledActions() {
+      try {
+        const response = await fetch(API_BASE + ACTIONS_EP);
+        if (!response.ok) {
+          console.warn('[Actions] Failed to fetch enabled actions:', response.status);
+          return;
+        }
+
+        const data = await response.json();
+        console.log('[Actions] Fetched actions:', data);
+
+        // Build set of enabled action IDs
+        enabledActionsSet = new Set(
+          data.actions.filter(a => a.enabled).map(a => a.id)
+        );
+
+        console.log('[Actions] Enabled actions:', Array.from(enabledActionsSet));
+      } catch (error) {
+        console.error('[Actions] Error fetching enabled actions:', error);
+      }
+    }
+
+    async function executePlan(plan, buttonElement) {
+      if (!plan || !plan.steps || plan.steps.length === 0) {
+        toast('No plan to execute', 'error');
+        return;
+      }
+
+      // Debug: log the plan structure
+      console.log('[EXEC] Executing plan:', plan);
+      console.log('[EXEC] Plan steps:', plan.steps);
+
+      // Disable the button
+      buttonElement.disabled = true;
+      buttonElement.textContent = 'Executing...';
+
+      const payload = { steps: plan.steps };
+      console.log('[EXEC] Sending payload:', payload);
+
+      try {
+        const response = await fetch(API_BASE + EXECUTE_EP, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.detail || `API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Update button to show success
+        buttonElement.textContent = 'Executed!';
+        buttonElement.style.backgroundColor = '#6b7280';
+
+        // Extract job/run IDs from results
+        const runIds = data.results?.map(r => r.result?.run_id).filter(Boolean) || [];
+
+        if (runIds.length > 0) {
+          const runId = runIds[0]; // Use first run ID
+          toast(`Execution started: ${runId}`, 'info');
+
+          // Add system message about execution
+          addMessage('assistant', `Execution started: <a href="/static/app/index.html#job=${runId}" class="job-link" target="_blank">${runId}</a>`);
+        } else {
+          toast('Execution completed successfully', 'info');
+        }
+
+      } catch (error) {
+        console.error('Execution error:', error);
+        buttonElement.disabled = false;
+        buttonElement.textContent = 'Retry';
+        toast(error.message, 'error');
+      }
+    }
+
+    // Sprint 56 Week 2: SSE Streaming function
+    async function sendMessageStreaming(message) {
+      // Add user message
+      addMessage('user', message);
+
+      // Disable input while processing
+      isProcessing = true;
+      sendBtn.disabled = true;
+      userInput.disabled = true;
+      statusIndicator.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-amber-500 mr-1"></span>Streaming...';
+
+      // Create AI message bubble for streaming content
+      const aiMessageBubble = addMessage('assistant', '');
+      const contentDiv = aiMessageBubble.querySelector('div:first-child');
+      let streamedContent = '';
+
+      try {
+        // Build streaming URL with query params
+        const allowedActionsParam = enabledActionsSet.size > 0 ? Array.from(enabledActionsSet).join(',') : '';
+        const streamUrl = `${API_BASE}${STREAM_EP}?prompt=${encodeURIComponent(message)}${allowedActionsParam ? `&allowed_actions=${encodeURIComponent(allowedActionsParam)}` : ''}`;
+
+        // Create EventSource for SSE
+        const eventSource = new EventSource(streamUrl);
+
+        eventSource.addEventListener('meta', (e) => {
+          const data = JSON.parse(e.data);
+          console.log('[SSE] Meta:', data);
+        });
+
+        eventSource.addEventListener('delta', (e) => {
+          const data = JSON.parse(e.data);
+          streamedContent += data.content;
+          contentDiv.textContent = streamedContent;
+          scrollToBottom();
+        });
+
+        eventSource.addEventListener('done', (e) => {
+          console.log('[SSE] Stream complete');
+          eventSource.close();
+
+          // Parse the streamed JSON content as a plan
+          try {
+            const plan = JSON.parse(streamedContent);
+            lastPlan = plan;
+
+            // Format the plan nicely (same logic as non-streaming)
+            let aiResponse = `<strong>Intent:</strong> ${plan.intent || 'Not specified'}\n\n`;
+            aiResponse += "I've created a plan for you:\n\n";
+
+            if (plan.steps && plan.steps.length > 0) {
+              plan.steps.forEach((step, idx) => {
+                aiResponse += `${idx + 1}. <strong>${step.action_id}</strong>\n`;
+                aiResponse += `   ${step.description}\n`;
+                if (step.params) {
+                  aiResponse += `   <small>Parameters: ${JSON.stringify(step.params, null, 2).replace(/\n/g, '<br>   ')}</small>\n`;
+                }
+              });
+            } else {
+              aiResponse += "No actions were generated for this prompt.";
+            }
+
+            if (plan.explanation) {
+              aiResponse += `\n<br><i>Note: ${plan.explanation}</i>`;
+            }
+
+            // Replace content with formatted version
+            contentDiv.innerHTML = sanitizeHTML(aiResponse.replace(/\n/g, '<br>'));
+
+            // Check for disabled actions
+            let hasDisabledActions = false;
+            let disabledActionsInPlan = [];
+
+            if (plan.steps && plan.steps.length > 0 && enabledActionsSet.size > 0) {
+              disabledActionsInPlan = plan.steps
+                .map(step => step.action_id)
+                .filter(actionId => !enabledActionsSet.has(actionId));
+              hasDisabledActions = disabledActionsInPlan.length > 0;
+            }
+
+            // Add notice banner if present
+            if (plan.notice) {
+              const noticeDiv = document.createElement('div');
+              noticeDiv.className = 'warning-banner';
+              noticeDiv.innerHTML = `⚠️ ${sanitizeHTML(plan.notice)}`;
+              aiMessageBubble.appendChild(noticeDiv);
+            }
+
+            // Add warning banner if disabled actions
+            if (hasDisabledActions) {
+              const warningDiv = document.createElement('div');
+              warningDiv.className = 'warning-banner';
+              const exampleAction = disabledActionsInPlan[0];
+              warningDiv.innerHTML = `⚠️ This plan includes disabled actions (e.g., <strong>${exampleAction}</strong>). ` +
+                `Enable the provider or replan with available actions.`;
+              aiMessageBubble.appendChild(warningDiv);
+
+              const replanBtn = document.createElement('button');
+              replanBtn.className = 'replan-btn';
+              replanBtn.textContent = 'Replan with Available Actions';
+              replanBtn.onclick = async () => {
+                userInput.value = message;
+                await sendMessage();
+              };
+              warningDiv.appendChild(replanBtn);
+            }
+
+            // Add execute button
+            if (plan.steps && plan.steps.length > 0) {
+              const executeBtn = document.createElement('button');
+              executeBtn.className = 'execute-btn';
+              executeBtn.textContent = 'Execute Plan';
+
+              if (hasDisabledActions) {
+                executeBtn.disabled = true;
+                executeBtn.title = 'Cannot execute plan with disabled actions';
+              }
+
+              executeBtn.onclick = () => executePlan(plan, executeBtn);
+              aiMessageBubble.appendChild(executeBtn);
+            }
+          } catch (parseError) {
+            console.error('[SSE] Failed to parse plan JSON:', parseError);
+            contentDiv.innerHTML = sanitizeHTML('Error: Failed to parse streaming response');
+          }
+
+          // Re-enable input
+          isProcessing = false;
+          sendBtn.disabled = false;
+          userInput.disabled = false;
+          userInput.focus();
+          statusIndicator.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>Connected';
+        });
+
+        eventSource.addEventListener('error', (e) => {
+          console.error('[SSE] Stream error:', e);
+          eventSource.close();
+
+          contentDiv.innerHTML = sanitizeHTML('Error: Streaming connection failed');
+          toast('Streaming error', 'error');
+
+          // Re-enable input
+          isProcessing = false;
+          sendBtn.disabled = false;
+          userInput.disabled = false;
+          userInput.focus();
+          statusIndicator.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>Connected';
+        });
+
+      } catch (error) {
+        console.error('[SSE] Error:', error);
+        contentDiv.innerHTML = sanitizeHTML(`Error: ${error.message}`);
+        toast(error.message, 'error');
+
+        // Re-enable input
+        isProcessing = false;
+        sendBtn.disabled = false;
+        userInput.disabled = false;
+        userInput.focus();
+        statusIndicator.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>Connected';
+      }
+    }
+
+    async function sendMessage() {
+      const message = userInput.value.trim();
+      if (!message || isProcessing) return;
+
+      // Clear input first
+      userInput.value = '';
+      autoResizeTextarea();
+
+      // Route to streaming or non-streaming based on toggle
+      if (streamingEnabled) {
+        return sendMessageStreaming(message);
+      }
+
+      // Non-streaming path
+      // Add user message
+      addMessage('user', message);
+
+      // Disable input while processing
+      isProcessing = true;
+      sendBtn.disabled = true;
+      userInput.disabled = true;
+      statusIndicator.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-amber-500 mr-1"></span>Processing...';
+
+      try {
+        // Call AI planning endpoint with allowed_actions
+        const payload = { prompt: message };
+
+        // Include allowed_actions if we have them
+        if (enabledActionsSet.size > 0) {
+          payload.allowed_actions = Array.from(enabledActionsSet);
+        }
+
+        const response = await fetch(API_BASE + PLAN_EP, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.detail || `API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Store the last plan for execution
+        lastPlan = data;
+
+        // Format AI response (handles response format: { steps: [...], intent, explanation })
+        let aiResponse = `<strong>Intent:</strong> ${data.intent || 'Not specified'}\n\n`;
+        aiResponse += "I've created a plan for you:\n\n";
+
+        if (data.steps && data.steps.length > 0) {
+          data.steps.forEach((step, idx) => {
+            aiResponse += `${idx + 1}. <strong>${step.action_id}</strong>\n`;
+            aiResponse += `   ${step.description}\n`;
+            if (step.params) {
+              aiResponse += `   <small>Parameters: ${JSON.stringify(step.params, null, 2).replace(/\n/g, '<br>   ')}</small>\n`;
+            }
+          });
+        } else {
+          aiResponse += "No actions were generated for this prompt.";
+        }
+
+        if (data.explanation) {
+          aiResponse += `\n<br><i>Note: ${data.explanation}</i>`;
+        }
+
+        // Add AI response with execute button
+        const aiMessageBubble = addMessage('assistant', aiResponse);
+
+        // Check for disabled actions in the plan
+        let hasDisabledActions = false;
+        let disabledActionsInPlan = [];
+
+        if (data.steps && data.steps.length > 0 && enabledActionsSet.size > 0) {
+          disabledActionsInPlan = data.steps
+            .map(step => step.action_id)
+            .filter(actionId => !enabledActionsSet.has(actionId));
+
+          hasDisabledActions = disabledActionsInPlan.length > 0;
+        }
+
+        // If plan includes notice from backend, show it
+        if (data.notice) {
+          const noticeDiv = document.createElement('div');
+          noticeDiv.className = 'warning-banner';
+          noticeDiv.innerHTML = `⚠️ ${sanitizeHTML(data.notice)}`;
+          aiMessageBubble.appendChild(noticeDiv);
+        }
+
+        // Show warning banner if plan contains disabled actions
+        if (hasDisabledActions) {
+          const warningDiv = document.createElement('div');
+          warningDiv.className = 'warning-banner';
+          const exampleAction = disabledActionsInPlan[0];
+          warningDiv.innerHTML = `⚠️ This plan includes disabled actions (e.g., <strong>${exampleAction}</strong>). ` +
+            `Enable the provider or replan with available actions.`;
+          aiMessageBubble.appendChild(warningDiv);
+
+          // Add replan button
+          const replanBtn = document.createElement('button');
+          replanBtn.className = 'replan-btn';
+          replanBtn.textContent = 'Replan with Available Actions';
+          replanBtn.onclick = async () => {
+            // Re-send the same prompt but ensure allowed_actions is included
+            userInput.value = message;
+            await sendMessage();
+          };
+          warningDiv.appendChild(replanBtn);
+        }
+
+        // Add execute button if there are steps to execute
+        if (data.steps && data.steps.length > 0) {
+          const executeBtn = document.createElement('button');
+          executeBtn.className = 'execute-btn';
+          executeBtn.textContent = 'Execute Plan';
+
+          // Disable button if plan has disabled actions
+          if (hasDisabledActions) {
+            executeBtn.disabled = true;
+            executeBtn.title = 'Cannot execute plan with disabled actions';
+          }
+
+          executeBtn.onclick = () => executePlan(data, executeBtn);
+          aiMessageBubble.appendChild(executeBtn);
+        }
+
+      } catch (error) {
+        console.error('Error:', error);
+        addMessage('assistant', `Error: ${error.message}`);
+        toast(error.message, 'error');
+      } finally {
+        isProcessing = false;
+        sendBtn.disabled = false;
+        userInput.disabled = false;
+        userInput.focus();
+        statusIndicator.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>Connected';
+      }
+    }
+
+    // ===== Event Listeners =====
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Fetch enabled actions first
+      await fetchEnabledActions();
+
+      // Load conversation history
+      loadConversation();
+
+      // Auto-resize textarea on input
+      userInput.addEventListener('input', autoResizeTextarea);
+
+      // Send on button click
+      sendBtn.addEventListener('click', sendMessage);
+
+      // Clear history
+      clearHistoryBtn.addEventListener('click', clearHistory);
+
+      // Sprint 56 Week 2: Streaming toggle
+      streamingToggle.addEventListener('change', (e) => {
+        streamingEnabled = e.target.checked;
+        console.log('[SSE] Streaming:', streamingEnabled ? 'enabled' : 'disabled');
+      });
+
+      // Send on Cmd/Ctrl + Enter
+      userInput.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+
+      // Focus input
+      userInput.focus();
+
+      console.log('[CS] Chat UI initialized');
+      console.log('[CS] DOMPurify loaded:', typeof DOMPurify !== 'undefined');
+    });
+  </script>
+</body>
+</html>
