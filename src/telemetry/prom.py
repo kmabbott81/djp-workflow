@@ -64,6 +64,15 @@ _outlook_draft_created_total = None
 _outlook_draft_create_seconds = None
 _outlook_draft_sent_total = None
 _outlook_draft_send_seconds = None
+# Sprint 55 Week 3: AI Orchestrator v0.1 metrics
+_ai_planner_seconds = None
+_ai_tokens_total = None
+_ai_jobs_total = None
+_ai_job_latency_seconds = None
+_ai_queue_depth = None
+_security_decisions_total = None
+# Sprint 60 Phase 1: Dual-write migration metrics
+_ai_jobs_dual_write_total = None
 
 
 def _is_enabled() -> bool:
@@ -92,6 +101,9 @@ def init_prometheus() -> None:
     global _outlook_upload_bytes_total, _outlook_upload_chunk_seconds
     global _outlook_draft_created_total, _outlook_draft_create_seconds
     global _outlook_draft_sent_total, _outlook_draft_send_seconds
+    global _ai_planner_seconds, _ai_tokens_total, _ai_jobs_total
+    global _ai_job_latency_seconds, _ai_queue_depth, _security_decisions_total
+    global _ai_jobs_dual_write_total
 
     if not _is_enabled():
         _LOG.debug("Telemetry disabled, skipping Prometheus init")
@@ -286,6 +298,52 @@ def init_prometheus() -> None:
             "outlook_draft_send_seconds",
             "Time to send draft message in seconds",
             buckets=[0.1, 0.25, 0.5, 1.0, 2.5, 5.0],
+        )
+
+        # Sprint 55 Week 3: AI Orchestrator v0.1 metrics
+        _ai_planner_seconds = Histogram(
+            "ai_planner_seconds",
+            "AI planning duration in seconds",
+            ["status"],  # ok | error | budget_exceeded
+            buckets=[0.5, 1.0, 2.0, 5.0, 10.0, 30.0],
+        )
+
+        _ai_tokens_total = Counter(
+            "ai_tokens_total",
+            "AI token usage",
+            ["type"],  # input | output
+        )
+
+        _ai_jobs_total = Counter(
+            "ai_jobs_total",
+            "AI orchestrator job executions",
+            ["workspace_id", "status"],  # workspace_id | pending | completed | error
+        )
+
+        _ai_job_latency_seconds = Histogram(
+            "ai_job_latency_seconds",
+            "AI job execution latency in seconds",
+            ["workspace_id"],  # workspace_id label
+            buckets=[0.5, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0],
+        )
+
+        _ai_queue_depth = Gauge(
+            "ai_queue_depth",
+            "Current AI job queue depth",
+            ["workspace_id"],  # workspace_id label
+        )
+
+        _security_decisions_total = Counter(
+            "security_decisions_total",
+            "Security permission decisions",
+            ["workspace_id", "result"],  # workspace_id | allowed | denied
+        )
+
+        # Sprint 60 Phase 1: Dual-write migration metrics
+        _ai_jobs_dual_write_total = Counter(
+            "ai_jobs_dual_write_total",
+            "AI job dual-write attempts for schema migration",
+            ["workspace_id", "result"],  # workspace_id | succeeded | failed
         )
 
         _METRICS_INITIALIZED = True
@@ -531,3 +589,134 @@ outlook_draft_created_total = _outlook_draft_created_total
 outlook_draft_create_seconds = _outlook_draft_create_seconds
 outlook_draft_sent_total = _outlook_draft_sent_total
 outlook_draft_send_seconds = _outlook_draft_send_seconds
+
+# Sprint 55 Week 3: AI Orchestrator v0.1 metric exports
+ai_planner_seconds = _ai_planner_seconds
+ai_tokens_total = _ai_tokens_total
+ai_jobs_total = _ai_jobs_total
+ai_job_latency_seconds = _ai_job_latency_seconds
+ai_queue_depth = _ai_queue_depth
+security_decisions_total = _security_decisions_total
+
+# Sprint 60 Phase 1: Dual-write migration metric exports
+ai_jobs_dual_write_total = _ai_jobs_dual_write_total
+
+
+# Sprint 55 Week 3: AI Orchestrator v0.1 recording functions
+
+
+def record_ai_planner(status: str, duration_seconds: float, workspace_id: str = "unknown") -> None:
+    """Record AI planner execution metrics.
+
+    Args:
+        status: Planning status (ok, error, budget_exceeded)
+        duration_seconds: Planning duration in seconds
+        workspace_id: Workspace identifier (for S60 isolation)
+    """
+    if not _PROM_AVAILABLE or not _METRICS_INITIALIZED:
+        return
+
+    try:
+        _ai_planner_seconds.labels(status=status).observe(duration_seconds)
+    except Exception as exc:
+        _LOG.warning("Failed to record AI planner metric: %s", exc)
+
+
+def record_ai_tokens(tokens_input: int, tokens_output: int) -> None:
+    """Record AI token usage metrics.
+
+    Args:
+        tokens_input: Input tokens consumed
+        tokens_output: Output tokens generated
+    """
+    if not _PROM_AVAILABLE or not _METRICS_INITIALIZED:
+        return
+
+    try:
+        _ai_tokens_total.labels(type="input").inc(tokens_input)
+        _ai_tokens_total.labels(type="output").inc(tokens_output)
+    except Exception as exc:
+        _LOG.warning("Failed to record AI tokens metric: %s", exc)
+
+
+def record_ai_job(workspace_id: str, status: str) -> None:
+    """Record AI job execution metrics (workspace-scoped).
+
+    Args:
+        workspace_id: Workspace identifier
+        status: Job status (pending, completed, error)
+    """
+    if not _PROM_AVAILABLE or not _METRICS_INITIALIZED:
+        return
+
+    try:
+        _ai_jobs_total.labels(workspace_id=workspace_id, status=status).inc()
+    except Exception as exc:
+        _LOG.warning("Failed to record AI job metric: %s", exc)
+
+
+def record_ai_job_latency(workspace_id: str, duration_seconds: float) -> None:
+    """Record AI job execution latency (workspace-scoped).
+
+    Args:
+        workspace_id: Workspace identifier
+        duration_seconds: Job execution duration in seconds
+    """
+    if not _PROM_AVAILABLE or not _METRICS_INITIALIZED:
+        return
+
+    try:
+        _ai_job_latency_seconds.labels(workspace_id=workspace_id).observe(duration_seconds)
+    except Exception as exc:
+        _LOG.warning("Failed to record AI job latency metric: %s", exc)
+
+
+def set_ai_queue_depth(workspace_id: str, depth: int) -> None:
+    """Set AI job queue depth gauge (workspace-scoped).
+
+    Args:
+        workspace_id: Workspace identifier
+        depth: Current number of jobs in queue for workspace
+    """
+    if not _PROM_AVAILABLE or not _METRICS_INITIALIZED:
+        return
+
+    try:
+        _ai_queue_depth.labels(workspace_id=workspace_id).set(depth)
+    except Exception as exc:
+        _LOG.warning("Failed to set AI queue depth metric: %s", exc)
+
+
+def record_security_decision(workspace_id: str, result: str) -> None:
+    """Record security permission decision (workspace-scoped).
+
+    Args:
+        workspace_id: Workspace identifier
+        result: Decision result (allowed, denied)
+    """
+    if not _PROM_AVAILABLE or not _METRICS_INITIALIZED:
+        return
+
+    try:
+        _security_decisions_total.labels(workspace_id=workspace_id, result=result).inc()
+    except Exception as exc:
+        _LOG.warning("Failed to record security decision metric: %s", exc)
+
+
+# Sprint 60 Phase 1: Dual-write migration recording function
+
+
+def record_dual_write_attempt(workspace_id: str, result: str) -> None:
+    """Record dual-write attempt for schema migration (Sprint 60 Phase 1).
+
+    Args:
+        workspace_id: Workspace identifier
+        result: Dual-write result (succeeded, failed)
+    """
+    if not _PROM_AVAILABLE or not _METRICS_INITIALIZED:
+        return
+
+    try:
+        _ai_jobs_dual_write_total.labels(workspace_id=workspace_id, result=result).inc()
+    except Exception as exc:
+        _LOG.warning("Failed to record dual-write attempt metric: %s", exc)

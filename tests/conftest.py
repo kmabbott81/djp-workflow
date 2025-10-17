@@ -13,6 +13,27 @@ def anyio_backend():
 
 
 @pytest.fixture(autouse=True)
+def mock_auth_decorator():
+    """Mock RBAC scope decorator for endpoint tests.
+
+    Allows testing endpoints that require scopes without auth setup.
+    Sprint 59: Required for /ai/jobs endpoint tests.
+    """
+    from unittest.mock import patch
+
+    def noop_decorator(scopes):
+        """No-op decorator that passes through the function unchanged."""
+
+        def decorator(func):
+            return func
+
+        return decorator
+
+    with patch("src.auth.security.require_scopes", noop_decorator):
+        yield
+
+
+@pytest.fixture(autouse=True)
 def _enable_rbac_and_budgets(monkeypatch):
     """
     Auto-enable RBAC and budgets for all tests to ensure deterministic behavior.

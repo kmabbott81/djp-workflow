@@ -1,4 +1,4 @@
-"""Configuration for Debate → Judge → Publish workflow."""
+"""Configuration for Debate → Judge → Publish workflow and AI Orchestrator."""
 
 import json
 import os
@@ -6,6 +6,11 @@ from pathlib import Path
 from typing import Optional
 
 ALLOWED_PUBLISH_MODELS = ["openai/gpt-4.1", "openai/gpt-4o", "openai/gpt-4o-mini"]
+
+# AI Orchestrator v0.1 Configuration
+DEFAULT_AI_MODEL = "gpt-4o-mini"
+DEFAULT_AI_MAX_OUTPUT_TOKENS = 800
+DEFAULT_AI_MAX_TOKENS_PER_MIN = 8000
 
 
 def get_openai_api_key() -> Optional[str]:
@@ -70,3 +75,26 @@ def load_policy(path_or_name: str) -> list[str]:
         raise KeyError(f"Policy file {policy_path} missing required key: ALLOWED_PUBLISH_MODELS")
 
     return policy_data["ALLOWED_PUBLISH_MODELS"]
+
+
+def get_openai_client_and_limits() -> tuple[object, int, str]:
+    """Get OpenAI client with cost control limits.
+
+    Returns:
+        Tuple of (client, max_output_tokens, model_name)
+
+    Raises:
+        ValueError: If OPENAI_API_KEY not set
+    """
+    import openai
+
+    api_key = get_openai_api_key()
+    if not api_key:
+        raise ValueError("OPENAI_API_KEY environment variable not set")
+
+    client = openai.OpenAI(api_key=api_key)
+
+    model = os.getenv("AI_MODEL", DEFAULT_AI_MODEL)
+    max_output_tokens = int(os.getenv("AI_MAX_OUTPUT_TOKENS", str(DEFAULT_AI_MAX_OUTPUT_TOKENS)))
+
+    return client, max_output_tokens, model
