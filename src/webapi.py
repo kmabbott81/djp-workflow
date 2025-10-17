@@ -1309,11 +1309,12 @@ async def plan_with_ai(
     # Generate plan with orchestrator (applies RBAC guards)
     planner = ActionPlanner()
     orchestrator = get_orchestrator()
-    plan = await orchestrator.plan(user_id, prompt, planner, context)
+    plan, plan_id = await orchestrator.plan(user_id, prompt, planner, context)
 
     # Return plan with sensitive data redacted
     return {
-        **plan.safe_dict(),  # Uses safe_dict() for PII redaction
+        **plan.model_dump(),  # Uses model_dump() for Pydantic models
+        "plan_id": plan_id,  # Correlation ID for job tracking
         "request_id": request.state.request_id if hasattr(request.state, "request_id") else str(uuid4()),
     }
 
@@ -1440,7 +1441,7 @@ async def execute_ai_plan(
 
         if was_enqueued:
             job_ids.append(job_id)
-            ai_jobs_total.labels(status="pending").inc()
+            ai_jobs_total.labels(workspace_id=workspace_id, status="pending").inc()
         else:
             # Idempotency hit - return existing job_id
             # (SimpleQueue.enqueue returns False on duplicate)
