@@ -19,8 +19,10 @@ from src.webapi import app
 
 @pytest.fixture
 def client():
-    """Create test client for FastAPI app."""
-    return TestClient(app)
+    """Create test client with demo authentication for testing."""
+    # Use demo preview key that bypasses database auth (Sprint 55 Week 3 feature)
+    # Defined in src/auth/security.py:156
+    return TestClient(app, headers={"Authorization": "Bearer relay_sk_demo_preview_key"})
 
 
 class TestAIJobsListEndpoint:
