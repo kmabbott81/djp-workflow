@@ -1,0 +1,221 @@
+================================================================================
+  SPRINT 60 PHASE 1 - CODE REVIEW EXECUTIVE SUMMARY
+================================================================================
+
+PROJECT: Dual-Write Migration (Redis Key Schema Evolution)
+BRANCH:  feat/rollout-infrastructure
+BASE:    main
+DATE:    2025-10-17 10:15 UTC
+
+================================================================================
+QUICK VERDICT
+================================================================================
+
+Status:     FAIL - Cannot merge
+Blockers:   3 critical/high issues
+Fix Time:   6-9 hours
+Tests:      5/5 current pass, 10+ new needed
+
+RECOMMENDATION: Do not deploy. Fix blockers, add tests, re-review.
+
+================================================================================
+WHAT WAS REVIEWED
+================================================================================
+
+Files Reviewed:
+  1. src/queue/simple_queue.py  (230 lines, dual-write logic)
+  2. src/telemetry/prom.py     (720 lines, telemetry counter added)
+  3. tests/test_dual_write.py   (166 lines, 5 tests)
+  4. SPRINT_60_PHASE_1_CHECKPOINT.md (330 lines, implementation summary)
+
+Scope: Atomicity, error handling, idempotency, test coverage, regressions
+
+================================================================================
+BLOCKERS (Must Fix Before Merge)
+================================================================================
+
+BLOCKER 1: Data Loss on Retry (CRITICAL-1)
+  Issue:  Idempotency check blocks retries after partial failure
+  Impact: Job is lost (not in Redis, idempotency key prevents retry)
+  Scenario: enqueue fails → retry blocked → job lost
+
+  Fix: Move SETNX after all writes OR use Redis pipeline
+  Priority: IMMEDIATE
+
+---
+
+BLOCKER 2: Non-Atomic Writes (HIGH-1)
+  Issue:  3 independent Redis ops, any can fail leaving inconsistent state
+  Impact: Job in queue but data missing, or vice versa
+  Sequence: hset(old) + hset(new) + rpush not atomic
+
+  Fix: Wrap all 3 ops in redis.pipeline()
+  Priority: IMMEDIATE
+
+---
+
+BLOCKER 3: Silent Divergence (HIGH-2)
+  Issue:  update_status has no error handling for dual-write
+  Impact: Old and new schema get out of sync silently
+  Scenario: Old key updated, new key fails, no error raised
+
+  Fix: Add try/catch + logging + telemetry for new schema update
+  Priority: IMMEDIATE
+
+================================================================================
+SEVERITY BREAKDOWN
+================================================================================
+
+CRITICAL (Data Loss):  1 issue
+  - CRITICAL-1: Idempotency blocks retries
+
+HIGH (Correctness):    3 issues
+  - HIGH-1: Non-atomic writes
+  - HIGH-2: Silent divergence
+  - HIGH-3: Queue consistency if rpush fails
+
+MEDIUM (Quality):      5 issues
+  - MEDIUM-1: Telemetry import in method (performance)
+  - MEDIUM-2: Fallback has no observability
+  - MEDIUM-3: workspace_id not validated (edge case)
+  - MEDIUM-4: Test coverage gaps (10 missing tests)
+  - MEDIUM-5: list_jobs doesn't scan new schema
+
+LOW (Nice-to-have):    2 issues
+  - LOW-1: Telemetry only for enqueue
+
+TOTAL: 11 issues (3 blockers, 8 improvements)
+
+================================================================================
+MUST FIX BEFORE MERGE (3 Issues, 3-4 hours)
+================================================================================
+
+1. Idempotency Check Blocks Retries (CRITICAL-1)
+   File: src/queue/simple_queue.py:71-77, 115-139
+
+2. Non-Atomic Multi-Step Writes (HIGH-1)
+   File: src/queue/simple_queue.py:96-111
+
+3. update_status Missing Error Handling (HIGH-2)
+   File: src/queue/simple_queue.py:208-214
+
+================================================================================
+SHOULD FIX BEFORE CANARY (5 Issues, 3-4 hours)
+================================================================================
+
+4. Workspace_ID Validation (MEDIUM-3)
+5. Move Telemetry Import (MEDIUM-1)
+6. Add Test Coverage (MEDIUM-4, 10 tests)
+7. Queue Consistency Monitoring (HIGH-3)
+8. Fallback Observability (MEDIUM-2)
+
+================================================================================
+TESTING STATUS
+================================================================================
+
+Current Tests: 5/5 passing (100%)
+Missing Tests: 10+ (error scenarios, edge cases)
+
+Validation: All 3 blockers confirmed with test reproductions
+  File: /tmp/test_critical_issues.py
+  Each blocker has dedicated test demonstrating failure mode
+
+================================================================================
+RECOMMENDATIONS FOR ENGINEERS
+================================================================================
+
+1. Read detailed analysis: SPRINT_60_PHASE_1_CODE_REVIEW.md
+2. Read fix guide: SPRINT_60_PHASE_1_FIX_GUIDE.md
+3. Implement fixes in order (3-4 hours):
+   - FIX 1: Idempotency (move SETNX) [1-2 hours]
+   - FIX 2: Atomicity (use pipeline) [1-2 hours]
+   - FIX 3: Error handling (try/catch) [1 hour]
+4. Add missing tests (2-3 hours):
+   - 10 new test cases with code samples provided
+5. Run full test suite (30+ tests should pass)
+6. Resubmit PR with all fixes + test results
+7. Schedule re-review (2-3 hours)
+
+Total Timeline: 8-10 hours (fix + test + review)
+
+================================================================================
+RISK ASSESSMENT IF DEPLOYED WITHOUT FIXES
+================================================================================
+
+Data Loss Risk:         HIGH
+  - Retries blocked by stale idempotency keys
+  - Jobs lost without recovery mechanism
+
+Consistency Risk:       HIGH
+  - Old and new schema can diverge
+  - Reads return non-deterministic results
+
+Production Impact:      MEDIUM-HIGH
+  - Affects all new jobs with flag=on
+  - Silent failures (no alerts by default)
+
+Overall Assessment: HIGH RISK - Do not deploy
+
+================================================================================
+DEPLOYMENT DECISION
+================================================================================
+
+CURRENT STATE:  Not ready
+NEXT STEP:      Fix blockers + add tests
+GATE REVIEW:    Required after fixes
+STAGING:        After gate review approval
+CANARY:         Only if staging tests pass
+PRODUCTION:     Only if canary stable 48 hours
+
+DO NOT DEPLOY without all 3 blockers fixed.
+
+================================================================================
+DOCUMENTATION PROVIDED
+================================================================================
+
+1. SPRINT_60_PHASE_1_CODE_REVIEW.md
+   - Detailed analysis of all 11 issues
+   - Severity, location, impact, fix recommendation for each
+   - Validation evidence for blockers
+
+2. SPRINT_60_REVIEW_SUMMARY.txt
+   - Quick reference table format
+   - Priority matrix
+   - Risk assessment
+
+3. SPRINT_60_PHASE_1_FIX_GUIDE.md
+   - Code-level fix recommendations
+   - Before/after code snippets
+   - 10 new test cases (copy-paste ready)
+   - 7-commit strategy
+
+4. Test Reproduction Script
+   - /tmp/test_critical_issues.py
+   - Demonstrates all 3 blockers
+
+================================================================================
+REVIEW METADATA
+================================================================================
+
+Reviewer: Code Review Agent (Haiku 4.5)
+Review Date: 2025-10-17 10:15 UTC
+Files Analyzed: 4 core files + related tests
+Issues Identified: 11 total (3 blockers)
+Issues Validated: 3/3 blockers confirmed with test reproductions
+Confidence Level: HIGH
+
+================================================================================
+FINAL STATEMENT
+================================================================================
+
+Sprint 60 Phase 1 implementation has good architecture and backward
+compatibility, but contains 3 critical blocking issues that can cause
+data loss and inconsistency.
+
+All 3 issues are straightforward to fix (4-5 hours engineering + 2-3
+hours testing). After fixes and tests added, implementation will be
+production-ready.
+
+Recommendation: Fix blockers, add tests, re-review, then proceed.
+
+================================================================================

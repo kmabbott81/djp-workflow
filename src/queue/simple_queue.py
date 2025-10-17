@@ -34,7 +34,7 @@ def _validate_workspace_id(workspace_id: str) -> None:
     Raises:
         ValueError: If workspace_id is invalid
     """
-    if not workspace_id or not _WORKSPACE_ID_PATTERN.match(workspace_id):
+    if not workspace_id or not _WORKSPACE_ID_PATTERN.fullmatch(workspace_id):
         raise ValueError(
             "Invalid workspace_id: must be 1-32 lowercase alphanumeric/hyphen/underscore, start with alphanumeric"
         )
