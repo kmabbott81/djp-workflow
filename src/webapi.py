@@ -190,13 +190,13 @@ async def add_security_headers(request: Request, call_next):
     # HSTS: Force HTTPS for 180 days, include subdomains, preload
     response.headers["Strict-Transport-Security"] = "max-age=15552000; includeSubDomains; preload"
 
-    # CSP: Strict content security policy
+    # CSP: Content security policy for UI + API (Sprint 60 Phase 3)
     csp_directives = [
         "default-src 'self'",
         "connect-src 'self' https://relay-production-f2a6.up.railway.app https://*.vercel.app",
         "img-src 'self' data:",
-        "script-src 'self'",
-        "style-src 'self' 'unsafe-inline'",  # unsafe-inline needed for some UI frameworks
+        "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net",  # Allow CDN for UI libraries + inline scripts
+        "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com",  # Tailwind injects styles
         "frame-ancestors 'none'",  # Prevent clickjacking
         "base-uri 'self'",
         "form-action 'self'",
