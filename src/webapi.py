@@ -1503,78 +1503,37 @@ async def list_ai_jobs(
     except ValueError as e:
         raise HTTPException(status_code=503, detail=f"Queue unavailable: {str(e)}") from e
 
-    # Sprint 60 Phase 2: Get job keys filtered by authenticated workspace
-    # Scan old schema for now (Phase 2.2 will optimize with new schema scan)
+    # Sprint 60 Phase 2.2: Use queue.list_jobs() for read-routing and workspace isolation
     try:
-        # Get all job keys matching pattern
-        job_keys = queue.redis.keys("ai:job:*")
+        # Get jobs using workspace-scoped list (handles read-routing + isolation)
+        result = queue.list_jobs(workspace_id=auth_workspace_id, limit=limit)
+        jobs_data = result["items"]
 
-        # Fetch job data for each key
+        # Format jobs for API response
         jobs = []
-        for job_key in job_keys:
-            job_data = queue.redis.hgetall(job_key)
-            if job_data:
-                # Sprint 60 Phase 2: Filter by authenticated workspace
-                job_workspace_id = job_data.get("workspace_id")
-                if job_workspace_id != auth_workspace_id:
-                    continue  # Skip jobs from other workspaces
+        for job_data in jobs_data:
+            # Calculate duration if finished
+            duration_ms = None
+            if job_data.get("finished_at") and job_data.get("started_at"):
+                from datetime import datetime
 
-                # Parse job_id from key
-                job_id = job_key.split(":")[-1]
+                started = datetime.fromisoformat(job_data["started_at"])
+                finished = datetime.fromisoformat(job_data["finished_at"])
+                duration_ms = int((finished - started).total_seconds() * 1000)
 
-                # Deserialize JSON fields (with error logging for data corruption detection)
-                import json
-                import logging
-
-                logger = logging.getLogger(__name__)
-                params = job_data.get("params")
-                result = job_data.get("result")
-
-                try:
-                    if params:
-                        params = json.loads(params)
-                except json.JSONDecodeError:
-                    # Log data corruption for monitoring, but don't break response
-                    logger.debug(f"Failed to deserialize job params (job_id={job_id})")
-                    # params stays as string - response still valid
-
-                try:
-                    if result:
-                        result = json.loads(result)
-                except json.JSONDecodeError:
-                    # Log data corruption for monitoring, but don't break response
-                    logger.debug(f"Failed to deserialize job result (job_id={job_id})")
-                    # result stays as string - response still valid
-
-                # Calculate duration if finished
-                duration_ms = None
-                if job_data.get("finished_at") and job_data.get("started_at"):
-                    from datetime import datetime
-
-                    started = datetime.fromisoformat(job_data["started_at"])
-                    finished = datetime.fromisoformat(job_data["finished_at"])
-                    duration_ms = int((finished - started).total_seconds() * 1000)
-
-                jobs.append(
-                    {
-                        "job_id": job_id,
-                        "status": job_data.get("status"),
-                        "action": f"{job_data.get('action_provider')}.{job_data.get('action_name')}",
-                        "result": result,
-                        "error": job_data.get("error"),
-                        "duration_ms": duration_ms,
-                        "enqueued_at": job_data.get("enqueued_at"),
-                        "started_at": job_data.get("started_at"),
-                        "finished_at": job_data.get("finished_at"),
-                    }
-                )
-
-                # Stop when we reach the limit
-                if len(jobs) >= limit:
-                    break
-
-        # Sort by enqueued_at descending (most recent first)
-        jobs.sort(key=lambda j: j.get("enqueued_at") or "", reverse=True)
+            jobs.append(
+                {
+                    "job_id": job_data.get("job_id"),
+                    "status": job_data.get("status"),
+                    "action": f"{job_data.get('action_provider')}.{job_data.get('action_name')}",
+                    "result": job_data.get("result"),
+                    "error": job_data.get("error"),
+                    "duration_ms": duration_ms,
+                    "enqueued_at": job_data.get("enqueued_at"),
+                    "started_at": job_data.get("started_at"),
+                    "finished_at": job_data.get("finished_at"),
+                }
+            )
 
         return {
             "jobs": jobs[:limit],
@@ -1625,8 +1584,8 @@ async def get_ai_job_status(
     except ValueError as e:
         raise HTTPException(status_code=503, detail=f"Queue unavailable: {str(e)}") from e
 
-    # Get job data
-    job_data = queue.get_job(job_id)
+    # Get job data - Sprint 60 Phase 2.2: Pass workspace_id for read-routing
+    job_data = queue.get_job(job_id, workspace_id=auth_workspace_id)
 
     if not job_data:
         raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found")

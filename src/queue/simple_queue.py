@@ -368,14 +368,33 @@ class SimpleQueue:
         next_cursor = None
         read_path = "new"  # Telemetry: track which schema(s) we used
 
+        # Sprint 60 Phase 2.2 FIX (Code-Reviewer P1): Parse composite cursor
+        # Format: "new:{new_cursor}:old:{old_cursor}" for mixed-mode pagination
+        scan_cursor_new = 0
+        scan_cursor_old = 0
+        if cursor:
+            if cursor.startswith("new:") and ":old:" in cursor:
+                # Composite cursor - extract both positions
+                try:
+                    parts = cursor.split(":")
+                    scan_cursor_new = int(parts[1])
+                    scan_cursor_old = int(parts[3])
+                except (IndexError, ValueError):
+                    _LOG.warning("Invalid composite cursor format: %s", cursor)
+                    scan_cursor_new = 0
+                    scan_cursor_old = 0
+            elif cursor.isdigit():
+                # Simple cursor - only new schema position (legacy support)
+                scan_cursor_new = int(cursor)
+                scan_cursor_old = 0
+
         # Sprint 60 Phase 2.2: Primary path - SCAN new schema (workspace-scoped keys)
         if READ_PREFERS_NEW:
             pattern = f"{self._jobs_key_new}:{workspace_id}:*"
-            scan_cursor = int(cursor) if cursor and cursor.isdigit() else 0
 
             try:
                 # SCAN with workspace-scoped pattern (efficient, no cross-workspace data)
-                scan_cursor, keys = self._redis.scan(scan_cursor, match=pattern, count=limit)
+                scan_cursor_new, keys = self._redis.scan(scan_cursor_new, match=pattern, count=limit)
 
                 for key in keys:
                     if len(jobs) >= limit:
@@ -404,9 +423,6 @@ class SimpleQueue:
 
                     jobs.append(job_data)
 
-                # Set next cursor if SCAN has more results
-                next_cursor = str(scan_cursor) if scan_cursor != 0 else None
-
             except Exception as exc:
                 _LOG.error("SCAN new schema failed (workspace=%s): %s", workspace_id, exc)
                 # Fall through to fallback path
@@ -416,7 +432,6 @@ class SimpleQueue:
         if len(jobs) < limit and READ_FALLBACK_OLD:
             read_path = "mixed"  # Mark that we used both schemas
             pattern_old = f"{self._jobs_key}:*"
-            scan_cursor_old = 0  # Fallback always starts from beginning (separate iteration)
 
             try:
                 # SCAN old schema in batches, filter by workspace
@@ -462,6 +477,18 @@ class SimpleQueue:
 
             except Exception as exc:
                 _LOG.error("SCAN old schema failed (workspace=%s): %s", workspace_id, exc)
+
+        # Sprint 60 Phase 2.2 FIX (Code-Reviewer P1): Construct composite cursor for pagination
+        # If both scans have pending results OR we used fallback, return composite cursor
+        # Format: "new:{new_cursor}:old:{old_cursor}"
+        if read_path == "mixed":
+            # Mixed mode - track both cursor positions
+            if scan_cursor_new != 0 or scan_cursor_old != 0:
+                next_cursor = f"new:{scan_cursor_new}:old:{scan_cursor_old}"
+        else:
+            # New schema only - simple cursor for backward compatibility
+            if scan_cursor_new != 0:
+                next_cursor = str(scan_cursor_new)
 
         # Sort by enqueued_at descending (most recent first)
         jobs.sort(key=lambda j: j.get("enqueued_at", ""), reverse=True)

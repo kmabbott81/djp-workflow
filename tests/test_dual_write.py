@@ -71,7 +71,8 @@ class TestDualWriteDisabled:
             )
 
             # Retrieve job (should read from old schema)
-            job_data = queue_with_redis.get_job("job-002")
+            # Phase 2.2: workspace_id now required for isolation
+            job_data = queue_with_redis.get_job("job-002", workspace_id="workspace-123")
             assert job_data is not None
             assert job_data["job_id"] == "job-002"
             assert job_data["workspace_id"] == "workspace-123"
