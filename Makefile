@@ -62,3 +62,13 @@ perf-baseline:  ## Generate performance baseline report
 	pytest -q --durations=25 -m "not slow" | tee durations.txt
 	python scripts/ci_perf_budget.py
 	@echo "Review perf-report.md; if acceptable, copy JSON metrics into dashboards/ci/baseline.json and commit."
+
+# Sprint 60 Phase 3: Backfill targets
+backfill-dry-run:  ## Run backfill in dry-run mode (Sprint 60 Phase 3)
+	python -m scripts.backfill_redis_keys --dry-run --rps 200 --batch 1000
+
+backfill-exec:  ## Run backfill in execute mode (Sprint 60 Phase 3)
+	python -m scripts.backfill_redis_keys --execute --rps 100 --batch 500
+
+backfill-test:  ## Run backfill script tests
+	pytest tests/test_backfill_script.py -v

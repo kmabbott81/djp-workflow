@@ -77,6 +77,12 @@ _ai_jobs_dual_write_total = None
 _relay_job_read_path_total = None
 _relay_job_list_read_path_total = None
 _relay_job_list_results_total = None
+# Sprint 60 Phase 3: Backfill metrics
+_relay_backfill_scanned_total = None
+_relay_backfill_migrated_total = None
+_relay_backfill_skipped_total = None
+_relay_backfill_errors_total = None
+_relay_backfill_duration_seconds = None
 
 
 def _is_enabled() -> bool:
@@ -109,6 +115,8 @@ def init_prometheus() -> None:
     global _ai_job_latency_seconds, _ai_queue_depth, _security_decisions_total
     global _ai_jobs_dual_write_total
     global _relay_job_read_path_total, _relay_job_list_read_path_total, _relay_job_list_results_total
+    global _relay_backfill_scanned_total, _relay_backfill_migrated_total, _relay_backfill_skipped_total
+    global _relay_backfill_errors_total, _relay_backfill_duration_seconds
 
     if not _is_enabled():
         _LOG.debug("Telemetry disabled, skipping Prometheus init")
@@ -370,6 +378,37 @@ def init_prometheus() -> None:
             ["workspace_id"],  # workspace_id
         )
 
+        # Sprint 60 Phase 3: Backfill metrics
+        _relay_backfill_scanned_total = Counter(
+            "relay_backfill_scanned_total",
+            "Total old schema keys scanned during backfill",
+            ["workspace_id"],  # workspace_id
+        )
+
+        _relay_backfill_migrated_total = Counter(
+            "relay_backfill_migrated_total",
+            "Total keys successfully migrated to new schema",
+            ["workspace_id"],  # workspace_id
+        )
+
+        _relay_backfill_skipped_total = Counter(
+            "relay_backfill_skipped_total",
+            "Total keys skipped during backfill",
+            ["workspace_id", "reason"],  # workspace_id | exists | invalid | error
+        )
+
+        _relay_backfill_errors_total = Counter(
+            "relay_backfill_errors_total",
+            "Total migration errors during backfill",
+            ["workspace_id"],  # workspace_id
+        )
+
+        _relay_backfill_duration_seconds = Histogram(
+            "relay_backfill_duration_seconds",
+            "Backfill execution duration in seconds",
+            buckets=[60, 300, 600, 1800, 3600, 7200, 14400],  # 1m, 5m, 10m, 30m, 1h, 2h, 4h
+        )
+
         _METRICS_INITIALIZED = True
         _LOG.info("Prometheus metrics initialized (port configured via PROM_EXPORT_PORT, default 9090)")
 
@@ -624,6 +663,13 @@ security_decisions_total = _security_decisions_total
 
 # Sprint 60 Phase 1: Dual-write migration metric exports
 ai_jobs_dual_write_total = _ai_jobs_dual_write_total
+
+# Sprint 60 Phase 3: Backfill metric exports
+backfill_scanned_total = _relay_backfill_scanned_total
+backfill_migrated_total = _relay_backfill_migrated_total
+backfill_skipped_total = _relay_backfill_skipped_total
+backfill_errors_total = _relay_backfill_errors_total
+backfill_duration_seconds = _relay_backfill_duration_seconds
 
 
 # Sprint 55 Week 3: AI Orchestrator v0.1 recording functions
