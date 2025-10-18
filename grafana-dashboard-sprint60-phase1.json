@@ -1,0 +1,350 @@
+{
+  "dashboard": {
+    "title": "Sprint 60 Phase 1 - Dual-Write Migration Monitoring",
+    "description": "Real-time monitoring for workspace-scoped Redis key migration (ai:jobs -> ai:job:{workspace_id}:{job_id})",
+    "tags": ["sprint-60", "dual-write", "migration", "redis"],
+    "timezone": "utc",
+    "editable": true,
+    "graphTooltip": 1,
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Dual-Write Success Rate (Should be 100%)",
+        "type": "stat",
+        "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "rate(ai_jobs_dual_write_total{result=\"succeeded\"}[5m]) / (rate(ai_jobs_dual_write_total{result=\"succeeded\"}[5m]) + rate(ai_jobs_dual_write_total{result=\"failed\"}[5m]))",
+            "legendFormat": "Success Rate"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 0.95, "color": "yellow"},
+                {"value": 0.99, "color": "green"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Dual-Write Coverage (% of jobs on new schema)",
+        "type": "stat",
+        "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "rate(ai_jobs_dual_write_total{result=\"succeeded\"}[5m]) / rate(ai_jobs_total[5m])",
+            "legendFormat": "Coverage"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "blue"},
+                {"value": 0.1, "color": "yellow"},
+                {"value": 0.5, "color": "orange"},
+                {"value": 1.0, "color": "green"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Job Latency p99 (Should stay <110% baseline)",
+        "type": "stat",
+        "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.99, rate(ai_job_latency_seconds_bucket[5m]))",
+            "legendFormat": "p99 Latency"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 0.01, "color": "yellow"},
+                {"value": 0.02, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Dual-Write Failures (ALERT if >0)",
+        "type": "stat",
+        "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "rate(ai_jobs_dual_write_total{result=\"failed\"}[5m]) * 300",
+            "legendFormat": "Failures (5min rate)"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 0.1, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Dual-Write Operations Over Time",
+        "type": "timeseries",
+        "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(ai_jobs_dual_write_total{result=\"succeeded\"}[5m])",
+            "legendFormat": "Succeeded - {{workspace_id}}"
+          },
+          {
+            "expr": "rate(ai_jobs_dual_write_total{result=\"failed\"}[5m])",
+            "legendFormat": "Failed - {{workspace_id}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "fillOpacity": 10,
+              "showPoints": "auto"
+            },
+            "unit": "ops"
+          },
+          "overrides": [
+            {
+              "matcher": {"id": "byRegexp", "options": "Failed.*"},
+              "properties": [
+                {"id": "color", "value": {"mode": "fixed", "fixedColor": "red"}}
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": 6,
+        "title": "Job Latency Distribution (p50, p95, p99)",
+        "type": "timeseries",
+        "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(ai_job_latency_seconds_bucket[5m]))",
+            "legendFormat": "p50"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(ai_job_latency_seconds_bucket[5m]))",
+            "legendFormat": "p95"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(ai_job_latency_seconds_bucket[5m]))",
+            "legendFormat": "p99"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "fillOpacity": 0,
+              "showPoints": "never"
+            },
+            "unit": "s"
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Per-Workspace Dual-Write Success",
+        "type": "timeseries",
+        "gridPos": {"x": 0, "y": 12, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "sum by (workspace_id) (rate(ai_jobs_dual_write_total{result=\"succeeded\"}[5m]))",
+            "legendFormat": "{{workspace_id}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "fillOpacity": 5,
+              "showPoints": "never",
+              "stacking": {"mode": "normal"}
+            },
+            "unit": "ops"
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "Total Jobs vs Dual-Write Jobs",
+        "type": "timeseries",
+        "gridPos": {"x": 12, "y": 12, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(ai_jobs_total[5m])",
+            "legendFormat": "Total Jobs"
+          },
+          {
+            "expr": "rate(ai_jobs_dual_write_total{result=\"succeeded\"}[5m])",
+            "legendFormat": "Dual-Write Jobs"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "fillOpacity": 10,
+              "showPoints": "never"
+            },
+            "unit": "ops"
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "Queue Depth (Should remain stable)",
+        "type": "timeseries",
+        "gridPos": {"x": 0, "y": 20, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "ai_queue_depth",
+            "legendFormat": "{{workspace_id}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "fillOpacity": 5,
+              "showPoints": "never"
+            },
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 10,
+        "title": "Error Rate (Should be near 0)",
+        "type": "timeseries",
+        "gridPos": {"x": 12, "y": 20, "w": 12, "h": 6},
+        "targets": [
+          {
+            "expr": "rate(ai_jobs_total{status=\"error\"}[5m])",
+            "legendFormat": "Error Rate - {{workspace_id}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "fillOpacity": 10,
+              "showPoints": "auto"
+            },
+            "unit": "ops",
+            "color": {"mode": "fixed", "fixedColor": "red"}
+          }
+        }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "workspace_id",
+          "type": "query",
+          "datasource": "Prometheus",
+          "query": "label_values(ai_jobs_dual_write_total, workspace_id)",
+          "multi": true,
+          "includeAll": true,
+          "refresh": 1
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "name": "Deployments",
+          "datasource": "-- Grafana --",
+          "enable": true,
+          "iconColor": "blue",
+          "tags": ["deployment", "sprint-60"]
+        },
+        {
+          "name": "Canary Phases",
+          "datasource": "-- Grafana --",
+          "enable": true,
+          "iconColor": "orange",
+          "tags": ["canary", "rollout"]
+        }
+      ]
+    }
+  },
+  "overwrite": true,
+  "message": "Sprint 60 Phase 1 - Dual-Write Migration Dashboard (v0.1.5-phase1)"
+}

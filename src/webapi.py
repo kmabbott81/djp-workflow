@@ -1401,10 +1401,15 @@ async def execute_ai_plan(
     if not actions:
         raise HTTPException(status_code=400, detail="Missing 'actions' field")
 
-    # Get context
-    workspace_id = body.get("workspace_id") or (
-        request.state.workspace_id if hasattr(request.state, "workspace_id") else "default"
-    )
+    # Sprint 60 Phase 2: Workspace isolation enforcement (CRITICAL-3)
+    from src.security.workspace import ensure_same_workspace, get_authenticated_workspace
+
+    auth_workspace_id = get_authenticated_workspace(request)
+    body_workspace_id = body.get("workspace_id")
+    ensure_same_workspace(auth_workspace_id, body_workspace_id)
+
+    # Get context - always use authenticated workspace (not client-provided)
+    workspace_id = auth_workspace_id
     actor_id = body.get("actor_id") or (request.state.actor_id if hasattr(request.state, "actor_id") else "system")
 
     # Initialize queue
@@ -1458,12 +1463,14 @@ async def execute_ai_plan(
 async def list_ai_jobs(
     request: Request,
     limit: int = 50,
+    workspace_id: str | None = None,
 ):
     """
-    AI Orchestrator v0.1: List recent jobs.
+    AI Orchestrator v0.1: List recent jobs (workspace-scoped).
 
     Args:
         limit: Maximum number of jobs to return (1-100, default 50)
+        workspace_id: Optional workspace filter (must match authenticated workspace)
 
     Returns:
         {
@@ -1472,10 +1479,17 @@ async def list_ai_jobs(
           "queue_depth": 5
         }
 
+    Security: Only returns jobs for authenticated workspace.
     Requires scope: actions:preview
     """
     if not ACTIONS_ENABLED:
         raise HTTPException(status_code=404, detail="Actions feature not enabled")
+
+    # Sprint 60 Phase 2: Workspace isolation enforcement (CRITICAL-2, HIGH-4)
+    from src.security.workspace import ensure_same_workspace, get_authenticated_workspace
+
+    auth_workspace_id = get_authenticated_workspace(request)
+    ensure_same_workspace(auth_workspace_id, workspace_id)
 
     # Validate limit
     if limit < 1 or limit > 100:
@@ -1489,23 +1503,30 @@ async def list_ai_jobs(
     except ValueError as e:
         raise HTTPException(status_code=503, detail=f"Queue unavailable: {str(e)}") from e
 
-    # Get all job keys from Redis (sorted by enqueue time)
-    # Note: In v0.1, we scan for all job keys. For production, use a sorted set.
+    # Sprint 60 Phase 2: Get job keys filtered by authenticated workspace
+    # Scan old schema for now (Phase 2.2 will optimize with new schema scan)
     try:
         # Get all job keys matching pattern
         job_keys = queue.redis.keys("ai:job:*")
 
         # Fetch job data for each key
         jobs = []
-        for job_key in job_keys[:limit]:  # Limit to requested number
+        for job_key in job_keys:
             job_data = queue.redis.hgetall(job_key)
             if job_data:
+                # Sprint 60 Phase 2: Filter by authenticated workspace
+                job_workspace_id = job_data.get("workspace_id")
+                if job_workspace_id != auth_workspace_id:
+                    continue  # Skip jobs from other workspaces
+
                 # Parse job_id from key
                 job_id = job_key.split(":")[-1]
 
-                # Deserialize JSON fields
+                # Deserialize JSON fields (with error logging for data corruption detection)
                 import json
+                import logging
 
+                logger = logging.getLogger(__name__)
                 params = job_data.get("params")
                 result = job_data.get("result")
 
@@ -1513,13 +1534,17 @@ async def list_ai_jobs(
                     if params:
                         params = json.loads(params)
                 except json.JSONDecodeError:
-                    pass
+                    # Log data corruption for monitoring, but don't break response
+                    logger.debug(f"Failed to deserialize job params (job_id={job_id})")
+                    # params stays as string - response still valid
 
                 try:
                     if result:
                         result = json.loads(result)
                 except json.JSONDecodeError:
-                    pass
+                    # Log data corruption for monitoring, but don't break response
+                    logger.debug(f"Failed to deserialize job result (job_id={job_id})")
+                    # result stays as string - response still valid
 
                 # Calculate duration if finished
                 duration_ms = None
@@ -1543,6 +1568,10 @@ async def list_ai_jobs(
                         "finished_at": job_data.get("finished_at"),
                     }
                 )
+
+                # Stop when we reach the limit
+                if len(jobs) >= limit:
+                    break
 
         # Sort by enqueued_at descending (most recent first)
         jobs.sort(key=lambda j: j.get("enqueued_at") or "", reverse=True)
@@ -1585,6 +1614,11 @@ async def get_ai_job_status(
     if not ACTIONS_ENABLED:
         raise HTTPException(status_code=404, detail="Actions feature not enabled")
 
+    # Sprint 60 Phase 2: Workspace isolation enforcement
+    from src.security.workspace import get_authenticated_workspace
+
+    auth_workspace_id = get_authenticated_workspace(request)
+
     # Initialize queue
     try:
         queue = SimpleQueue()
@@ -1596,6 +1630,13 @@ async def get_ai_job_status(
 
     if not job_data:
         raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found")
+
+    # Validate workspace isolation: reject cross-workspace access with 403 (not 404)
+    # Use helper for consistency with other endpoints
+    from src.security.workspace import ensure_same_workspace
+
+    job_workspace_id = job_data.get("workspace_id")
+    ensure_same_workspace(auth_workspace_id, job_workspace_id)
 
     # Calculate duration if finished
     duration_ms = None

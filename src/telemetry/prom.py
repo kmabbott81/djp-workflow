@@ -73,6 +73,10 @@ _ai_queue_depth = None
 _security_decisions_total = None
 # Sprint 60 Phase 1: Dual-write migration metrics
 _ai_jobs_dual_write_total = None
+# Sprint 60 Phase 2.2: Read-routing metrics
+_relay_job_read_path_total = None
+_relay_job_list_read_path_total = None
+_relay_job_list_results_total = None
 
 
 def _is_enabled() -> bool:
@@ -104,6 +108,7 @@ def init_prometheus() -> None:
     global _ai_planner_seconds, _ai_tokens_total, _ai_jobs_total
     global _ai_job_latency_seconds, _ai_queue_depth, _security_decisions_total
     global _ai_jobs_dual_write_total
+    global _relay_job_read_path_total, _relay_job_list_read_path_total, _relay_job_list_results_total
 
     if not _is_enabled():
         _LOG.debug("Telemetry disabled, skipping Prometheus init")
@@ -344,6 +349,25 @@ def init_prometheus() -> None:
             "ai_jobs_dual_write_total",
             "AI job dual-write attempts for schema migration",
             ["workspace_id", "result"],  # workspace_id | succeeded | failed
+        )
+
+        # Sprint 60 Phase 2.2: Read-routing metrics
+        _relay_job_read_path_total = Counter(
+            "relay_job_read_path_total",
+            "AI job read path distribution (new schema, old schema fallback, or miss)",
+            ["workspace_id", "path"],  # workspace_id | new | old | miss
+        )
+
+        _relay_job_list_read_path_total = Counter(
+            "relay_job_list_read_path_total",
+            "AI job list read path distribution (new schema only or mixed with fallback)",
+            ["workspace_id", "path"],  # workspace_id | new | mixed
+        )
+
+        _relay_job_list_results_total = Counter(
+            "relay_job_list_results_total",
+            "Total number of job results returned by list operations",
+            ["workspace_id"],  # workspace_id
         )
 
         _METRICS_INITIALIZED = True
@@ -720,3 +744,54 @@ def record_dual_write_attempt(workspace_id: str, result: str) -> None:
         _ai_jobs_dual_write_total.labels(workspace_id=workspace_id, result=result).inc()
     except Exception as exc:
         _LOG.warning("Failed to record dual-write attempt metric: %s", exc)
+
+
+# Sprint 60 Phase 2.2: Read-routing recording functions
+
+
+def record_job_read_path(workspace_id: str, path: str) -> None:
+    """Record job read path for schema migration tracking (Sprint 60 Phase 2.2).
+
+    Args:
+        workspace_id: Workspace identifier
+        path: Read path used (new, old, miss)
+    """
+    if not _PROM_AVAILABLE or not _METRICS_INITIALIZED:
+        return
+
+    try:
+        _relay_job_read_path_total.labels(workspace_id=workspace_id, path=path).inc()
+    except Exception as exc:
+        _LOG.warning("Failed to record job read path metric: %s", exc)
+
+
+def record_job_list_read_path(workspace_id: str, path: str) -> None:
+    """Record job list read path for schema migration tracking (Sprint 60 Phase 2.2).
+
+    Args:
+        workspace_id: Workspace identifier
+        path: Read path used (new, mixed)
+    """
+    if not _PROM_AVAILABLE or not _METRICS_INITIALIZED:
+        return
+
+    try:
+        _relay_job_list_read_path_total.labels(workspace_id=workspace_id, path=path).inc()
+    except Exception as exc:
+        _LOG.warning("Failed to record job list read path metric: %s", exc)
+
+
+def record_job_list_results(workspace_id: str, count: int) -> None:
+    """Record number of job results returned by list operation (Sprint 60 Phase 2.2).
+
+    Args:
+        workspace_id: Workspace identifier
+        count: Number of jobs returned
+    """
+    if not _PROM_AVAILABLE or not _METRICS_INITIALIZED:
+        return
+
+    try:
+        _relay_job_list_results_total.labels(workspace_id=workspace_id).inc(count)
+    except Exception as exc:
+        _LOG.warning("Failed to record job list results metric: %s", exc)

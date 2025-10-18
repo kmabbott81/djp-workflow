@@ -17,6 +17,13 @@ import redis
 # When enabled, writes to both old (ai:jobs:{job_id}) and new (ai:job:{workspace_id}:{job_id}) schemas
 ENABLE_NEW_SCHEMA = os.getenv("AI_JOBS_NEW_SCHEMA", "off").lower() == "on"
 
+# Sprint 60 Phase 2.2: Read-routing feature flags
+# READ_PREFERS_NEW: When enabled, prefer new schema during reads (default: on)
+READ_PREFERS_NEW = os.getenv("READ_PREFERS_NEW", "on").lower() == "on"
+# READ_FALLBACK_OLD: When enabled, fall back to old schema if new schema misses (default: on)
+# Turn off after backfill completes to enforce new schema only
+READ_FALLBACK_OLD = os.getenv("READ_FALLBACK_OLD", "on").lower() == "on"
+
 _LOG = logging.getLogger(__name__)
 
 # Workspace ID validation (Sprint 60 Phase 1 - Security fix HIGH-5)
@@ -169,45 +176,90 @@ class SimpleQueue:
 
     def get_job(self, job_id: str, workspace_id: str | None = None) -> dict[str, Any] | None:
         """
-        Get job data by ID.
+        Get job data by ID with workspace isolation enforcement.
 
-        Sprint 60 Phase 1: Falls back from new schema to old schema when flag enabled.
+        Sprint 60 Phase 2.2: Read-routing with new→old fallback and workspace isolation.
+        - Prefers new schema (ai:job:{workspace_id}:{job_id}) if READ_PREFERS_NEW=on
+        - Falls back to old schema (ai:jobs:{job_id}) if READ_FALLBACK_OLD=on
+        - Enforces workspace isolation: rejects jobs from other workspaces during fallback
+        - Records telemetry: relay_job_read_path_total{path="new|old|miss"}
 
         Args:
             job_id: Job identifier
-            workspace_id: Workspace identifier (required if ENABLE_NEW_SCHEMA is True)
+            workspace_id: Workspace identifier (required for workspace isolation)
 
         Returns:
-            Job data dict or None if not found
+            Job data dict or None if not found or workspace mismatch
         """
+        # Sprint 60 Phase 2.2: Validate workspace_id (required for isolation)
+        if not workspace_id:
+            _LOG.warning("get_job called without workspace_id - workspace isolation cannot be enforced")
+            return None
+
+        try:
+            _validate_workspace_id(workspace_id)
+        except ValueError as exc:
+            _LOG.warning("Invalid workspace_id in get_job: %s", exc)
+            return None
+
         job_data = None
+        read_path = "miss"  # Telemetry tracking
 
-        # Sprint 60 Phase 1: Try new schema first if enabled and workspace_id provided
-        if ENABLE_NEW_SCHEMA and workspace_id:
-            # Validate workspace_id to prevent key injection (HIGH-5)
-            try:
-                _validate_workspace_id(workspace_id)
-            except ValueError:
-                _LOG.warning("Invalid workspace_id in get_job, falling back to old schema")
-                workspace_id = None  # Fall back to old schema
-
-        if ENABLE_NEW_SCHEMA and workspace_id:
+        # Sprint 60 Phase 2.2: Try new schema first if enabled
+        if READ_PREFERS_NEW:
             job_key_new = f"{self._jobs_key_new}:{workspace_id}:{job_id}"
             job_data = self._redis.hgetall(job_key_new)
+            if job_data:
+                read_path = "new"
+                _LOG.debug("get_job: Found job in new schema (job_id=%s, workspace=%s)", job_id, workspace_id)
 
-        # Fallback to old schema if not found in new schema (or flag disabled)
-        if not job_data:
+        # Sprint 60 Phase 2.2: Fallback to old schema with workspace isolation check
+        if not job_data and READ_FALLBACK_OLD:
             job_key_old = f"{self._jobs_key}:{job_id}"
             job_data = self._redis.hgetall(job_key_old)
+
+            if job_data:
+                # CRITICAL: Enforce workspace isolation during fallback
+                # Reject jobs that belong to different workspaces (prevent cross-tenant leaks)
+                stored_workspace_id = job_data.get("workspace_id")
+                if stored_workspace_id != workspace_id:
+                    _LOG.warning(
+                        "get_job: Workspace mismatch during fallback - rejecting (job_id=%s, requested=%s, stored=%s)",
+                        job_id,
+                        workspace_id,
+                        stored_workspace_id,
+                    )
+                    job_data = None  # Reject cross-workspace access
+                    read_path = "miss"  # Count as miss (not a leak)
+                else:
+                    read_path = "old"
+                    _LOG.debug("get_job: Found job in old schema with matching workspace (job_id=%s)", job_id)
+
+        # Record telemetry (Sprint 60 Phase 2.2)
+        try:
+            from src.telemetry.prom import record_job_read_path
+
+            record_job_read_path(workspace_id, read_path)
+        except Exception as exc:
+            _LOG.debug("Failed to record read path telemetry: %s", exc)
 
         if not job_data:
             return None
 
         # Deserialize params and result
         if "params" in job_data:
-            job_data["params"] = json.loads(job_data["params"])
+            try:
+                job_data["params"] = json.loads(job_data["params"])
+            except json.JSONDecodeError:
+                _LOG.debug("Failed to deserialize job params (job_id=%s)", job_id)
+                # Keep as string - response still valid
+
         if job_data.get("result"):
-            job_data["result"] = json.loads(job_data["result"])
+            try:
+                job_data["result"] = json.loads(job_data["result"])
+            except json.JSONDecodeError:
+                _LOG.debug("Failed to deserialize job result (job_id=%s)", job_id)
+                # Keep as string - response still valid
 
         return job_data
 
@@ -282,48 +334,145 @@ class SimpleQueue:
 
     def list_jobs(
         self,
-        workspace_id: str | None = None,
+        workspace_id: str,
         status: str | None = None,
+        cursor: str | None = None,
         limit: int = 100,
-    ) -> list[dict[str, Any]]:
+    ) -> dict[str, Any]:
         """
-        List jobs with optional filters.
+        List jobs for a workspace with cursor-based pagination.
+
+        Sprint 60 Phase 2.2: Workspace-scoped enumeration with read-routing.
+        - Primary path: SCAN ai:job:{workspace_id}:* (new schema)
+        - Fallback path: SCAN ai:job:* with workspace filtering (old schema, if READ_FALLBACK_OLD=on)
+        - Returns: {items: [...], next_cursor: str|None}
+        - Records telemetry: relay_job_list_read_path_total{path="new|mixed"}
 
         Args:
-            workspace_id: Filter by workspace (None for all)
-            status: Filter by status (None for all)
-            limit: Maximum number of jobs to return
+            workspace_id: Workspace identifier (required for workspace isolation)
+            status: Optional status filter (pending, running, completed, failed)
+            cursor: Pagination cursor (Redis SCAN cursor, None for first page)
+            limit: Maximum number of jobs to return per page
 
         Returns:
-            List of job data dicts
+            Dict with 'items' (list of job dicts) and 'next_cursor' (str or None)
         """
-        # Get all job keys
-        job_keys = self._redis.keys(f"{self._jobs_key}:*")
+        # Sprint 60 Phase 2.2: Validate workspace_id (required)
+        try:
+            _validate_workspace_id(workspace_id)
+        except ValueError as exc:
+            _LOG.warning("Invalid workspace_id in list_jobs: %s", exc)
+            return {"items": [], "next_cursor": None}
+
         jobs = []
+        next_cursor = None
+        read_path = "new"  # Telemetry: track which schema(s) we used
 
-        for job_key in job_keys:
-            job_data = self._redis.hgetall(job_key)
-            if not job_data:
-                continue
+        # Sprint 60 Phase 2.2: Primary path - SCAN new schema (workspace-scoped keys)
+        if READ_PREFERS_NEW:
+            pattern = f"{self._jobs_key_new}:{workspace_id}:*"
+            scan_cursor = int(cursor) if cursor and cursor.isdigit() else 0
 
-            # Apply filters
-            if workspace_id and job_data.get("workspace_id") != workspace_id:
-                continue
-            if status and job_data.get("status") != status:
-                continue
+            try:
+                # SCAN with workspace-scoped pattern (efficient, no cross-workspace data)
+                scan_cursor, keys = self._redis.scan(scan_cursor, match=pattern, count=limit)
 
-            # Deserialize JSON fields
-            if "params" in job_data:
-                job_data["params"] = json.loads(job_data["params"])
-            if job_data.get("result"):
-                job_data["result"] = json.loads(job_data["result"])
+                for key in keys:
+                    if len(jobs) >= limit:
+                        break
 
-            jobs.append(job_data)
+                    job_data = self._redis.hgetall(key)
+                    if not job_data:
+                        continue
 
-            if len(jobs) >= limit:
-                break
+                    # Apply status filter
+                    if status and job_data.get("status") != status:
+                        continue
+
+                    # Deserialize JSON fields with error handling
+                    if "params" in job_data:
+                        try:
+                            job_data["params"] = json.loads(job_data["params"])
+                        except json.JSONDecodeError:
+                            _LOG.debug("Failed to deserialize job params (key=%s)", key)
+
+                    if job_data.get("result"):
+                        try:
+                            job_data["result"] = json.loads(job_data["result"])
+                        except json.JSONDecodeError:
+                            _LOG.debug("Failed to deserialize job result (key=%s)", key)
+
+                    jobs.append(job_data)
+
+                # Set next cursor if SCAN has more results
+                next_cursor = str(scan_cursor) if scan_cursor != 0 else None
+
+            except Exception as exc:
+                _LOG.error("SCAN new schema failed (workspace=%s): %s", workspace_id, exc)
+                # Fall through to fallback path
+
+        # Sprint 60 Phase 2.2: Fallback path - SCAN old schema with workspace filtering
+        # Only activate if: (1) insufficient results from new schema, (2) fallback enabled
+        if len(jobs) < limit and READ_FALLBACK_OLD:
+            read_path = "mixed"  # Mark that we used both schemas
+            pattern_old = f"{self._jobs_key}:*"
+            scan_cursor_old = 0  # Fallback always starts from beginning (separate iteration)
+
+            try:
+                # SCAN old schema in batches, filter by workspace
+                while len(jobs) < limit:
+                    scan_cursor_old, keys_old = self._redis.scan(
+                        scan_cursor_old, match=pattern_old, count=min(50, limit * 2)
+                    )
+
+                    for key in keys_old:
+                        if len(jobs) >= limit:
+                            break
+
+                        job_data = self._redis.hgetall(key)
+                        if not job_data:
+                            continue
+
+                        # CRITICAL: Workspace isolation - only include matching workspace
+                        if job_data.get("workspace_id") != workspace_id:
+                            continue
+
+                        # Apply status filter
+                        if status and job_data.get("status") != status:
+                            continue
+
+                        # Deserialize JSON fields
+                        if "params" in job_data:
+                            try:
+                                job_data["params"] = json.loads(job_data["params"])
+                            except json.JSONDecodeError:
+                                _LOG.debug("Failed to deserialize job params (key=%s)", key)
+
+                        if job_data.get("result"):
+                            try:
+                                job_data["result"] = json.loads(job_data["result"])
+                            except json.JSONDecodeError:
+                                _LOG.debug("Failed to deserialize job result (key=%s)", key)
+
+                        jobs.append(job_data)
+
+                    # Stop if SCAN completed (cursor=0) or we have enough jobs
+                    if scan_cursor_old == 0:
+                        break
+
+            except Exception as exc:
+                _LOG.error("SCAN old schema failed (workspace=%s): %s", workspace_id, exc)
 
         # Sort by enqueued_at descending (most recent first)
         jobs.sort(key=lambda j: j.get("enqueued_at", ""), reverse=True)
 
-        return jobs[:limit]
+        # Record telemetry (Sprint 60 Phase 2.2)
+        try:
+            from src.telemetry.prom import record_job_list_read_path, record_job_list_results
+
+            record_job_list_read_path(workspace_id, read_path)
+            record_job_list_results(workspace_id, len(jobs))
+        except Exception as exc:
+            _LOG.debug("Failed to record list telemetry: %s", exc)
+
+        return {"items": jobs[:limit], "next_cursor": next_cursor}
