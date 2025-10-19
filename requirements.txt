@@ -100,3 +100,6 @@ tzdata==2025.2
     # via pandas
 ujson==5.11.0
     # via -r requirements.in
+PyJWT==2.10.1
+aiohttp==3.9.3
+python-multipart==0.0.6

@@ -282,7 +282,7 @@
         }
 
         connect() {
-            if (this.isManulallyClosed) {
+            if (this.isManuallyClosed) {
                 return;
             }
 
@@ -385,7 +385,7 @@
         }
 
         reconnect() {
-            if (this.isManulallyClosed) {
+            if (this.isManuallyClosed) {
                 return;
             }
 
@@ -407,7 +407,7 @@
 
         close() {
             console.log('[SSE] Closing connection');
-            this.isManulallyClosed = true;
+            this.isManuallyClosed = true;
             if (this.eventSource) {
                 this.eventSource.close();
                 this.eventSource = null;

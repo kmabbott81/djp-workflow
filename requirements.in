@@ -22,3 +22,8 @@ redis>=5.0.0            # Redis client for durable rate limiting
 
 # Sprint 55 Week 3: AI agent infrastructure
 openai>=1.0.0           # OpenAI API for natural language action planning
+
+# Sprint 61b R0.5: Security hotfix - JWT & streaming
+PyJWT>=2.8.0                      # JWT token handling (auth)
+aiohttp>=3.9.0                    # Async HTTP client (optional, for JWKS)
+python-multipart>=0.0.6           # Multipart form data support
