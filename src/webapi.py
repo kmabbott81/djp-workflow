@@ -1831,17 +1831,25 @@ async def stream_response(
         raise HTTPException(status_code=422, detail=f"Invalid model: {model}. Valid models: {valid_models}")
 
     # Check rate limits (per-user and per-IP) - deferred import
-    from .stream.limits import RateLimiter
+    try:
+        from .stream.limits import RateLimiter
 
-    client_ip = request.client.host if request.client else "0.0.0.0"
-    limiter = RateLimiter()
+        client_ip = request.client.host if request.client else "0.0.0.0"
+        limiter = RateLimiter()
 
-    # Check rate limits (raises HTTPException 429 if exceeded)
-    await limiter.check_rate_limit(user_id, client_ip)
+        # Check rate limits (raises HTTPException 429 if exceeded)
+        await limiter.check_rate_limit(user_id, client_ip)
 
-    # Check quotas for anonymous users (raises HTTPException 429 if exceeded)
-    if principal.is_anonymous:
-        await limiter.check_anonymous_quotas(principal.user_id)
+        # Check quotas for anonymous users (raises HTTPException 429 if exceeded)
+        if principal.is_anonymous:
+            await limiter.check_anonymous_quotas(principal.user_id)
+    except HTTPException:
+        raise  # Re-raise auth/rate limit exceptions
+    except Exception as e:
+        # Log but don't fail on rate limiter connection issues during development
+        import traceback
+        print(f"[WARN] Rate limiter check failed (non-blocking): {e}")
+        traceback.print_exc()
 
     # Get stream state
     state = get_stream_state(stream_id)
