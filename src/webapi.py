@@ -1808,22 +1808,12 @@ async def stream_response(
     client_ip = request.client.host if request.client else "0.0.0.0"
     limiter = RateLimiter()
 
-    # Check rate limits
-    rate_limit_ok = await limiter.check_rate_limit(user_id, client_ip)
-    if not rate_limit_ok:
-        from fastapi.responses import JSONResponse
+    # Check rate limits (raises HTTPException 429 if exceeded)
+    await limiter.check_rate_limit(user_id, client_ip)
 
-        return JSONResponse(
-            status_code=429,
-            content={"detail": "Rate limit exceeded"},
-            headers={"Retry-After": "30"},
-        )
-
-    # Check quotas for anonymous users
+    # Check quotas for anonymous users (raises HTTPException 429 if exceeded)
     if principal.is_anonymous:
-        quota_ok = await limiter.check_anonymous_quotas(principal.user_id)
-        if not quota_ok:
-            raise HTTPException(status_code=429, detail="Quota exceeded")
+        await limiter.check_anonymous_quotas(principal.user_id)
 
     # Get stream state
     state = get_stream_state(stream_id)
