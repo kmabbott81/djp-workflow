@@ -87,54 +87,47 @@ async def verify_supabase_jwt(token: str) -> StreamPrincipal:
         HTTPException: 401 if invalid/expired token
     """
     try:
-        # Try symmetric key first (faster, for development)
-        if SUPABASE_JWT_SECRET:
-            try:
-                claims = decode(
-                    token,
-                    SUPABASE_JWT_SECRET,
-                    algorithms=["HS256"],
-                    options={"verify_aud": False},
-                )
-            except DecodeError:
-                # Symmetric key failed, try asymmetric
-                pass
-            else:
-                # Symmetric key succeeded
-                user_id = str(claims.get("sub") or claims.get("user_id") or "")
-                if not user_id:
-                    raise HTTPException(
-                        status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail="Invalid token: missing user_id",
-                    )
+        # Use same secret as token generation (with fallback)
+        secret = SUPABASE_JWT_SECRET or os.getenv("SECRET_KEY", "dev-secret-key")
 
-                session_id = str(uuid4())
-                now = time.time()
-                return StreamPrincipal(
-                    user_id=user_id,
-                    is_anonymous=bool(claims.get("anon", False)),
-                    session_id=session_id,
-                    created_at=now,
-                    expires_at=now + 86400,  # 24h expiry
-                )
-
-        # Try asymmetric key (JWKS) - simplified (skip for now without python-jose)
-        if SUPABASE_JWKS_URL:
+        try:
+            claims = decode(
+                token,
+                secret,
+                algorithms=["HS256"],
+                options={"verify_aud": False},
+            )
+        except DecodeError as e:
             raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="JWKS verification not yet supported, use HS256 secret",
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired token",
             )
 
-    except DecodeError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token",
+        # Extract user_id from token
+        user_id = str(claims.get("sub") or claims.get("user_id") or "")
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token: missing user_id",
+            )
+
+        session_id = str(uuid4())
+        now = time.time()
+        return StreamPrincipal(
+            user_id=user_id,
+            is_anonymous=bool(claims.get("anon", False)),
+            session_id=session_id,
+            created_at=now,
+            expires_at=now + 86400,  # 24h expiry
         )
 
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="No authentication method available",
-    )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Authentication failed: {str(e)}",
+        )
 
 
 # =============================================================================
