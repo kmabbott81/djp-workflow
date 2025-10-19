@@ -21,8 +21,9 @@ from starlette.responses import Response
 
 from .auth.security import require_scopes
 from .limits.limiter import RateLimitExceeded, get_rate_limiter
-from .stream.auth import generate_anon_session_token, verify_supabase_jwt
-from .stream.limits import RateLimiter
+# Note: stream auth module imports deferred to avoid startup issues
+# from .stream.auth import generate_anon_session_token, verify_supabase_jwt
+# from .stream.limits import RateLimiter
 from .telemetry import init_telemetry
 from .telemetry.middleware import TelemetryMiddleware
 from .templates import list_templates
@@ -1737,6 +1738,8 @@ async def format_sse_event(event_type: str, data: dict, event_id: int) -> str:
 @app.post("/api/v1/anon_session")
 async def create_anon_session():
     """Create anonymous session token (7-day TTL)."""
+    from .stream.auth import generate_anon_session_token
+
     token, expires_at = generate_anon_session_token()
     return {
         "token": token,
@@ -1787,7 +1790,9 @@ async def stream_response(
             detail="Missing or invalid Authorization header",
         )
 
-    # Verify JWT token and extract principal
+    # Verify JWT token and extract principal (deferred import)
+    from .stream.auth import verify_supabase_jwt
+
     token = auth_header.split(" ", 1)[1]
     principal = await verify_supabase_jwt(token)
 
@@ -1815,7 +1820,9 @@ async def stream_response(
     if model not in valid_models:
         raise HTTPException(status_code=422, detail=f"Invalid model: {model}. Valid models: {valid_models}")
 
-    # Check rate limits (per-user and per-IP)
+    # Check rate limits (per-user and per-IP) - deferred import
+    from .stream.limits import RateLimiter
+
     client_ip = request.client.host if request.client else "0.0.0.0"
     limiter = RateLimiter()
 
