@@ -59,7 +59,7 @@ class TestStreamAuthentication:
 
     async def test_anon_session_token_decode(self, monkeypatch):
         """Generated anon tokens should decode correctly."""
-        from jose import jwt
+        from jwt import decode
 
         # Set secret for testing
         monkeypatch.setenv("SUPABASE_JWT_SECRET", "test-secret-key")
@@ -67,7 +67,7 @@ class TestStreamAuthentication:
         token, expires_at = generate_anon_session_token(ttl_seconds=3600)
 
         # Decode token
-        claims = jwt.decode(token, "test-secret-key", algorithms=["HS256"])
+        claims = decode(token, "test-secret-key", algorithms=["HS256"])
 
         assert claims["anon"] is True
         assert "sub" in claims
@@ -77,16 +77,16 @@ class TestStreamAuthentication:
     async def test_token_expiration_enforced(self, monkeypatch):
         """Expired tokens should be rejected."""
 
-        from jose import jwt
+        from jwt import encode
 
         monkeypatch.setenv("SUPABASE_JWT_SECRET", "test-secret-key")
 
         # Create expired token
         now = time.time()
-        expired_token = jwt.encode(
+        expired_token = encode(
             {
                 "sub": "test_user",
-                "exp": now - 3600,  # Expired 1 hour ago
+                "exp": int(now - 3600),  # Expired 1 hour ago
             },
             "test-secret-key",
             algorithm="HS256",
