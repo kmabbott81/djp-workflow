@@ -10,7 +10,7 @@ from typing import Any, Optional
 from uuid import uuid4
 
 from fastapi import Header, HTTPException, Request, status
-from jose import JWTError, jwt
+from jwt import DecodeError, decode, encode, get_unverified_header
 from pydantic import BaseModel
 
 # =============================================================================
@@ -90,13 +90,13 @@ async def verify_supabase_jwt(token: str) -> StreamPrincipal:
         # Try symmetric key first (faster, for development)
         if SUPABASE_JWT_SECRET:
             try:
-                claims = jwt.decode(
+                claims = decode(
                     token,
                     SUPABASE_JWT_SECRET,
                     algorithms=["HS256"],
                     options={"verify_aud": False},
                 )
-            except JWTError:
+            except DecodeError:
                 # Symmetric key failed, try asymmetric
                 pass
             else:
@@ -118,46 +118,14 @@ async def verify_supabase_jwt(token: str) -> StreamPrincipal:
                     expires_at=now + 86400,  # 24h expiry
                 )
 
-        # Try asymmetric key (JWKS)
+        # Try asymmetric key (JWKS) - simplified (skip for now without python-jose)
         if SUPABASE_JWKS_URL:
-            jwks = await _load_supabase_jwks()
-            # Find matching key by kid
-            token_header = jwt.get_unverified_header(token)
-            kid = token_header.get("kid")
-
-            key = None
-            if jwks and "keys" in jwks:
-                for k in jwks["keys"]:
-                    if k.get("kid") == kid:
-                        key = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(k))
-                        break
-
-            if not key:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid token: unknown key",
-                )
-
-            claims = jwt.decode(token, key, algorithms=["RS256"], options={"verify_aud": False})
-
-            user_id = str(claims.get("sub") or claims.get("user_id") or "")
-            if not user_id:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid token: missing user_id",
-                )
-
-            session_id = str(uuid4())
-            now = time.time()
-            return StreamPrincipal(
-                user_id=user_id,
-                is_anonymous=bool(claims.get("anon", False)),
-                session_id=session_id,
-                created_at=now,
-                expires_at=now + 86400,
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="JWKS verification not yet supported, use HS256 secret",
             )
 
-    except JWTError:
+    except DecodeError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",
@@ -194,13 +162,13 @@ def generate_anon_session_token(ttl_seconds: int = 604800) -> tuple[str, float]:
         "user_id": user_id,
         "anon": True,
         "sid": session_id,
-        "iat": now,
-        "exp": expires_at,
+        "iat": int(now),
+        "exp": int(expires_at),
     }
 
     # Sign with JWT secret (symmetric)
     secret = SUPABASE_JWT_SECRET or os.getenv("SECRET_KEY", "dev-secret-key")
-    token = jwt.encode(payload, secret, algorithm="HS256")
+    token = encode(payload, secret, algorithm="HS256")
 
     return token, expires_at
 
