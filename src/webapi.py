@@ -1738,14 +1738,24 @@ async def format_sse_event(event_type: str, data: dict, event_id: int) -> str:
 @app.post("/api/v1/anon_session")
 async def create_anon_session():
     """Create anonymous session token (7-day TTL)."""
-    from .stream.auth import generate_anon_session_token
+    try:
+        from .stream.auth import generate_anon_session_token
 
-    token, expires_at = generate_anon_session_token()
-    return {
-        "token": token,
-        "expires_at": expires_at,
-        "expires_in": 604800,  # 7 days in seconds
-    }
+        token, expires_at = generate_anon_session_token()
+        return {
+            "token": token,
+            "expires_at": expires_at,
+            "expires_in": 604800,  # 7 days in seconds
+        }
+    except Exception as e:
+        import traceback
+
+        print(f"Error creating anon session: {e}")
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error creating session: {str(e)}",
+        )
 
 
 @app.get("/api/v1/stream")
