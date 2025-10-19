@@ -21,7 +21,7 @@ from starlette.responses import Response
 
 from .auth.security import require_scopes
 from .limits.limiter import RateLimitExceeded, get_rate_limiter
-from .stream.auth import generate_anon_session_token, get_stream_principal
+from .stream.auth import generate_anon_session_token, verify_supabase_jwt
 from .stream.limits import RateLimiter
 from .telemetry import init_telemetry
 from .telemetry.middleware import TelemetryMiddleware
@@ -1749,7 +1749,6 @@ async def create_anon_session():
 @app.post("/api/v1/stream")
 async def stream_response(
     request: Request,
-    principal=Depends(get_stream_principal),
     user_id: Optional[str] = None,
     message: Optional[str] = None,
     model: Optional[str] = None,
@@ -1779,6 +1778,18 @@ async def stream_response(
     - event: done (completion)
     """
     from fastapi.responses import StreamingResponse
+
+    # Authenticate via Authorization header or reject with 401
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail="Missing or invalid Authorization header",
+        )
+
+    # Verify JWT token and extract principal
+    token = auth_header.split(" ", 1)[1]
+    principal = await verify_supabase_jwt(token)
 
     # For POST, extract from JSON body
     if request.method == "POST" and body:
