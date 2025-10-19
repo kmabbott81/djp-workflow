@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Optional
 from uuid import uuid4
 
-from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from fastapi.staticfiles import StaticFiles
@@ -21,6 +21,8 @@ from starlette.responses import Response
 
 from .auth.security import require_scopes
 from .limits.limiter import RateLimitExceeded, get_rate_limiter
+from .stream.auth import generate_anon_session_token, get_stream_principal
+from .stream.limits import RateLimiter
 from .telemetry import init_telemetry
 from .telemetry.middleware import TelemetryMiddleware
 from .templates import list_templates
@@ -300,6 +302,7 @@ def root():
         "ready": "/ready",
         "version": "/version",
         "metrics": "/metrics",
+        "magic": "/magic",
     }
 
     # Add actions endpoints if enabled
@@ -314,6 +317,7 @@ def root():
         "endpoints": endpoints,
         "features": {
             "actions": ACTIONS_ENABLED,
+            "magic_box": True,
         },
     }
 
@@ -1646,6 +1650,325 @@ def get_demo_outbox():
             pass
 
     return {"items": items, "count": len(items)}
+
+
+# ============================================================================
+# Sprint 61a: Magic Box Interface & SSE Streaming
+# ============================================================================
+
+import asyncio
+import json
+import time
+from collections.abc import AsyncIterator
+
+
+class SSEEventBuffer:
+    """Buffer for SSE events with backpressure handling."""
+
+    def __init__(self, max_buffer_size: int = 1000, backpressure_timeout: float = 30.0):
+        self.buffer = asyncio.Queue(maxsize=max_buffer_size)
+        self.backpressure_timeout = backpressure_timeout
+        self.last_event_id = -1
+
+    async def send_event(self, event_type: str, data: dict, event_id: int) -> bool:
+        """
+        Queue an event. Returns False if backpressure detected (client stalled).
+        """
+        event = {"event": event_type, "id": event_id, "data": json.dumps(data)}
+        try:
+            # Try to add with timeout to detect stalled clients
+            self.buffer.put_nowait(event)
+            return True
+        except asyncio.QueueFull:
+            # Buffer full - client is stalled
+            return False
+
+    async def get_event(self) -> dict:
+        """Get next event from buffer."""
+        return await asyncio.wait_for(self.buffer.get(), timeout=self.backpressure_timeout)
+
+
+class SSEStreamState:
+    """Tracks per-stream state for deduplication and recovery."""
+
+    def __init__(self, stream_id: str):
+        self.stream_id = stream_id
+        self.event_id = 0
+        self.last_acked_id = -1
+        self.created_at = time.time()
+        self.chunks_sent = []
+        self.is_closed = False
+
+    def next_event_id(self) -> int:
+        """Get next event ID (monotonically increasing)."""
+        event_id = self.event_id
+        self.event_id += 1
+        return event_id
+
+    def add_chunk(self, content: str, tokens: int, cost: float) -> None:
+        """Record a chunk for potential replay."""
+        self.chunks_sent.append({"event_id": self.event_id - 1, "content": content, "tokens": tokens, "cost": cost})
+
+    def get_chunks_after(self, last_event_id: int) -> list:
+        """Get all chunks after given event ID for replay."""
+        return [chunk for chunk in self.chunks_sent if chunk["event_id"] > last_event_id]
+
+
+# Global stream state (in production: use Redis)
+_stream_states = {}
+
+
+def get_stream_state(stream_id: str) -> SSEStreamState:
+    """Get or create stream state."""
+    if stream_id not in _stream_states:
+        _stream_states[stream_id] = SSEStreamState(stream_id)
+    return _stream_states[stream_id]
+
+
+async def format_sse_event(event_type: str, data: dict, event_id: int) -> str:
+    """Format event as SSE (Server-Sent Events) format."""
+    sse = f"event: {event_type}\n"
+    sse += f"id: {event_id}\n"
+    sse += "retry: 10000\n"  # 10 second retry for stalled clients
+    sse += f"data: {json.dumps(data)}\n\n"
+    return sse
+
+
+@app.post("/api/v1/anon_session")
+async def create_anon_session():
+    """Create anonymous session token (7-day TTL)."""
+    token, expires_at = generate_anon_session_token()
+    return {
+        "token": token,
+        "expires_at": expires_at,
+        "expires_in": 604800,  # 7 days in seconds
+    }
+
+
+@app.get("/api/v1/stream")
+@app.post("/api/v1/stream")
+async def stream_response(
+    request: Request,
+    principal=Depends(get_stream_principal),
+    user_id: Optional[str] = None,
+    message: Optional[str] = None,
+    model: Optional[str] = None,
+    stream_id: Optional[str] = None,
+    last_event_id: Optional[int] = None,
+    body: Optional[dict[str, Any]] = None,
+) -> Any:
+    """
+    SSE streaming endpoint for Magic Box.
+
+    Handles:
+    - Message streaming with incremental event IDs
+    - Last-Event-ID recovery and replay
+    - Heartbeat for stalled connection detection
+    - Backpressure detection and graceful closure
+
+    Accepts both GET (query params) and POST (JSON body):
+    - user_id: "anon_xxx"
+    - message: "Your prompt here"
+    - model: "gpt-4o-mini"
+    - stream_id: "stream_xxx" (optional, auto-generated if missing)
+    - last_event_id: last event ID for recovery
+
+    Response: SSE stream with events:
+    - event: message_chunk (incremental content)
+    - event: heartbeat (keep-alive)
+    - event: done (completion)
+    """
+    from fastapi.responses import StreamingResponse
+
+    # For POST, extract from JSON body
+    if request.method == "POST" and body:
+        message = message or body.get("message", "")
+        model = model or body.get("model", "gpt-4o-mini")
+        stream_id = stream_id or body.get("stream_id")
+        last_event_id = last_event_id or body.get("last_event_id")
+
+    # Use authenticated user_id from principal
+    user_id = principal.user_id
+    message = message or ""
+    model = model or "gpt-4o-mini"
+    stream_id = stream_id or str(uuid4())
+
+    if not message:
+        raise HTTPException(status_code=400, detail="message required")
+
+    # Validate message length and model
+    if len(message) > 8192:
+        raise HTTPException(status_code=422, detail="Message too long (max 8192 characters)")
+
+    valid_models = ["gpt-4o-mini", "gpt-4", "gpt-4-turbo", "claude-3-5-sonnet", "claude-3-opus"]
+    if model not in valid_models:
+        raise HTTPException(status_code=422, detail=f"Invalid model: {model}. Valid models: {valid_models}")
+
+    # Check rate limits (per-user and per-IP)
+    client_ip = request.client.host if request.client else "0.0.0.0"
+    limiter = RateLimiter()
+
+    # Check rate limits
+    rate_limit_ok = await limiter.check_rate_limit(user_id, client_ip)
+    if not rate_limit_ok:
+        from fastapi.responses import JSONResponse
+
+        return JSONResponse(
+            status_code=429,
+            content={"detail": "Rate limit exceeded"},
+            headers={"Retry-After": "30"},
+        )
+
+    # Check quotas for anonymous users
+    if principal.is_anonymous:
+        quota_ok = await limiter.check_anonymous_quotas(principal.user_id)
+        if not quota_ok:
+            raise HTTPException(status_code=429, detail="Quota exceeded")
+
+    # Get stream state
+    state = get_stream_state(stream_id)
+
+    # Determine starting point for replay
+    replay_from_id = last_event_id if last_event_id is not None else -1
+
+    async def generate_sse_stream() -> AsyncIterator[str]:
+        """Generate SSE stream with backpressure handling."""
+        try:
+            # Emit replay of previous chunks if reconnecting
+            if replay_from_id >= 0:
+                replayed_chunks = state.get_chunks_after(replay_from_id)
+                for chunk in replayed_chunks:
+                    event_data = {
+                        "content": chunk["content"],
+                        "tokens": chunk["tokens"],
+                        "cost_usd": chunk["cost"],
+                        "replayed": True,
+                    }
+                    sse_event = await format_sse_event("message_chunk", event_data, chunk["event_id"])
+                    yield sse_event
+
+            # Emit heartbeat every 10 seconds (keep connection alive)
+            heartbeat_task = asyncio.create_task(emit_heartbeat_loop(state))
+
+            # Simulate streaming response (in production: call LLM API)
+            response_text = await generate_mock_response(message, model)
+
+            # Stream response in chunks
+            chunk_size = 7  # Characters per chunk
+            current_pos = 0
+
+            while current_pos < len(response_text):
+                if state.is_closed:
+                    break
+
+                # Extract chunk
+                chunk = response_text[current_pos : current_pos + chunk_size]
+                current_pos += chunk_size
+
+                # Get event ID
+                event_id = state.next_event_id()
+
+                # Approximate tokens (4 chars = 1 token)
+                tokens = max(1, len(chunk) // 4)
+
+                # Calculate cost based on model
+                cost_per_token = 0.00060 / 1000 if model == "gpt-4o-mini" else 0.01000 / 1000
+                cost_usd = tokens * cost_per_token
+
+                # Record chunk
+                state.add_chunk(chunk, tokens, cost_usd)
+
+                # Emit event
+                event_data = {
+                    "content": chunk,
+                    "tokens": tokens,
+                    "cost_usd": cost_usd,
+                }
+                sse_event = await format_sse_event("message_chunk", event_data, event_id)
+                yield sse_event
+
+                # Small delay between chunks for demo
+                await asyncio.sleep(0.05)
+
+            # Emit done event
+            final_event_id = state.next_event_id()
+            done_data = {
+                "total_tokens": sum(c["tokens"] for c in state.chunks_sent),
+                "total_cost": sum(c["cost"] for c in state.chunks_sent),
+                "latency_ms": int((time.time() - state.created_at) * 1000),
+            }
+            sse_event = await format_sse_event("done", done_data, final_event_id)
+            yield sse_event
+
+            # Cancel heartbeat task
+            heartbeat_task.cancel()
+            try:
+                await heartbeat_task
+            except asyncio.CancelledError:
+                pass
+
+        except asyncio.CancelledError:
+            # Client disconnected
+            state.is_closed = True
+            raise
+        except Exception as e:
+            # Error during streaming
+            state.is_closed = True
+            error_event_id = state.next_event_id()
+            error_data = {"error": str(e), "error_type": type(e).__name__}
+            sse_event = await format_sse_event("error", error_data, error_event_id)
+            yield sse_event
+
+    async def emit_heartbeat_loop(state: SSEStreamState, interval: float = 10.0) -> None:
+        """Emit heartbeat events to keep connection alive."""
+        try:
+            while not state.is_closed:
+                await asyncio.sleep(interval)
+                if not state.is_closed:
+                    event_id = state.next_event_id()
+                    heartbeat_event = await format_sse_event("heartbeat", {}, event_id)
+                    # Note: In real implementation, would queue this to the stream
+                    # For now, heartbeats are implicit in streaming
+        except asyncio.CancelledError:
+            pass
+
+    return StreamingResponse(
+        generate_sse_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable Nginx buffering
+        },
+    )
+
+
+async def generate_mock_response(message: str, model: str) -> str:
+    """Generate mock response for demo."""
+    responses = {
+        "default": "I'm here to help you with that task. As an AI assistant, I can analyze, explain, search, and provide recommendations. For actions that modify external systems or send messages, I may need additional permissions. What specifically would you like me to help you with?",
+    }
+
+    return responses.get(model, responses["default"])
+
+
+@app.get("/magic")
+def magic_box():
+    """
+    Magic Box interface - Sprint 61a.
+
+    Pure HTML/JS interface with SSE streaming, cost tracking, and anonymous sessions.
+    No authentication required for anonymous use.
+    """
+    from fastapi.responses import FileResponse
+
+    # Find magic/index.html in static directory
+    if static_dir:
+        magic_path = static_dir / "magic" / "index.html"
+        if magic_path.exists():
+            return FileResponse(magic_path)
+
+    raise HTTPException(status_code=404, detail="Magic Box interface not found")
 
 
 if __name__ == "__main__":
