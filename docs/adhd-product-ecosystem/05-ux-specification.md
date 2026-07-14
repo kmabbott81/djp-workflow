@@ -778,4 +778,4 @@ The voice everywhere: a calm friend who has read the research (§8). Rules:
 
 ---
 
-*Prev: [04 — Product Specifications](04-product-specifications.md) · Next: [06 — Notion Implementation](06-notion-implementation.md) · Full index in [README](README.md).*
+*Prev: [04 — Information Architecture](04-information-architecture.md) · Next: [06 — ADHD Design Checklist](06-adhd-design-checklist.md) · Full index in [README](README.md).*
