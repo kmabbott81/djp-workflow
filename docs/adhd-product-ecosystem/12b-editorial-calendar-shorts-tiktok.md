@@ -411,4 +411,97 @@ Recurring native series: **"Things I refuse to put in an ADHD planner/budget/sys
 135. Storytime: the capsule wardrobe I built for my brain, not for fashion [DF|T2]
 136. POV: progressive disclosure hides most buttons and you finally exhale [DF|T3]
 
-<!-- CONT-5 -->
+### OR — Organization (137–154)
+
+137. POV: a thought appears and three seconds later it's in the Inbox [OR|T2]
+138. Skit: six capture points get an intervention and merge into one inbox [OR|T2]
+139. Greenscreen: organisational strategies, incremental OR 2.03 — the component that pulls [OR|T1]
+140. Day-in-the-life: my weekly filing pass — twelve minutes, everything lands [OR|T1]
+141. Things I refuse to put in an ADHD system #10: filing at capture time [OR|T2]
+142. Stitch this: your inbox count right now — no shame, one sweep together [OR|T2]
+143. POV: the voice memo catches the idea before the parking lot eats it [OR|T2]
+144. Skit: the someday list rescues a project from forty stray ideas [OR|T2]
+145. Replying to "my notes app is a junk drawer" — retrieval beats tidiness [OR|T2]
+146. Voiceover: photographing paperwork before it teleports to another dimension [OR|T2]
+147. POV: you find the document in ten seconds; roll credits [OR|T2]
+148. Skit: the conversation commitment that finally got captured mid-sentence [OR|T2]
+149. Duet-bait: show your capture ritual in one unedited take [OR|T2]
+150. Greenscreen: checklists — T1 inside structured workflows, honest about standalone [OR|T1]
+151. Storytime: the email-forwarding rule that ended my tab hoarding [OR|T2]
+152. POV: the archive swallows the backlog; nothing is deleted; you breathe [OR|T2]
+153. Skit: triage court — today, someday, and trash take the stand [OR|T1]
+154. Things I refuse #11: perfectly labeled bins as an entry requirement [OR|T2]
+
+### PW — Product Walkthroughs (155–176)
+
+155. Build-in-Public #1: why the Daily Board caps committed tasks at three [PW|T1]
+156. Screen-record: Comeback Mode click-through — archive, one button, zero guilt [PW|T2]
+157. POV: onboarding asks three questions and then just stops [PW|T2]
+158. Build-in-Public #2: the streak feature we killed, with receipts [PW|T2]
+159. Rate-my-setup: a user's Anchor board reviewed honestly, tier labels on screen [PW|T2]
+160. Screen-record: the paycheck flow, every tap, real numbers blurred [PW|T2]
+161. Build-in-Public #3: Evidence Notes — every feature wears its tier in public [PW|T2]
+162. Replying to "is this another aesthetic Notion template?" — a walkthrough answers [PW|T1]
+163. POV: the app asks how life went, not how long you scrolled [PW|T2]
+164. Build-in-Public #4: our anti-engagement dashboard with live numbers [PW|T2]
+165. Screen-record: First Action Kit, download to first capture in ninety seconds [PW|T2]
+166. Duet-bait: build your setup on our template; we'll tier-label it [PW|T2]
+167. Build-in-Public #5: what shipped behind an "experimental" label this month [PW|T3]
+168. POV: Weekly Reset prompt four asks what to drop — you drop it [PW|T1]
+169. Screen-record: Home Base shared chores syncing between two phones [PW|T2]
+170. Build-in-Public #6: reading a one-star review aloud, then fixing the thing [PW|T2]
+171. Skit: sales-page copy meets Evidence Notes — same feature, both honest [PW|T2]
+172. Screen-record: cue setup — one reminder tied to one pre-decided action [PW|T2]
+173. Build-in-Public #7: how Anchor Lab members shape what we test next [PW|T2]
+174. POV: you lapse and the app's first word is "welcome," not "warning" [PW|T2]
+175. Screen-record: momentum metrics after a missed week — nothing resets [PW|T2]
+176. Build-in-Public #8: feature requests we said no to, and the evidence why [PW|T4]
+
+### RE — Research Explanations (177–200)
+
+177. Greenscreen Journal Club #1: [Safren-2010] on screen — what the CBT package actually contained [RE|T1]
+178. Greenscreen Journal Club #2: [Solanto-2010] — metacognitive group, response OR 5.41, explained plainly [RE|T1]
+179. Greenscreen Journal Club #3: [Nordby-2022] — the reminder study no app will market [RE|T4]
+180. Greenscreen Journal Club #4: [attexis-2026] — d = 0.85, plus its sponsor-conflict footnote [RE|T1]
+181. Greenscreen Journal Club #5: [Kenter-2023] — 29% finished; we design for the rest [RE|T1]
+182. Greenscreen Journal Club #6: [Pasarelu-2020] — 109 apps, zero proof, screenshot receipts [RE|T4]
+183. Greenscreen Journal Club #7: [Inflow-2026] — organization behaviors partially carried the inattention gains [RE|T1]
+184. Greenscreen Journal Club #8: [Gollwitzer-2006] — eight thousand participants of if-then planning [RE|T2]
+185. Greenscreen Journal Club #9: [Lally-2010] — the missed day that didn't matter [RE|T2]
+186. Greenscreen Journal Club #10: [Stern-2016] — brain training's quiet null result [RE|T4]
+187. Greenscreen Journal Club #11: [NimmoSmith-2020] — neurofeedback matched by sham [RE|T4]
+188. Greenscreen Journal Club #12: [Bangma-2019] — the money findings, told without moralizing [RE|T2]
+189. Greenscreen Journal Club #13: [Swedish-Registry] — 11.5 million adults; why the stakes are real [RE|T2]
+190. Greenscreen Journal Club #14: [Fernandes-2014] — 201 studies, 0.1% of behavior variance [RE|T2]
+191. Greenscreen Journal Club #15: [Matsumoto-2024] — the component meta-analysis; organization wins [RE|T1]
+192. Greenscreen Journal Club #16: [FOCUS-2023] — 100% adoption, null primary outcome [RE|T4]
+193. Greenscreen Journal Club #17: [LivingSMART-2015] — 33% versus 0% clinically improved [RE|T1]
+194. Greenscreen Journal Club #18: [Selaskowski-2022] — homework compliance rose with smartphones [RE|T1]
+195. Greenscreen Journal Club #19: [Nasri-2023] — iCBT beat nothing, not relaxation; humility clip [RE|T1]
+196. Greenscreen Journal Club #20: [Hallez-2024] — visual timers tested in children only; we say so [RE|T3]
+197. Greenscreen Journal Club #21: [DelayDiscounting-Meta] — the curve behind impulse buying [RE|T2]
+198. Greenscreen Journal Club #22: [BodyDoubling-HCI] — community-endorsed, zero RCTs, still interesting [RE|T3]
+199. Greenscreen Journal Club #23: [Lauder-2024] — psychosocial d = 0.56 on work outcomes [RE|T1]
+200. Greenscreen Journal Club #24: [ACCESS-2021] — college coaching RCT, population caveat included [RE|T1]
+
+---
+
+## Coverage Check — 10 Themes × 2 Platforms
+
+| Theme | YouTube Shorts | TikTok | Total |
+|---|---|---|---|
+| EF — Executive function | 22 | 22 | 44 |
+| MO — Money | 24 | 24 | 48 |
+| PL — Planning | 22 | 20 | 42 |
+| HO — Home | 16 | 16 | 32 |
+| HA — Habits | 20 | 20 | 40 |
+| TB — Time blindness | 18 | 18 | 36 |
+| DF — Decision fatigue | 16 | 16 | 32 |
+| OR — Organization | 18 | 18 | 36 |
+| PW — Product walkthrough | 22 | 22 | 44 |
+| RE — Research explanation | 22 | 24 | 46 |
+| **Total** | **200** | **200** | **400** |
+
+---
+
+*Companion file: [12 — Editorial Calendar (long-form & other channels)](12-editorial-calendar.md) · Evidence source: [00 — Evidence Foundation](00-evidence-foundation.md) · Full index: [README](README.md).*

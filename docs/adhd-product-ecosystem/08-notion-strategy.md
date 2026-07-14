@@ -77,7 +77,7 @@ Three properties. That is the entire schema, and the restraint is the feature: a
 
 #### B.2.2 Tasks
 
-The T1 spine: task list + decomposition ([Safren-2010], [Matsumoto-2024] organizational strategies iOR 2.03).
+The T1 spine: task list + decomposition ([Safren-2010]; [Matsumoto-2024] organizational strategies, incremental OR 2.03).
 
 | Property | Type | Options / formula | Why it exists |
 |---|---|---|---|
