@@ -137,13 +137,27 @@ Features leave the ecosystem the way they entered: on evidence and observed beha
 5. **Removal from new sales and current templates.** Existing user copies keep working untouched — we never reach into them.
 6. **Recorded** in the annual State of the Evidence report (§10).
 
+**Sunset email skeleton:**
+
+```
+Subject: We're retiring [feature] — here's the honest why
+
+We built [feature] labeled experimental. The evidence has moved: [one plain
+sentence + key, e.g., "a randomized trial found no benefit"]. So we're
+retiring it rather than keeping it because it looks good on a listing.
+
+Your copy keeps working — nothing breaks, nothing to do. From [date], new
+versions won't include it. What we recommend instead: [one alternative].
+Full reasoning: this year's State of the Evidence report.
+```
+
 **Tone rule:** a retirement announcement gets the same care as a launch. Publicly removing something because the evidence moved is the cheapest credibility we will ever buy — and it is also simply the deal we offered.
 
 ---
 
 ## 5. Evidence monitoring dashboard (privacy first)
 
-The §11 canonical metrics, made real — with the instrumentation honesty stated up front: **templates can't and shouldn't spy.** Notion templates, spreadsheets, and printables ship with no pixels, no scripts, no hidden telemetry of any kind. In most cases that is technically infeasible anyway; in all cases it would be wrong for a product whose core promise is being safe to think inside. Every number below comes from people who chose to tell us.
+The foundation §11 canonical metrics, made real — with the instrumentation honesty stated up front: **templates can't and shouldn't spy.** Notion templates, spreadsheets, and printables ship with no pixels, no scripts, no hidden telemetry of any kind. In most cases that is technically infeasible anyway; in all cases it would be wrong for a product whose core promise is being safe to think inside. Every number below comes from people who chose to tell us.
 
 **Data sources (all opt-in, all revocable):**
 
