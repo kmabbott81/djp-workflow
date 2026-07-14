@@ -79,5 +79,72 @@
 48. The Honest Review: Streak-Based Habit Trackers — category patterns vs forgiveness-by-design; no names [HA|T2]
 49. Practice Was the Predictor — homework completion correlated with symptom improvement [Solanto-2010] [HA|T1]
 50. Pick Habits You Actually Want — self-selected habits formed more strongly [Singh-2024] [HA|T2]
-<!--CHUNK3-->
+### TB — Time blindness
+
+51. Time Blindness Is Measurable — estimation and reproduction deficits across a decade of studies [TimePerception-Review] [TB|T1]
+52. Training Is Proven; Widgets Aren't — the T1/T3 split inside "time-blindness tools" [TB|T1]
+53. Visual Timers: Read the Fine Print — the controlled evidence is from schoolchildren [Hallez-2024] [TB|T3]
+54. Make Time Visible, Skills First — calendars, external timers, checklists as trained skills [LGO] [TB|T1]
+55. Scheduling Blocks That Hold — planning and scheduling practice from metacognitive therapy [Solanto-2010] [TB|T1]
+56. The Honest Review: Countdown Timer Apps — category patterns against our checklist; widgets stay experimental [TB|T3]
+57. Transition Alarms Done Right — every alarm names its pre-decided next action [TB|T2]
+58. Why Far Deadlines Feel Fake — steep discounting of distant outcomes, explained [DelayDiscounting-Meta] [TB|T1]
+59. Estimate, Time It, Compare — a calibration practice; plausible, honestly unproven [TB|T3]
+60. "Waiting Mode," Named Honestly — community concept; what evidence exists and doesn't [TB|T3]
+
+### DF — Decision fatigue
+
+61. The Jam Study, Explained — 6 options outsold 24 by 10×; overload is real [IyengarLepper-2000] [DF|T2]
+62. Defaults Do the Heavy Lifting — d=0.68 across 73,675 people; design your own [Jachimowicz-2019] [DF|T2]
+63. Decide Once, Benefit Daily — turning recurring choices into standing defaults [DF|T2]
+64. Pre-Decide the Hard Moments — if-then plans as decision elimination [Gollwitzer-2006] [DF|T2]
+65. Progressive Disclosure — show less now, more later; experimental as an isolated feature [DF|T3]
+66. Template Your Repeating Work — pre-filled structure beats blank pages; indirect evidence, honestly useful [DF|T2]
+67. A Two-Option Rule for Stuck Moments — our design heuristic; mechanism-plausible, unproven [DF|T3]
+68. Cut Your Menus in Half — applying choice-overload findings to everyday menus of options [IyengarLepper-2000] [DF|T2]
+69. Checklists as Decision Savers — structured checklists inside CBT-style workflows [DF|T2]
+70. Myth vs. Mechanism: AI Will Decide for You — chatbot showed no superiority in its RCT [Selaskowski-2023] [DF|T4-debunk]
+
+### OR — Organization
+
+71. Organization Doubled Response Odds — incremental OR 2.03 for organisational strategies [Matsumoto-2024] [OR|T1]
+72. Capture First, Organize Later — offloading evidence and the universal-inbox principle [Offloading-2025] [OR|T2]
+73. Filing at Capture Kills Capture — friction rationale; keep entry cost near zero [OR|T3]
+74. One System, Not Five — maintenance burden drives abandonment; consolidation as design rationale [OR|T3]
+75. The Weekly Reset Keeps Systems Alive — review rituals as the organizing engine [Solanto-2010] [OR|T1]
+76. Everything Gets One Home — environmental structuring from OT consensus [UKAAN-2021] [OR|T2]
+77. Findable Beats Filed — retrieval cues make offloading actually work later [Offloading-2025] [OR|T2]
+78. Does ADHD Coaching Help? — college-student RCT effects d=0.39–1.21, population caveats stated [ACCESS-2021] [OR|T2]
+79. The Honest Review: "Second Brain" Systems — category patterns vs our checklist; maintenance cost up front [OR|T2]
+80. Myth vs. Mechanism: Minimalism as Medicine — no trials; fewer-options mechanism separated from cure claims [OR|T4-debunk]
+
+### PW — Product walkthroughs
+
+81. Build With Me: Anchor Daily Board — Now/Next/Later built from scratch; one next action throughout [PW|T1]
+82. Build With Me: The Inbox — zero-friction capture; nothing requires filing at entry [PW|T2]
+83. Build With Me: Anchor Money System — stepwise paycheck-to-bills workflow; no outcome promises, tiers shown [PW|T2]
+84. Build With Me: The Weekly Reset — the 15-minute ritual, screen by screen [PW|T1]
+85. Comeback Mode, Demonstrated — lapse recovery without guilt; one screen, one button [PW|T2]
+86. Anchor Routines Tour — momentum metrics instead of streaks; misses never reset progress [PW|T2]
+87. Build With Me: Anchor Home Base — shared checklists and recurring chores for households [PW|T2]
+88. Evidence Notes, Explained — why every feature carries a plain-language evidence tier [Pasarelu-2020] [PW|T2]
+89. The Honest Review: Our Own Daily Board — self-audit against the Ten Laws; failures included [PW|T2]
+90. What We Measured (Quarterly) — function metrics, Comeback Rate, misses; engagement isn't success [FOCUS-2023] [PW|T1]
+
+### RE — Research explanations
+
+91. Evidence Check: [Solanto-2010] — metacognitive therapy RCT; response OR 5.41 vs active control [RE|T1]
+92. Evidence Check: [Safren-2010] — 12-session CBT modules; gains maintained at 12 months [RE|T1]
+93. Evidence Check: [Cochrane-2018] — 14 RCTs; real effects, honest certainty grades [RE|T1]
+94. Evidence Check: [attexis-2026] — self-guided digital CBT, d=0.85; caveats included [RE|T1]
+95. Evidence Check: [Inflow-2026] — symptom gains; no functional-impairment change; OTMP mediation [RE|T1]
+96. Evidence Check: [Kenter-2023] — MyADHD worked; only 29% finished — the adherence lesson [RE|T1]
+97. Evidence Check: [Lauder-2024] — work outcomes: psychosocial d=0.56 vs pharmacological 0.19 [RE|T1]
+98. Evidence Check: [Stern-2016] & [Elbe-2023] — computerized cognitive training's null results, walked through [RE|T4-debunk]
+99. Evidence Check: [NimmoSmith-2020] — neurofeedback no better than sham; what that means [RE|T4-debunk]
+100. Evidence Check: [LopezCampos-2025] — umbrella review: low-quality field, real adverse-effect signals [RE|T1]
+
+---
+<!--CHUNK4-->
+
 
