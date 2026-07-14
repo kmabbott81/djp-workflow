@@ -560,7 +560,7 @@ Welcome. Two minutes to your first win. Open step 1.
     Tap "+ Capture" at the top of this page. Type anything on your mind.
     Now open the Anchor Daily Board: drag one SAMPLE task into Now.
     That's the whole core move - capture what appears, pick one thing.
-    ✅ Check this box. You have used the system now.
+    [x] Check this box. You have used the system now.
 
 ▸ 2 · Make Today yours (3 minutes)
     On the Daily Board, drag SAMPLE tasks out of Now/Next and put one real
