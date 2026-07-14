@@ -211,15 +211,23 @@ Clinical-outcome screen:         passed (no symptom/treatment implications)
 
 **Rule zero:** no public copy without review against the foundation. "Public copy" = listings, sales pages, emails, social posts, ads, in-product marketing surfaces, and this documentation when published.
 
-1. **Writer self-check.** Run checklist items H1–H4 from [06 — ADHD Design Checklist](06-adhd-design-checklist.md), including the banned-language sweep from §3.
-2. **Second-person review.** Someone other than the writer (the evidence lead by default) verifies every stated or implied benefit against §4 keys and tier phrasings in §2. Implied claims count: an image of a rising savings chart *is* a savings claim.
-3. **Claims log.** Each approved surface gets a log entry: claim → tier → key(s) → approver → date → where published. Real deadlines (§5.1) are logged here too. The log is the audit trail counsel reviews (§8).
+1. **Writer self-check.** Run checklist items H1–H4 from [06 — ADHD Design Checklist](06-adhd-design-checklist.md), including the banned-language sweep from §3. The 60-second version: search the draft for *proven, clinical, treat, cure, fix, rewire, guarantee, dopamine, neuroscience, 21 days, never miss, only X left* — every hit is either deleted or defended in the claims log.
+2. **Second-person review.** Someone other than the writer (the evidence lead by default) verifies every stated or implied benefit against foundation §4 keys and the tier phrasings in §2 above. Implied claims count: an image of a rising savings chart *is* a savings claim.
+3. **Claims log.** Each approved surface gets a log entry. The log is the audit trail counsel reviews (§8); real deadlines (§5.1) are logged here too.
+
+| Field | Example entry |
+|---|---|
+| Surface + date | Anchor Daily Board Etsy listing, 2026-07-14 |
+| Claim (as written) | "one pre-decided first step so starting takes two minutes" |
+| Tier + key(s) | T2 · [Gollwitzer-2006]; qualifier present in Evidence Note |
+| Approver | Evidence lead (not the writer) |
+| Expiry / re-review | Next §2 re-grade touching [Gollwitzer-2006], or 12 months |
 4. **Disagreement rule.** Ties break conservative — the stricter tier, the softer claim, per the foundation's prime directive.
 5. **Corrections and retractions.** Severity classes:
    - **Class A — material claim wrong** (an outcome or evidence claim that could have influenced purchase): correct all live surfaces within 48 hours, pause affected ads, add a visible correction note where the claim appeared, email purchasers who bought under the claim, log in the annual State of the Evidence report (Part 14 §10).
    - **Class B — tier mislabel or missing qualifier:** fix within 7 days across channels; log.
    - **Class C — typo-level:** fix in the next scheduled update; log optional.
-6. **Evidence changes propagate.** When Part 14's re-grading workflow changes a tier, marketing surfaces citing it are swept within 30 days (Part 14 §3). Promotions upgrade copy only after re-review; demotions trigger immediate Class B handling.
+6. **Evidence changes propagate.** When Part 14's re-grading workflow changes a tier, marketing surfaces citing it are swept within 30 days (Part 14 §2). Promotions upgrade copy only after re-review; demotions trigger immediate Class B handling.
 
 ---
 
@@ -228,6 +236,15 @@ Clinical-outcome screen:         passed (no symptom/treatment implications)
 This framework is **good-practice policy, not legal advice**. It is written in the spirit of FTC-style advertising substantiation: have a reasonable basis for claims before publishing; treat health-adjacent claims as requiring competent and reliable evidence (we sidestep this by not making health claims at all); ensure endorsements reflect honest experiences of real users, with typicality handled truthfully; disclose material connections. Marketing wellness products near a clinical condition also has platform-policy dimensions (Etsy, ad networks) with their own claim rules.
 
 **Standing recommendations:** engage counsel to review this framework, the disclosure block, the testimonial policy, and the claims log before launch and annually thereafter; re-review before any paid advertising, any health-adjacent copy change, and any expansion into regulated territory (see Part 14 §9 for the wellness-vs-digital-therapeutic boundary). Nothing in this document creates or substitutes for that review.
+
+**Scope to put in front of counsel, minimum:**
+
+- The verbatim disclosure block (§2) and refund copy (§5) as used on each platform
+- The claims log format and a sample quarter of entries (§7)
+- Testimonial consent records and the typicality disclaimer (§6)
+- Any deadline-based promotion before it runs (§5.1)
+- The wellness-lane positioning against local health-claim and consumer-protection rules, per jurisdiction we sell into
+- Data-practice statements that touch marketing (Part 14 §5, §8)
 
 ---
 

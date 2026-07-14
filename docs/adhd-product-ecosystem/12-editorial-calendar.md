@@ -137,6 +137,17 @@ Last week of March, June, September, and December — run inside a normal Friday
 4. **Re-weight the arc.** Check next quarter's monthly themes (§c) against what the metrics and Anchor Lab questions actually show; shift secondary themes freely, keep the ethics notes fixed.
 5. **Close with the pool.** Retire ideas that no longer pass the foundation's gates, note gaps for new ideas (tagged, registry-traced) — the pool stays a surplus, so the next quarter still starts with selection, not generation.
 
+**Action thresholds** (pre-decided, so the audit ends in actions rather than moods):
+
+| Signal | Pre-decided response |
+|---|---|
+| Business Weekly Reset completed <50% of active weeks (mirrors §11 metric 5) | Next month runs minimum-viable weeks only; nothing else changes |
+| A whole month skipped | Comeback Mode: resume with the current month's themes; the skipped month's seasonal ideas wait for next year — never backfilled |
+| Saves rising but pin → First Action Kit click-to-email flat | Destination mismatch: fix the landing page or the pin's promise, don't make louder pins |
+| A T3 "experimental" asset outperforms everything | Do **not** upgrade its language — add the feature to the Anchor Lab test queue ([14](14-continuous-improvement-system.md)); popularity is not evidence (Law 10, [FOCUS-2023]) |
+| Any live claim fails re-tracing to §4 | Correct or unpublish within 48 hours; log it in the public changelog |
+| One quarter's output = zero | The calendar didn't fail, the season did: restart at §a step 1 with the smallest possible week |
+
 ---
 
 *Master index for [12a](12a-editorial-calendar-youtube-blog-newsletter.md) · [12b](12b-editorial-calendar-shorts-tiktok.md) · [12c](12c-editorial-calendar-reels-carousels.md) · [12d](12d-editorial-calendar-pinterest.md) — part of the [Anchor blueprint](README.md) · Strategy layer: [11 — Content Strategy](11-content-strategy.md) · Every claim traces to [00 — Evidence Foundation](00-evidence-foundation.md).*

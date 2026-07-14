@@ -110,4 +110,67 @@ Recurring micro-series: **Externalize It [EF]** · **Money Mechanics [MO]** · *
 83. Home Base Sunday #8: the guest-ready-in-thirty damage-control checklist [HO|T2]
 84. Why home systems collapse in week three — and the recovery design [HO|T2]
 
-<!-- CONT-1 -->
+### HA — Habits & Routines (85–104)
+
+85. Comeback Week #1: missing one day doesn't break a habit — the actual data [HA|T2]
+86. Habits take 18–254 days, median 66 — plan for months, not 21 days [HA|T2]
+87. Comeback Week #2: the one-button restart — archive the backlog, keep your dignity [HA|T2]
+88. Why Anchor Routines track weekly frequency and never streaks [HA|T2]
+89. Comeback Week #3: shrink the habit until it survives your worst day [HA|T2]
+90. Morning habits form faster — the evidence, with its honest caveats [HA|T2]
+91. Comeback Week #4: relapse-prevention scripting borrowed from CBT protocols [HA|T1]
+92. The streak-freeze illusion — forgiveness bolted on versus designed in [HA|T2]
+93. Comeback Week #5: the 14-day comeback rate — the metric we obsess over [HA|T2]
+94. Habit stacking, tested honestly — cue-chaining as an implementation intention [HA|T2]
+95. Comeback Week #6: what to say to yourself on day one back [HA|T1]
+96. Self-selected habits stick better than assigned ones — choose your own [HA|T2]
+97. Comeback Week #7: rebuild with one anchor habit, not five [HA|T2]
+98. Gamified habit apps decay by week twenty — the meta-analysis curve, drawn [HA|T2]
+99. Why "reminder plus guilt" fails — the adherence nulls, kindly explained [HA|T4]
+100. Comeback Week #8: lapse forensics without self-blame — a three-question review [HA|T1]
+101. Automaticity explained — when the routine stops costing willpower [HA|T2]
+102. The 29% completion problem — designing for the other 71% [HA|T2]
+103. Comeback Week #9: pre-writing your comeback plan while you're motivated [HA|T2]
+104. Momentum metrics demo — three-of-seven weeks beats perfect-or-nothing [HA|T2]
+
+### TB — Time Blindness (105–122)
+
+105. Time Made Visible #1: time blindness is a documented construct, not an excuse [TB|T2]
+106. Time-management training is T1; timer widgets are T3 — the difference explained [TB|T1]
+107. Time Made Visible #2: estimate, do, compare — calibrating your inner clock [TB|T1]
+108. The "one more thing" trap before leaving — exit buffers, demoed [TB|T1]
+109. Time Made Visible #3: visual timers — child-study evidence, honestly labeled [TB|T3]
+110. Why 9am and 9pm feel identical — time-horizon research in plain words [TB|T2]
+111. Time Made Visible #4: backwards-timing a morning routine, on screen [TB|T1]
+112. Waiting mode — why a 2pm appointment eats the day, plus an experimental scaffold [TB|T3]
+113. Time Made Visible #5: the transition alarm — a cue tied to one pre-decided action [TB|T2]
+114. Scheduling by energy, not just hours — metacognitive sequencing demo [TB|T1]
+115. Time Made Visible #6: making durations physical — analog clocks and progress bars, tier-labeled [TB|T3]
+116. Hyperfocus isn't free time — building exit ramps, experimental and labeled [TB|T3]
+117. Time Made Visible #7: the Friday time audit — ten minutes, three questions [TB|T1]
+118. "Five minutes" measured — a live demo of time-reproduction drift [TB|T2]
+119. Time Made Visible #8: buffer math — travel time, transition time, find-shoes time [TB|T1]
+120. Deadlines as horizons — chunking far dates into visible weeks [TB|T1]
+121. Time Made Visible #9: external timers taught inside a workflow, LGO-style [TB|T1]
+122. Your calendar is a time prosthetic — wearing it daily, demoed [TB|T1]
+
+### DF — Decision Fatigue (123–138)
+
+123. Decision Diet #1: the jam study — 30% versus 3% — in 45 seconds [DF|T2]
+124. Defaults do heavy lifting — d = 0.68 across 58 studies [DF|T2]
+125. Decision Diet #2: pre-filled templates — decide once, reuse forever [DF|T2]
+126. Choice overload in your task app — why we cap visible options [DF|T2]
+127. Decision Diet #3: the wardrobe default — one fewer morning decision [DF|T2]
+128. Progressive disclosure — hiding 80% of buttons on purpose, honestly tiered [DF|T3]
+129. Decision Diet #4: decision budgets — mechanism-plausible, labeled experimental [DF|T3]
+130. Decision Diet #5: menus of three — constraining choices without condescending [DF|T2]
+131. Why blank pages fail — templates as anti-decision scaffolds [DF|T2]
+132. Decision Diet #6: smart defaults in Anchor Money — changeable anytime [DF|T2]
+133. The cost of "where does this go?" — filing decisions deferred by design [DF|T2]
+134. Decision Diet #7: the either/or rule for stuck moments [DF|T3]
+135. Option-pruning demo — archiving fourteen half-used lists in one pass [DF|T2]
+136. Decision Diet #8: decide the criteria, then let the criteria decide [DF|T1]
+137. Setup screens — why we ask three questions, not thirty [DF|T2]
+138. Decision Diet #9: recurring decisions get rules; one-offs get timers [DF|T2]
+
+<!-- CONT-2 -->
