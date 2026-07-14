@@ -30,7 +30,22 @@ The tier ladder from foundation §3, expanded into copy-ready phrasings. Rules o
 | **T3** | Experimental features: body doubling [BodyDoubling-HCI], visual timers [Hallez-2024], purchase cool-downs (mechanism via [DelayDiscounting-Meta]), AI/chat layers [Selaskowski-2023] | "**Experimental — community-endorsed and mechanism-plausible, but unproven.** It's optional, it's labeled, and we'll tell you if the evidence changes." |
 | **T4** | Unsupported or refuted approaches | **No marketing statement of benefit, ever.** If a T4 element exists in a product at all, it is labeled experimental and non-punitive in-product and is never a selling point. |
 
+**Rules of use, per tier:**
+
+- **T1 rules.** The claim names the *strategy class* (weekly review, task breakdown, calendar-plus-task system, organization components) — never "this product is proven." T1 claims may appear in headlines. Additional approved variants: "The methods here come from structured skills programs tested with adults with ADHD — we adapted them for a template, and we say exactly where we adapted." · "Organization strategies are among the best-supported components in the adult-ADHD research; that's why they're the spine of this system."
+- **T2 rules.** The qualifier travels with the claim — same sentence or the one immediately following, never a footnote. T2 claims may support features but not headline the product. Additional variants: "Here's the honest asterisk: this principle is well studied in adults generally, not yet in ADHD-specific trials." · "Smart defaults have a large general-population evidence base; we use them everywhere a choice can be pre-made."
+- **T3 rules.** Always paired with the word "experimental" or "unproven"; always optional in-product; never a purchase driver in paid ads. Additional variant: "The community swears by it. The trials don't exist yet. We ship it labeled, optional, and easy to ignore."
+- **T4 rules.** Not marketed, not implied, not illustrated. A T4 mechanic that survives in a product for legacy reasons is labeled experimental and non-punitive in-product and is absent from every sales surface.
+
 **Also always allowed:** describing what the product literally does ("three columns: Now, Next, Later"); describing the documented *problem* ([Bangma-2019], [Barkley-2008], [TimePerception-Review]) with care and without diagnosis-flavored certainty about any individual; stating our honesty practices ("we label every feature's evidence level"); inviting verification ("read our Evidence Notes before you buy").
+
+**Problem-evidence phrasing bank** (fully substantiated; use freely, always about the population, never a promise about the reader):
+
+- "Adults with ADHD carry more debt, save less, and buy more on impulse — that's documented. Tools that fix it aren't. That's why we measure ours." [Bangma-2019], foundation §4D ruling
+- "In a 27-year study, adults with ADHD saved 3–4% of income versus 11% for peers." [Barkley-2008]
+- "Time blindness is a documented finding, not a character flaw." [TimePerception-Review]
+- "Most ADHD apps promise more than the research supports — a systematic review of 109 found none with proof of effectiveness. We decided to compete on the opposite claim." [Pasarelu-2020]
+- "Reminders alone don't fix follow-through — a randomized trial showed exactly that. Ours are built differently, and we explain how." [Nordby-2022]
 
 ### The mandatory disclosure block (verbatim, reusable)
 
