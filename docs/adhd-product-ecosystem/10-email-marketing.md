@@ -224,7 +224,19 @@ Purpose: the buyer's first 30 days decide whether the product joins the graveyar
 | **14** | **Comeback normalization** | Subject: "Missed days are part of the design." If week 2 wobbled: that's the documented pattern, not failure <!-- [Lally-2010] [Kenter-2023] -->; Comeback Mode walkthrough — one button, backlog archived, one next action. CTA: open Comeback Mode (or reply "still rolling"). |
 | **30** | **Outcomes-panel invite** | Invitation to the voluntary, anonymized check-in panel (§11 metrics: bills on time, resets done, comeback after lapse). Framed honestly: "This is how we find out whether Anchor actually works — including if it doesn't. Opt-in, 3 minutes a month, quit anytime." CTA: join the panel. |
 
-Product-specific inserts (owned by each product doc): the Day-0 "one action" and Day-1 "one module" per product; everything else is shared spine. Guarantee is restated at Day 14 — deliberately *inside* the refund window, because a buyer reminded of an easy exit who stays is a buyer who trusts us.
+Product-specific inserts (final wording owned by each product doc; defaults below): the Day-0 "one action" and Day-1 "one module" per product; everything else is shared spine. Guarantee is restated at Day 14 — deliberately *inside* the refund window, because a buyer reminded of an easy exit who stays is a buyer who trusts us.
+
+**Default first-win inserts per product:**
+
+| Product | Day-0 one action (≤2 min) | Day-1 one module |
+|---|---|---|
+| Anchor Money System | Duplicate the template; enter one bill and its due date | The payday workflow, defaults on (one account, one transfer rule) |
+| Anchor Planner | Put 3 things into The Inbox | The Anchor Daily Board: commit tomorrow's 3 (and no more) |
+| Anchor Life OS | Put 3 things into The Inbox | Anchor Daily Board only — money/routines/home explicitly deferred to week 2+ |
+| Weekly Reset Kit | Book the first 15-minute slot | Run reset step 1 only (empty the Inbox) |
+| Daily Board Lite | Commit tomorrow's 3 tasks | Now / Next / Later sort, one pass |
+| Anchor Routines | Pick ONE routine to track (weekly frequency, no streaks) | Attach it to an existing daily anchor (if-then) <!-- [Gollwitzer-2006] --> |
+| Anchor Home Base | Add one recurring chore with an owner | The shared capture list, household invited |
 
 ---
 

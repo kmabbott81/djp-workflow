@@ -148,7 +148,7 @@ Ten myths we actively counter, each with the exact honest framing we use on came
 | Pinterest | Evergreen search; printables | 5–10 pins/wk (scheduled) | Blog → First Action Kit |
 | LinkedIn | Workplace credibility; B2B seed | 1–2 posts/wk | Newsletter |
 | Blog/SEO | Canonical reference layer | 2 posts/mo (from scripts) | The External Brain |
-| The External Brain (newsletter) | Owned audience; deepest trust | Weekly, no exceptions smaller than a 5-line issue | Product (capped; see CTA policy) |
+| The External Brain (newsletter) | Owned audience; deepest trust | Weekly (floor: a 5-line issue) | Product (capped; see CTA policy) |
 | Threads | Conversation; real-time nuance | 3–5/wk + replies | Newsletter |
 
 ### 5.1 YouTube (long-form) — the trust engine
@@ -173,7 +173,7 @@ Ten myths we actively counter, each with the exact honest framing we use on came
 - **Honest hooks:**
   1. "A trial sent people weekly reminders. Completion didn't move." [Nordby-2022]
   2. "Habits took a median of 66 days in the classic study — and one missed day didn't matter." [Lally-2010]
-  3. "Why fewer options sold 10× more jam — and what that suggests about your to-do list." [IyengarLepper-2000]
+  3. "Six jam options beat twenty-four — 30% vs 3% bought. What that suggests about your to-do list." [IyengarLepper-2000]
   4. "Brain-training apps: nine randomized trials, no significant executive-function gains." [Elbe-2023]
   5. "'Clinically proven ADHD app'? A review of 109 found zero with proof." [Pasarelu-2020]
 - **Citing research:** persistent corner citation card (≥3 seconds, readable at arm's length: "Meta-analysis · 9 RCTs · n=285"); pinned comment carries the full reference and the caveat sentence.
@@ -203,7 +203,7 @@ Ten myths we actively counter, each with the exact honest framing we use on came
 - **Honest hooks:**
   1. Carousel: "What adult-ADHD trials actually support — and 5 popular things they don't (yet)."
   2. Carousel: "Why every effective program includes a weekly review — and how The Weekly Reset works in 15 minutes." [Solanto-2010][NICE-NG87]
-  3. Reel: "You missed a week. The habit data says that's recoverable — here's the study." [Lally-2010]
+  3. Reel: "You missed a day. In the classic habit study, a single miss didn't materially hurt formation — here's the data." [Lally-2010]
   4. Carousel: "'Time blindness' is measurable. The gadgets that claim to fix it aren't proven. Here's the difference." [TimePerception-Review][Hallez-2024]
   5. Reel: "'Externalize, don't educate' — why offloading beats trying harder." [Offloading-2025]
 - **Citing research:** final Sources slide with keys + one-line study descriptors; alt text carries citations for accessibility; Stories link-sticker to the Evidence page.
@@ -233,7 +233,7 @@ Ten myths we actively counter, each with the exact honest framing we use on came
 - **Honest hooks:**
   1. "In a 23-study meta-analysis, psychosocial interventions moved work outcomes (d = 0.56) more than medication did in that domain (d = 0.19). Here's what that means for managers." [Lauder-2024]
   2. "Only 29% of users finished an ADHD program that worked. What that teaches anyone who ships software." [Kenter-2023]
-  3. "Financial-literacy training explains ~0.1% of later behavior. Why workplace training alone rarely changes anything — and what does the heavy lifting." [Fernandes-2014]
+  3. "Financial-literacy training explains ~0.1% of the variance in later financial behavior. Why teaching alone rarely changes behavior — and what does the heavy lifting." [Fernandes-2014]
   4. "We publish the evidence tier of every feature we ship. Here's the template, free." (Evidence Notes)
   5. "The cheapest accommodation nobody budgets for: a protected 15-minute weekly review." [Solanto-2010][NICE-NG87]
 - **Citing research:** author-year inline plus study descriptor; link to the Evidence page (we test link placement empirically rather than following folklore about link penalties).
