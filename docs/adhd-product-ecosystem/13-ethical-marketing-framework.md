@@ -265,4 +265,31 @@ This framework is **good-practice policy, not legal advice**. It is written in t
 
 ---
 
+## 9. The framework on one card
+
+Print this next to the claims log.
+
+**We always:**
+
+- Attach claims to strategies at their true tier, with the qualifier in the same breath (§2)
+- Carry the verbatim disclosure block on every sales surface (§2)
+- Put an Evidence Note wherever a benefit is implied (§4)
+- Sell recognition and mechanism, not outcomes (§4)
+- Offer save-for-later, transparent prices, 30-day no-questions refunds (§5)
+- Log every claim, every deadline, every testimonial consent (§6, §7)
+
+**We never:**
+
+- Say proven, treats, cures, rewires, guaranteed, "21 days," dopamine/neuro-halo (§3)
+- Promise money outcomes we have not measured (§1, §3)
+- Use countdowns, fake scarcity, shame hooks, distress targeting (§5)
+- Dress engagement numbers or testimonials as efficacy (§3, §6)
+- Publish copy nobody reviewed against the foundation (§7)
+
+**When unsure:** gray-zone protocol (§3) — review first, publish second. Conservative reading wins.
+
+**When wrong:** Class A = fix in 48 hours, notify buyers; Class B = fix in 7 days; log both; report annually (§7; Part 14 §10).
+
+---
+
 *Previous: Part 12 · Next: [14 — Continuous Improvement System](14-continuous-improvement-system.md) · Canonical rules: [00 — Evidence Foundation](00-evidence-foundation.md) · Full index in [README](README.md).*
