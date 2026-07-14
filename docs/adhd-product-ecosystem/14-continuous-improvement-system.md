@@ -69,9 +69,9 @@ Single positive studies promote **one tier maximum**. T1 requires the tier defin
 Example entry:
 
 ```
-### 2027-03-14 — foundation v1.2
-- Added [Hypothetical-2027] to §4E: preregistered adult-ADHD RCT of scheduled
-  co-working, task completion improved (details in entry).
+### 20XX-03-14 — foundation v1.2   (illustrative entry — no such study exists)
+- Added [ExampleKey-20XX] to §4E: a (hypothetical) preregistered adult-ADHD
+  RCT of scheduled co-working, task completion improved (details in entry).
 - Re-graded: body doubling T3 → T2 (single study; confidence Low).
 - §6 ruling "Body doubling" updated; divergence with source reviews resolved.
 - Downstream: Parts 06 (item keys), 13 (§2 phrasing, Evidence Notes), product

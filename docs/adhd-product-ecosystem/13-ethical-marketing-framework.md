@@ -47,6 +47,17 @@ The tier ladder from foundation §3, expanded into copy-ready phrasings. Rules o
 - "Most ADHD apps promise more than the research supports — a systematic review of 109 found none with proof of effectiveness. We decided to compete on the opposite claim." [Pasarelu-2020]
 - "Reminders alone don't fix follow-through — a randomized trial showed exactly that. Ours are built differently, and we explain how." [Nordby-2022]
 
+**Where each tier claim may appear:**
+
+| Surface | T1 | T2 | T3 | Disclosure block |
+|---|---|---|---|---|
+| Headlines and titles | Yes | No (support copy only) | No | Linked or adjacent |
+| Listing body / sales page | Yes | Yes, qualifier attached | Yes, labeled "experimental" | Required, verbatim |
+| Email | Yes | Yes, qualifier attached | Yes, labeled | Footer link minimum; verbatim in sales emails |
+| Paid ads | Yes (short form: "designed around strategies tested in randomized trials with adults with ADHD") | Avoid — too little room for the qualifier | Never | Landing page carries it |
+| Social posts | Yes | Yes, qualifier in the same post, not the comments | Yes, labeled | Profile/link minimum |
+| In-product | Yes | Yes | Yes, labeled | On the start page |
+
 ### The mandatory disclosure block (verbatim, reusable)
 
 Place on every sales page, listing, About page, and product start page. Do not reword per-channel; consistency is the point.
@@ -79,6 +90,8 @@ Place on every sales page, listing, About page, and product start page. Do not r
 **Images count as claims.** A rising-savings chart implies a savings outcome; brain imagery implies a neurological effect; a serene before/after desk implies a life outcome. Every image on a sales surface passes the same review as the words next to it (§7).
 
 **Absence-of-evidence rule:** if a claim is not traceable to a foundation §4 key at the tier the copy implies, it is banned by default — the burden is on the copy to prove itself to the reviewer (§7), never on the reviewer to prove it wrong.
+
+**Gray-zone protocol.** Copy that is neither clearly approved (§2) nor clearly banned (above) — a new metaphor, a new benefit angle, a borrowed community phrase — goes to §7 review before first use, with three possible outcomes: approved and added to the §2/§4 phrasing banks; rewritten to an approved pattern; or banned and added to the table above with its reason. The phrase "it's probably fine" is itself the trigger for review. Rulings are logged so the same debate never happens twice.
 
 ---
 
