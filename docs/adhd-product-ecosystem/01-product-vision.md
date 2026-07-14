@@ -196,6 +196,14 @@ Restating 00 §11 with working targets. **Targets are business judgments, not ev
 
 All measurement is voluntary, consented, privacy-respecting, via the outcomes panel (Part 14). Templates and printables cannot phone home — a limitation and, for privacy, a feature.
 
+**Measurement principles.**
+
+1. Self-baseline first: each user is compared to their own first four weeks, never to invented norms.
+2. Voluntary and consented, always. Templates cannot phone home, and we do not want them to.
+3. Proxies are named as proxies — a final-email open is not a formed habit, and our reports say so.
+4. Panel self-selection is disclosed in every report we publish; volunteers skew engaged, and readers deserve to know that.
+5. Results publish either way. A bad number reported beats a good number implied.
+
 **Explicit non-goals.** We do not target and will not celebrate: daily active users, session length, notification open rate, or streak length. Engagement is a cost the user pays, not a goal we harvest — an app users liked and opened still failed its primary outcome [FOCUS-2023]; engagement-optimized formats are where the umbrella review found adverse-effect signals [LopezCampos-2025]; streak mechanics decay and can turn negative long-term [KimCastelli-2021]. Time-in-tool should trend **down** per unit of life managed (Law 10). If a user runs their week from one printed page and never opens Notion again, that is a success story, and our metrics must be able to say so.
 
 > **Evidence:** Metric framework per 00 §11; benchmark anchors [Kenter-2023], [FOCUS-2023]; anti-engagement stance [FOCUS-2023], [KimCastelli-2021], [LopezCampos-2025]; Weekly Reset as leading indicator [Solanto-2010] · **Confidence:** High for the framework's honesty; Low for every numeric target until panel data exists · **Rationale:** measure the functions the problem evidence says are broken, against each user's own baseline. · **Expected outcome:** we learn whether our products work — possibly the first vendor in this category able to say either way. · **Downside:** honest metrics can return bad news publicly; voluntary panels self-select toward engaged users, which we must state in every report. · **Difficulty:** Medium · **Priority:** High
@@ -217,6 +225,14 @@ That promise is entirely within our control: provenance, labeling, and forgivene
 1. **"This will reduce your ADHD symptoms."** Trials support treatment packages with coaching, homework, and follow-up ([Solanto-2010], [Safren-2010], [attexis-2026]); our templates carry those packages' ingredients but have not been trialed. We are a self-help organization tool, not a treatment — and we say so on the listing.
 2. **"You'll save money and never miss another bill."** No financial feature in any product, anywhere, has been shown to reduce debt, missed bills, or impulse spending in adults with ADHD (00 §5). We build the mechanism, label it honestly, and measure — the first outcome claim waits for Part 14 data.
 3. **"This beats your spreadsheet — and this time you'll actually stick with it."** No head-to-head trial against a spreadsheet or paper planner exists for any tool in this category, including ours (00 §5), and abandonment is the documented norm even for effective programs [Kenter-2023]. We design for coming back, not for never leaving — Comeback Mode is the honest version of this promise.
+
+**The promise, tuned to each persona.**
+
+- To Maya: "Built to survive the week you disappear — Comeback Mode is one button, and the backlog gets archived, not held against you."
+- To Sam: "One small money step at a pre-decided time, built from strategies tested in trials with adults with ADHD — and we will never pretend a template guarantees fewer late fees."
+- To Jordan: "Deadlines broken into first actions on a calendar — that part is tested — plus timers if you want them, labeled experimental because that is what they are."
+
+**How we speak about competitors.** We never name-and-shame individual products. We state the field fact — 109 ADHD apps, none with published proof of effectiveness [Pasarelu-2020] — and then the standard we hold ourselves to instead. The contrast does the work; contempt would cost us the voice that makes the contrast credible.
 
 > **Evidence:** Language rules per 00 §10; refusals grounded in 00 §5 and [Pasarelu-2020], [Kenter-2023]; the permitted claim uses the sanctioned T1 framing ([Solanto-2010], [Safren-2010], [Matsumoto-2024]) · **Confidence:** High · **Rationale:** in a market of unprovable promises, the defensible position is provenance plus honesty plus forgiveness. · **Expected outcome:** slower but compounding trust; reviews that cite being leveled with as the reason to buy. · **Downside:** hype outsells honesty in the short term, and refused promises hand competitors easy copy. · **Difficulty:** Low · **Priority:** High
 

@@ -353,6 +353,13 @@ Idea capture runs continuously into The Inbox (voice notes, comment screenshots,
 - **Kindness norms.** No shame language ("lazy," "excuses"), no diagnosis-policing ("you don't seem ADHD"), no unsolicited treatment evangelism. We correct ideas generously and people never.
 - **Honesty norms extend to the community.** Commenters' miracle claims ("this cured me in a week") get gentle context, not amplification; testimonials are never screenshotted into marketing as outcome evidence (§10).
 
+**The macro shelf** (pre-written so moderation never depends on that day's executive function — ours included):
+
+- *Medical signpost* (above), *crisis response* (above), plus:
+- *Myth correction:* "Totally understandable that you've heard that — it's everywhere. The best data we know of says [honest framing from §4, with key]. Full breakdown with sources here: [link]. And genuinely, thanks for raising it."
+- *Not-a-clinician:* "We're tool-makers and educators, not clinicians — for medication or diagnosis questions, your prescriber/clinician is the right person, and it's worth the ask. What we *can* offer is the organization-side research: [Evidence page link]."
+- *Warm boundary* (for shame-policing between commenters): "We don't do 'lazy' here — the completion data says abandonment is a design problem, not a character one [Kenter-2023]. Comment edited/removed per community rules."
+
 **Engagement that doesn't exploit:** no rage bait, no fake controversy, no "comment X to trigger the algorithm" farming, no open loops we don't close, no posting designed to provoke correction. Questions we ask the community are questions we actually want answered — they feed The Inbox and Anchor Lab research, and we say so. Engagement is a cost we ask of people with attention differences; we spend it carefully (Law 10 applied to media).
 
 ---
@@ -363,12 +370,14 @@ Platform engagement is never the goal; it is a *leading indicator* that teaching
 
 **Leading indicators we watch (per piece and per quarter):**
 
-- **Saves and shares** (proxy: "worth keeping / worth giving away" — the two most teaching-aligned actions platforms expose)
-- **Completion / average view duration** on seeds and verticals (proxy: comprehension-friendly pacing)
-- **Click-to-email rate** — First Action Kit opt-ins per 1,000 views (the funnel's honest heartbeat)
-- **Newsletter replies and reply sentiment** ("this helped me do X this week" is our favorite sentence in the business)
-- **Correction rate** (errors caught post-publish per 50 pieces — should trend toward zero as §3 matures)
-- **Myth-penetration checks:** do commenters echo our honest framings back ("okay but it's 66 days not 21")? Qualitative, sampled quarterly.
+| Leading indicator | What it proxies | What it must never become |
+|---|---|---|
+| Saves + shares | "Worth keeping / worth giving away" — the two most teaching-aligned actions platforms expose | A save-bait format target ("save this so the algorithm…") |
+| Completion / average view duration | Pacing and comprehension of the concept taught | A retention-editing arms race that crowds out caveats |
+| Click-to-email rate (First Action Kit opt-ins per 1,000 views) | Earned trust; the funnel's honest heartbeat | Aggressive pop-up and gate tactics |
+| Newsletter replies + sentiment | Real-life usefulness ("this helped me do X this week") | Reply-bait prompts and manufactured polls |
+| Correction rate (errors caught post-publish per 50 pieces) | Health of the §3 accuracy workflow | A reason to stop correcting publicly (hiding errors ≠ fewer errors) |
+| Myth echo-back (qualitative, sampled quarterly) | Concepts actually landing ("okay but it's 66 days, not 21") | Comment-fishing for validation |
 
 **Explicit vanity non-goals:** follower counts, viral one-offs, raw view totals, engagement-rate theater, posting-streak length (we of all people will not keep a streak for its own sake), rage-driven comment volume. None of these appear in our quarterly review as success measures.
 
