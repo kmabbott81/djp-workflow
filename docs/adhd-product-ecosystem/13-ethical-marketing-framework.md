@@ -15,6 +15,8 @@ Four facts from the foundation set the bar:
 
 One more, stated as belief rather than evidence: we think verifiable honesty is our only unclonable marketing asset. Anyone can copy a template; nobody can fake a public evidence registry, tier labels on every feature, and a published record of what we got wrong (Part 14 §10).
 
+**The three-readings test.** Every piece of copy must survive three readers: the buyer at the moment of purchase (does it persuade without deceiving?), the same buyer three weeks in, on a hard week (does it still feel true, or does it now read as a broken promise?), and a skeptical regulator or journalist holding it next to our evidence registry (does every claim trace?). Copy that passes only the first reading is a refund, a one-star review, and a reputation debt — deferred, not avoided.
+
 ---
 
 ## 2. Claims we CAN make

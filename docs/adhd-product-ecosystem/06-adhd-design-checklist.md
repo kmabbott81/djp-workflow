@@ -175,9 +175,19 @@ Review (failures only; passing and N-A rows omitted):
 | E2 [MUST] | Fail | First open is a blank grid |
 | A1 [MUST] | Fail | There is no Today surface; value exists only if the whole system is maintained |
 | H1/H2 [MUST] | Fail | "Clinically proven," "rewire," "21 days" — three banned claims in one headline ([Pasarelu-2020], [Singh-2024]) |
-| D3, D4, F2–F4, R3, R4, E4, H3 [SHOULD] | Fail | Nine SHOULD failures; not itemized because the ship decision is already made |
 
-**Verdict: blocked.** 14 of 15 [MUST] items failed (M3-adjacent state handling was the only near-pass). Any one of them blocks alone. The fix path is not polish — it is adopting the Anchor Money System workflow: capture-first entry, one bill as the next action, dated bills, a Weekly Reset hook, Comeback-safe lapse handling, and truthful listing copy.
+SHOULD failures (itemized for the fix list, though the ship decision is already made):
+
+| Item | One-line reason |
+|---|---|
+| D3, D4 | No defaults anywhere; all 12 tabs and every column visible at once |
+| I3, I4 | No primary action exists; no breakdown structure, only raw rows |
+| M2, T2 | Category codes live two tabs from the entry point; no committed-vs-available view |
+| F3, R3, R4 | Nothing feeds a weekly review; return view is the red wall itself; No-Spend Streak is a breakable chain |
+| E3, E4 | "Budget like a boss!!" voice; red moralizing formatting on overspend |
+| H3, H4 | No Evidence Notes; sidebar claims "typical user saves $400/mo" with no source |
+
+**Verdict: blocked.** All 15 [MUST] items failed, and any one of them blocks alone; 13 [SHOULD] items failed against a block threshold of 2. The fix path is not polish — it is adopting the Anchor Money System workflow: capture-first entry, one bill as the next action, dated bills, a Weekly Reset hook, Comeback-safe lapse handling, and truthful listing copy.
 
 ### 3.2 Passing artifact: Anchor Daily Board (planner "Today" screen)
 

@@ -132,6 +132,8 @@ The ladder at a glance:
 
 > **Evidence:** See §5 per feature; the gating decision itself rests on Part 14 measurement, per Law 10 · **Confidence:** Low (appropriately — it does not exist) · **Rationale:** build the expensive thing only when our own data says the cheap things have hit their medium ceiling. · **Expected outcome:** a defensible SaaS if and only if the evidence work justifies it. · **Downside:** competitors ship apps faster by skipping the evidence step; we accept that. · **Difficulty:** High · **Priority:** Low now, High at Phase 4 gate
 
+**What is deliberately absent from this map.** Three plausible products do not appear, on purpose: a **video course** (education alone barely moves behavior — [Fernandes-2014], [KaiserMenkhoff-2020] — so teaching without a tool would violate Law 1); **1:1 coaching** (evidence is plausible but methodologically weak as a standalone service [PrevattYelland-2015], and the duty of care does not scale to a creator business — Anchor Lab's scheduled group structure is the honest ceiling of what we can host responsibly); and **any child or teen edition** (out of scope entirely, per 01 §3.1). Absence here is a decision, not an oversight — additions to this map require a new ruling against 00 §6, not just a revenue case.
+
 ---
 
 ## 2. What each medium can and cannot deliver (read this before writing any listing)
