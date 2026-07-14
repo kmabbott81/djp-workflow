@@ -258,7 +258,7 @@ Ten myths we actively counter, each with the exact honest framing we use on came
 
 ### 5.8 The External Brain (newsletter) — the owned audience
 
-- **Funnel role:** the asset we own outright; deepest trust; where launches happen; the only channel where we initiate contact — which is a responsibility.
+- **Funnel role:** the asset we own outright; deepest trust; where launches happen; the only channel where we initiate contact — which is a responsibility. This section covers the weekly editorial issue; the full email program (welcome, onboarding, launch, retention, and reactivation sequences) is specified in [10 — Email Marketing](10-email-marketing.md).
 - **Native format:** weekly; scannable in under 3 minutes by design (our readers have ADHD — respect working memory): **one concept → one next action → one honest evidence note ("The Receipts") → one small product or community note (optional)**. Plain layout, minimal images, no walls of text.
 - **Honest hooks (subject lines):**
   1. "One next action (it's smaller than you think)"
@@ -323,7 +323,22 @@ Idea capture runs continuously into The Inbox (voice notes, comment screenshots,
 
 **Sustainable minimum viable cadence (the floor, not the goal):** 1 seed video per 2 weeks + 1 weekly newsletter (even at 5 lines) + scheduled pins. Everything else is officially optional. The floor is chosen so it's achievable in ~4 focused hours/week.
 
-**Comeback plan for missed weeks (Comeback Mode for the channel):** miss a week → no apology video, no explanation spiral, no double-posting to "make up for it." Protocol: (1) send the 5-line newsletter ("one concept, one action, see you next week"); (2) re-promote one evergreen seed; (3) resume the normal schedule as if nothing happened — because per the habit evidence, nothing did [Lally-2010]. The backlog of unposted ideas is archived to The Inbox, not owed to anyone.
+**Comeback plan for missed weeks (Comeback Mode for the channel):** miss a week → no apology video, no explanation spiral, no double-posting to "make up for it." Protocol: (1) send the 5-line newsletter ("one concept, one action, see you next week"); (2) re-promote one evergreen seed; (3) resume the normal schedule as if nothing happened. The habit data strictly covers single missed occasions, not whole weeks [Lally-2010] — but the design translation (Law 7) is identical: recovery, not penance. The backlog of unposted ideas is archived to The Inbox, not owed to anyone.
+
+**The content log (our single source of accountability):** every published piece gets one row — date, platform, pillar/tier tag, seed it derives from, claim-ledger link, CTA used, and correction status. The quarterly audit (§3, §8) runs off this log, not off memory [Offloading-2025]. One system, maintained during the Friday Weekly Reset, replaces every "did we already cover this?" decision.
+
+**The first eight seeds (starter queue).** The engine needs a running start that exercises every part of this document — pillars, myth library, PW transparency, and the RE voice. The full one-year calendar lives in [12 — Editorial Calendar](12-editorial-calendar.md); these eight prove the format:
+
+| Wk | Seed video | Pillar | Tier of concept taught | Keys |
+|---|---|---|---|---|
+| 1 | What executive function actually is — and why "try harder" was never the plan | EF | T1 (package components) | [Safren-2010][Knouse-2017][Offloading-2025] |
+| 2 | The 21-day habit myth: what the studies really measured | HA | T2 (general population) | [Lally-2010][Singh-2024] |
+| 3 | One next action: task breakdown the way the trials taught it | PL | T1 | [Safren-2010][Solanto-2010][Matsumoto-2024] |
+| 4 | Do ADHD apps work? The honest state of the evidence | RE | T1 packages; market claims unsupported | [attexis-2026][Kenter-2023][Inflow-2026][Pasarelu-2020] |
+| 5 | Reminders alone don't work — the cue-to-action pattern that has evidence | PL | T2 with T1 constraints (Law 5) | [Nordby-2022][Gollwitzer-2006] |
+| 6 | ADHD and money: the problem is proven; the tools are not | MO | Problem evidence (§4D ruling) | [Bangma-2019][Barkley-2008][Fernandes-2014] |
+| 7 | Streaks vs. momentum: why Anchor Routines has nothing to lose | HA | T2 | [KimCastelli-2021][Lally-2010] |
+| 8 | The Weekly Reset, live and unedited (15 minutes) | PW | T1 (review rituals within packages) | [Solanto-2010][NICE-NG87] |
 
 > **Evidence:** T2 — the schedule operationalizes capture/offloading [Offloading-2025], review rituals [Solanto-2010][NICE-NG87], forgiveness after misses [Lally-2010], and batch/default structure [Jachimowicz-2019]; its effectiveness *as a creator workflow* is untested design rationale · **Confidence:** Moderate · **Rationale:** a production system with a low floor and a scripted restart survives the creator's own executive-function variance · **Expected outcome:** ≥80% of weeks hit the minimum viable cadence over a year, misses recover within one week · **Downside:** batching concentrates risk into single days; a lost Tuesday can cost the week — the floor cadence is the buffer · **Difficulty:** Medium · **Priority:** High
 

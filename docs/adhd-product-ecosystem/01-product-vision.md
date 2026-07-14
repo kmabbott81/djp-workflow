@@ -42,6 +42,15 @@ Even in successful trials, only 29% of participants completed all modules [Kente
 
 Said out loud, per 00 §5: **no trial has ever tested an ADHD-specific planner or budget tool against Excel, Google Sheets, a printable, or a paper planner.** No isolated feature — visual simplification, today-views, timers, streaks, dashboards — has been validated in adults with ADHD. No financial feature anywhere has been shown to reduce debt, missed bills, or impulse spending in this population. Quality-of-life findings are inconsistent, and durability beyond 12 months is largely unmeasured. Our position in that gap: build from the tested ingredients, label every feature's evidence tier in plain language (Evidence Notes), and measure our own users' functional outcomes (Part 14) instead of borrowing certainty we do not have.
 
+### 1.6 Why a creator business is the right first vehicle
+
+We start with Etsy products, Notion templates, spreadsheets, printables, email, and content — not an app — on purpose:
+
+- **User ownership and privacy by default.** Templates and printables live in the buyer's own accounts and drawers; nothing phones home. Given that adverse-effect signals in the digital-ADHD literature cluster in engagement-heavy formats [LopezCampos-2025], starting inert is a safety posture, not only a budget one.
+- **Honest scale for a small team.** A creator catalog can be built, corrected, and updated continuously without the funding pressure that inflates claims — the pressure that produced the 109-app market [Pasarelu-2020].
+- **The evidence permits it.** The tested ingredients are structures and rituals — calendars, task lists, checklists, reviews ([Safren-2010], [Solanto-2010], [LGO]) — and those are format-portable.
+- **The gap it leaves is the roadmap.** What static media cannot deliver — cueing and automation — is disclosed everywhere it matters (02 §2), and it defines exactly what the future Anchor App is for (02 §5).
+
 > **Evidence:** T1 for the intervention class we translate ([Solanto-2010], [Safren-2010], [Matsumoto-2024], [Lauder-2024], [attexis-2026], [Kenter-2023]); problem evidence [Swedish-Registry], [Barkley-2008], [Bangma-2019], [DelayDiscounting-Meta]; market failure [Pasarelu-2020]; the products themselves are untested (00 §5) · **Confidence:** Moderate · **Rationale:** proven need plus proven package ingredients plus an untrustworthy market leaves room for an honest translator. · **Expected outcome:** adults with ADHD get load-reducing structure without hype, and we accumulate real outcome data. · **Downside:** translating packages into self-serve templates may shed active ingredients (coaching, accountability, follow-up), and honesty may convert worse than hype. · **Difficulty:** Medium · **Priority:** High
 
 ---
@@ -52,9 +61,15 @@ Said out loud, per 00 §5: **no trial has ever tested an ADHD-specific planner o
 
 **Maya, 32, diagnosed at 29.** Knowledge worker. Five abandoned planners — each abandoned at the moment life got busy, which is when a planner matters most. The evidence says this is typical (29% full completion even in an effective trial [Kenter-2023]). Maya does not need a sixth system to configure; she needs the Anchor Daily Board answering "what now?", a 15-minute Weekly Reset that survives busy weeks, and Comeback Mode so that week three of silence costs her nothing.
 
+*Success at twelve weeks:* still running any core workflow (metric 6); a Weekly Reset in most active weeks (metric 5); at least one lapse followed by a return within 14 days — counted as a win, never a relapse.
+
 **Sam, 41, self-identified.** Has never sought a diagnosis and may never. Avoids the banking app; late fees arrive like weather. Sam's pattern is the documented one — more debt, fewer savings, avoidance-driven costs [Bangma-2019], with stakes that grow over decades [Swedish-Registry]. Sam needs the Anchor Money System's stepwise paycheck/bill workflow, cues that fire one pre-decided act ("8pm: pay one bill" — Law 5), and copy that never once implies laziness.
 
+*Success at twelve weeks:* on-time bills better than his own first month (metrics 1–2); one pre-decided money cue that actually fires weekly; the account no longer avoided for weeks at a stretch.
+
 **Jordan, 26, student and early-career.** Time blindness [TimePerception-Review] and deadline collisions. The closest trial population — college students with ADHD receiving structured CBT plus coaching — showed d = 0.39–1.21 on symptoms and executive functioning [ACCESS-2021]. Jordan needs planning scaffolds that make time visible on the page (Law 9 workflows, T1), decomposition into first actions (Law 2), and honest labels on the timer widgets (T3, experimental).
+
+*Success at twelve weeks:* three-or-fewer committed tasks per day, mostly done (metric 4); deadlines decomposed backward into calendar steps; timers kept only if they earn their place.
 
 ### 2.2 Diagnosed and self-identified adults — and why that is defensible
 
@@ -67,6 +82,14 @@ We serve both, deliberately:
 **What we do NOT infer from self-identification.** We never confirm, suggest, or imply that anyone has ADHD. We run no quizzes that "detect" ADHD. We never message "if you struggle with this, you probably have ADHD." We make no treatment, medication, or diagnosis recommendations either way. Self-identification is treated as a description of struggles someone wants help organizing around — never as clinical data — and outcomes-panel reporting (Part 14) makes no diagnostic claims about participants.
 
 > **Evidence:** T1 that self-guided digital structure helped self-reported and subclinical populations ([Kenter-2023], [LivingSMART-2015]); the inclusion decision itself is policy grounded in that evidence · **Confidence:** Moderate · **Rationale:** benefit in trials did not depend on formal diagnosis, and our products carry no medical risk surface that would demand gatekeeping. · **Expected outcome:** Sam-type users get help years before (or without) a diagnosis, without being medicalized by us. · **Downside:** some buyers' difficulties may stem from something a planner cannot help and a clinician could; mitigated by explicit signposting and by never discouraging professional care. · **Difficulty:** Low · **Priority:** High
+
+### 2.3 What serving both means in practice
+
+- Purchase requires no diagnosis question — ever. We do not ask; buyers may tell us.
+- Copy addresses struggles ("bills slip past their dates"), never diagnostic status; we do not write sentences that begin "your ADHD brain."
+- The outcomes panel records self-described status only as an optional demographic, reported in aggregate, never as a claim about any individual.
+- Support replies never speculate about whether someone "really has" ADHD, and always leave the door to professional care open.
+- Evidence Notes use one tier language for everyone; there is no diagnosed-only feature or claim.
 
 ---
 
@@ -94,6 +117,16 @@ We say this with respect: some people genuinely enjoy elaborate custom dashboard
 
 Delegation, approvals, admin, compliance — different jobs, different product, and a guaranteed engine of feature creep. Anchor manages one adult's life. Anchor Home Base supports a shared household checklist; that is the boundary.
 
+### 3.6 How refusal shows up in the product
+
+- Every landing page carries a plain "This is probably not for you if…" section mirroring §3.1–3.5 — the cheapest refund prevention and the loudest trust signal we own.
+- All products and marketing state: designed for adults, 18 and over.
+- The crisis signpost is a standing copy block (maintained under Part 13 review) in every money product and onboarding sequence. Current wording:
+
+> "One more thing, and we mean it kindly: if money or your mental health is in crisis right now, this planner can wait. Please contact local emergency services, a crisis line, or a professional you trust first. Anchor will still be here when things are steadier."
+
+- Refunds are granted without argument. A mismatched buyer kept is worse than a sale lost, and the mismatch was our targeting to fix, not their failure.
+
 > **Evidence:** No direct evidence — scope policy; supporting anchors: adult-only evidence base [Cochrane-2018], crisis-risk overlap [Swedish-Registry], medication-adherence null [FOCUS-2023], choice overload [IyengarLepper-2000] · **Confidence:** High (as policy coherence, not as outcome data) · **Rationale:** every excluded segment either exceeds our evidence, exceeds our duty of care, or would force complexity that harms core users. · **Expected outcome:** fewer mismatched purchases and refunds; preserved trust; a product that stays small. · **Downside:** real revenue declined, and some excluded people will buy anyway — signposting must assume they will. · **Difficulty:** Low · **Priority:** High
 
 ---
@@ -103,6 +136,10 @@ Delegation, approvals, admin, compliance — different jobs, different product, 
 ADHD is a performance problem at the point of performance, not a knowledge problem. Education alone barely moves behavior — financial education explains about 0.1% of variance in financial behavior and decays within about 20 months [Fernandes-2014]; later estimates are larger but still small, and only action-linked, just-in-time designs do better [KaiserMenkhoff-2020]. What does work is offloading: moving intentions into external systems reliably improves performance, most of all for prospective memory — remembering to do the thing at the time of the thing — which is the core ADHD-relevant deficit [Offloading-2025].
 
 So Anchor is a prosthetic, in the dignified sense of the word: like glasses, it does not train your eyes — it does part of the work so you can do yours. The tool holds the memory, sequences the steps, shrinks the decision, and makes time visible. It never assigns willpower as homework, and it never treats needing support as a deficiency to graduate from. The design consequence is subtraction: fewer features, fewer options, fewer decisions per screen. Where most products earn upgrades by adding, we earn trust by removing.
+
+**What the prosthetic stance forbids.** No willpower homework ("just commit this time"). No education-first onboarding that must be studied before the tool starts helping. No shame mechanics — no walls of red overdue tasks, no broken streaks, no guilt copy. No "graduation" framing that treats ongoing support as a failure to outgrow; nobody shames glasses for being worn daily. And no feature whose main job is to make us look sophisticated — dashboards included; Law 3 audits apply to our own roadmap first.
+
+**The commercial consequence.** Subtraction must survive contact with revenue. The honest meaning of "premium" here is fewer decisions, better defaults, and maintained updates — not more modules. The ladder prices accordingly (02 §1).
 
 The Ten Design Laws (00 §7) are the operating constitution. In plain language:
 
@@ -136,6 +173,8 @@ If Anchor works, it shows up in a user's Tuesday, not in our analytics. Each cor
 | The Weekly Reset keeps happening, imperfectly | 5 — Weekly Reset completion (target ≥50% of active weeks) | Home-exercise completion correlated with improvement [Solanto-2010] — our strongest defensible leading indicator |
 | A lost week stays a lost week, not a lost system | 6 — Retention at weeks 4/12/26 and Comeback Rate: % who return within 14 days after a ≥7-day lapse | One missed occasion does not materially harm habit formation [Lally-2010]; abandonment is the field's failure mode [Kenter-2023], [FOCUS-2023] |
 | Life feels more workable | 7 — Optional QoL/functioning self-check-ins (AAQoL/WSAS-style in spirit; self-tracking, not diagnosis) | QoL evidence is mixed ([Cochrane-2018] unclear; [attexis-2026], [Kenter-2023] positive; [Inflow-2026] no functional-impairment change) — so we track it honestly rather than claim it |
+
+Why behavior metrics lead: in the one app trial with a mediation analysis, gains in organization, time-management, and planning behaviors partially mediated the improvement in inattention [Inflow-2026]. Behavior is what our tools can actually touch, and the most defensible leading indicator of what users came for. The downstream promise still waits for data (§7).
 
 Note what is absent: symptom reduction is not a core outcome. Package-level trials moved symptoms; our untested templates get no such presumption. If the outcomes panel (Part 14) ever earns a symptom claim, it will arrive with data attached.
 

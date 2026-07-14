@@ -415,6 +415,20 @@ And if it's late where you are and this purchase feels *urgent* — close the ta
 
 **Deliverability basics:** authenticate (SPF, DKIM, DMARC at enforcement); warm any new domain gradually; keep the dormant-suppression policy (sending only to people who act is the single best deliverability lever — and it's also just respect); plain-text-priority templates with low image weight; no link shorteners; every email individually valuable (forwardability is our growth loop); process unsubscribes instantly; monitor spam-complaint rate (<0.1%) and bounce rate (<2%); seed-test major sends. List is opt-in only — no purchased lists, no quiet re-opt-ins, no "we imported you" emails.
 
+**Per-flow success metrics (what each flow is *for* — Law 10 applied):**
+
+| Flow | Primary metric | Secondary | Explicit non-goal |
+|---|---|---|---|
+| Welcome | % completing ≥1 tracked tiny action by day 14 | E7 click-to-offer rate; reply rate on E1 | Open rate |
+| Nurture | Click-to-action rate per email; reply quality mix | Unsubscribe-after-send (spike = content miss) | Sends survived |
+| Launch | Purchase rate among *clickers of L3/L4* (informed buyers) | Refund rate ≤ target (high refunds = we oversold) | Day-1 revenue spike |
+| Onboarding | Day-7 first Weekly Reset completion; day-30 panel opt-in | Day-3 reply (snag) rate | Feature-tour clicks |
+| Newsletter | Tiny-action click rate; permissioned wins banked per month | Forward/share signals | List growth for its own sake |
+| Reactivation | Comeback Rate: return within 14 days of a ≥7-day lapse (§11 signature metric) | Downgrade-instead-of-unsubscribe rate | Winback revenue |
+| Cart | Question-resolved rate (buy OR save-for-later OR explicit drop) | Reply objections captured | Recovered-revenue-at-any-cost |
+
+**Honest testing policy:** we A/B test subject lines, send times, and structure — never honesty itself. No test cell may violate §10 (e.g., no "urgency vs. no urgency" test where one arm fakes scarcity). Minimum detectable effect defined before the test; losing variants documented in the swipe file so we don't re-run them; results judged on click-to-action and downstream behavior, never opens.
+
 ---
 
 ## (j) Compliance & care
