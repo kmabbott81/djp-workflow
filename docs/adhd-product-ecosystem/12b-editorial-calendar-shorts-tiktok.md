@@ -348,4 +348,67 @@ Recurring native series: **"Things I refuse to put in an ADHD planner/budget/sys
 81. Duet-bait: show your launchpad; I'll show mine [HO|T2]
 82. Storytime: my chore chart's week-three collapse — and the forgiving redesign [HO|T2]
 
-<!-- CONT-4 -->
+### HA — Habits & Routines (83–102)
+
+83. POV: day one back after two weeks away — Comeback Mode opens first [HA|T2]
+84. Greenscreen: median 66 days to automaticity — the real habit math [HA|T2]
+85. Skit: a streak counter begs for attention; the momentum metric shrugs [HA|T2]
+86. Things I refuse to put in an ADHD habit tracker #6: streak flames [HA|T2]
+87. Stitch this: your smallest habit that survived your worst week [HA|T2]
+88. Day-in-the-life: Comeback Week vlog — archive, restart, one anchor habit [HA|T2]
+89. Replying to "I break every streak" — streaks break people; weekly frequency doesn't [HA|T2]
+90. POV: the tracker forgives Tuesday, so you keep Wednesday [HA|T2]
+91. Skit: the 21-day myth on trial; the habit cohort study testifies [HA|T4]
+92. Voiceover: pre-writing my comeback plan while I'm still motivated [HA|T2]
+93. POV: the habit shrinks to "put on one shoe" and survives [HA|T2]
+94. Greenscreen: gamification at d = 1.57 in week one, negative years later [HA|T2]
+95. Duet-bait: post your three-of-seven win this week [HA|T2]
+96. Skit: morning habit versus 11pm habit — which one lasts? [HA|T2]
+97. Storytime: the forty-day gap that didn't end my routine [HA|T2]
+98. Replying to "how do I restart without shame?" — the three-question lapse review [HA|T1]
+99. POV: your app celebrates you returning, not just arriving daily [HA|T2]
+100. Stitch: show the recovery screen of any app you use — most don't have one [HA|T2]
+101. Skit: self-selected habit versus assigned habit — friendly cage match [HA|T2]
+102. Things I refuse #7: guilt-trip push notifications [HA|T4]
+
+### TB — Time Blindness (103–120)
+
+103. POV: it's "five minutes" later and 25 minutes are gone — the drift, filmed [TB|T2]
+104. Greenscreen: time-blindness research — a documented construct, not a character flaw [TB|T2]
+105. Skit: a 2pm appointment holds the entire day hostage — waiting mode [TB|T3]
+106. Day-in-the-life: leaving the house with exit buffers, narrated honestly [TB|T1]
+107. Things I refuse to put in an ADHD planner #8: minute-perfect schedules [TB|T1]
+108. POV: the transition alarm fires and the pre-decided action just begins [TB|T2]
+109. Stitch this: guess your commute time, then actually time it [TB|T1]
+110. Skit: analog clock versus phone clock — making time physical, tier label shown [TB|T3]
+111. Replying to "are visual timers proven?" — child data only; T3, clearly labeled [TB|T3]
+112. Voiceover: backwards-timing my morning from the bus stop to my alarm [TB|T1]
+113. POV: hyperfocus ends and the exit ramp catches you gently [TB|T3]
+114. Greenscreen: training is T1, widgets are T3 — receipts on screen [TB|T1]
+115. Duet-bait: your most accurate time trick — evidence tier assigned live [TB|T3]
+116. Skit: the Friday time audit — three questions, zero spreadsheets [TB|T1]
+117. Storytime: the flight I nearly missed and the buffer math since [TB|T1]
+118. POV: a far deadline becomes visible weeks on a wall strip [TB|T1]
+119. Replying to "I'm always late — am I broken?" — estimation drift, kindly explained [TB|T2]
+120. Skit: energy scheduling versus clock scheduling — same day, two scripts [TB|T1]
+
+### DF — Decision Fatigue (121–136)
+
+121. Greenscreen: the jam study — twenty-four choices, three percent purchases [DF|T2]
+122. POV: the template already decided; you just fill in two blanks [DF|T2]
+123. Skit: forty-seven app settings versus three questions — onboarding face-off [DF|T2]
+124. Things I refuse to put in an ADHD planner #9: custom color taxonomies [DF|T2]
+125. Stitch this: the default that quietly runs your life [DF|T2]
+126. Day-in-the-life: counting every decision before noon, then pruning ruthlessly [DF|T3]
+127. POV: dinner is menu item four because it's Thursday [DF|T2]
+128. Replying to "isn't limiting choices patronizing?" — you set the defaults yourself [DF|T2]
+129. Skit: blank page versus template — a race to one finished plan [DF|T2]
+130. Greenscreen: defaults at d = 0.68 — why opt-out beats opt-in [DF|T2]
+131. POV: the either/or rule breaks your twenty-minute dithering loop [DF|T3]
+132. Voiceover: archiving fourteen half-used lists in a single pass [DF|T2]
+133. Skit: the criteria make the choice; you only wrote the criteria [DF|T1]
+134. Duet-bait: your best decide-once rule in one take [DF|T2]
+135. Storytime: the capsule wardrobe I built for my brain, not for fashion [DF|T2]
+136. POV: progressive disclosure hides most buttons and you finally exhale [DF|T3]
+
+<!-- CONT-5 -->

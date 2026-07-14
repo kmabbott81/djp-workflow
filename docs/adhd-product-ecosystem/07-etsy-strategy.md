@@ -81,7 +81,7 @@ Per-product recommendation blocks:
 > **Evidence:** T1 for the package it implements ([Safren-2010], [Solanto-2010], [Matsumoto-2024] organizational strategies OR 2.03); digital delivery of same ingredients T1 ([attexis-2026], [Kenter-2023]); this product as shipped is untested until Part 14 measurement · **Confidence:** Moderate · **Rationale:** this is the calendar/task-list spine the trials actually used, translated · **Expected outcome:** committed-≤3 daily planning plus a weekly review habit (metrics 4–5) · **Downside:** the planner category is Etsy's most crowded; differentiation rests on the honesty layer and Comeback Mode · **Difficulty:** Medium · **Priority:** High
 
 **Anchor Money System ($39, two editions).** Stepwise paycheck/bill workflow + financial dashboard; Notion edition and Google Sheets edition sold as separate listings.
-> **Evidence:** problem T1-documented ([Bangma-2019], [Barkley-2008], [Swedish-Registry], [Einarsson-2024]); solution unproven — no budgeting tool has outcome trials (00 §4D ruling); workflow scaffolds borrow T1 components ([Safren-2010] structure, [Gollwitzer-2006] cues) · **Confidence:** Moderate (need), Low (our effect) · **Rationale:** externalize bills, dates, and payday decisions so working memory never carries them (Law 1, Law 5) · **Expected outcome:** bills visible ≥7 days ahead; a repeatable payday routine (metrics 1–3) · **Downside:** we must sell a money product while stating no money outcome is proven — the Evidence Notes section carries that weight on every listing · **Difficulty:** Medium · **Priority:** High (this is the front door, §E)
+> **Evidence:** the money *problem* is well-documented observational/registry evidence ([Bangma-2019], [Barkley-2008], [Swedish-Registry], [Einarsson-2024]); the *solution* is unproven — no budgeting tool has outcome trials (00 §4D ruling); workflow scaffolds borrow T1 components ([Safren-2010] structure) and T2 cues ([Gollwitzer-2006]) · **Confidence:** Moderate (need), Low (our effect) · **Rationale:** externalize bills, dates, and payday decisions so working memory never carries them (Law 1, Law 5) · **Expected outcome:** bills visible ≥7 days ahead; a repeatable payday routine (metrics 1–3) · **Downside:** we must sell a money product while stating no money outcome is proven — the Evidence Notes section carries that weight on every listing · **Difficulty:** Medium · **Priority:** High (this is the front door, §E)
 
 **Anchor Life OS ($79).** The flagship six-database Notion workspace (08 — Notion Strategy).
 > **Evidence:** T1 package translation ([Safren-2010], [Solanto-2010], [attexis-2026]); architecture choices T2/T3 per 04 · **Confidence:** Moderate · **Rationale:** one integrated system beats four disconnected ones for maintenance burden — fewer places to check is itself decision reduction (Law 3) · **Expected outcome:** the core workflows in one workspace; highest-LTV single purchase · **Downside:** big systems invite big setup stalls; the 2-minute START HERE wizard (08 §L) exists precisely for this · **Difficulty:** High · **Priority:** High
@@ -298,6 +298,18 @@ tomorrow, at the same price.
 ```
 
 > **Evidence:** copy implements 00 §10 (allowed T1 phrasing, mandatory disclosure, no outcome promises); abandonment honesty grounded in [Kenter-2023] (29% module completion) without quoting stats at buyers; structure T3 design rationale · **Confidence:** Moderate · **Rationale:** the listing does the Evidence Notes work before purchase so no buyer can feel bait-and-switched after · **Expected outcome:** lower refund and negative-review rates; reviews referencing honesty · **Downside:** longer copy than category norm; the honest FAQ names our own category's failure mode out loud · **Difficulty:** Low · **Priority:** High
+
+### G.5 Pre-publish QA gate (every listing, every revision)
+
+No listing goes live or is edited live without passing all of:
+
+1. Title ≤ 140 characters, front-loaded, zero claims — read it aloud once.
+2. 13 of 13 tags used, each ≤ 20 characters, no wasted duplicates of attribute fields.
+3. Image 7 is Evidence Notes and sits at slot 7 or earlier; all 10 slots filled; video present.
+4. Alt text on all images per §F spec.
+5. Description: promise complete within first 160 characters; Evidence Notes heading present; the not-a-treatment line present verbatim; refund stated; "sleep on it" line present.
+6. Language scan against 00 §10 banned list (no "clinically proven," no outcome promises, no urgency/scarcity, no shame hooks).
+7. The listing passes the relevant items of [06 — ADHD Design Checklist](06-adhd-design-checklist.md) as if it were a product screen — because it is one.
 
 ---
 

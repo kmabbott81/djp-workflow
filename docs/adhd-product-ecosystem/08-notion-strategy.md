@@ -196,8 +196,9 @@ Momentum = completions per week, never streaks (04 §E; Law 7; [Lally-2010] one 
 min(1, prop("This week") / max(prop("Target per week"), 1))
    /* number format: percent */
 
-/* Today? — true when today's weekday is a scheduled day */
-prop("Scheduled days").map(current.name()).includes(formatDate(now(), "ddd"))
+/* Today? — true when today's weekday is a scheduled day
+   (multi-select values are strings; options are named Mon…Sun) */
+prop("Scheduled days").includes(formatDate(now(), "ddd"))
 ```
 
 **Honest deviation, recorded:** the ideal metric is completions in a *trailing 7 days* / target, capped. Free-plan Notion cannot compute a rolling window without a second database, so the shipped metric is *this calendar week* / target, capped — with last week's card keeping its own score forever. A Monday-morning 0% is a fresh week, not a loss: no card ever shows a broken streak because streaks do not exist here. The trailing-window version is an Anchor App capability (00 §8).

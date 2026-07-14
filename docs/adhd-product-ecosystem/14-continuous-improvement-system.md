@@ -161,7 +161,15 @@ The foundation §11 canonical metrics, made real — with the instrumentation ho
 
 **Data sources (all opt-in, all revocable):**
 
-1. **Monthly check-in survey:** ~2 minutes, the same 8 questions every month, one-tap answers, sent by email to subscribers who opted in.
+1. **Monthly check-in survey:** ~2 minutes, the same 8 questions every month, one-tap answers, sent by email to subscribers who opted in. The 8 questions, verbatim:
+   1. "Did you use any Anchor workflow this month?" (yes / no / stopped — and stopping is a fine answer)
+   2. "Bills due this month: how many were paid on time?" (all / most / some / few / prefer not to say)
+   3. "Any late fees or overdrafts this month?" (count or skip)
+   4. "Savings transfers you planned: how many happened?" (all / some / none / didn't plan any)
+   5. "On days you used the Daily Board, did you finish what you committed?" (mostly / sometimes / rarely)
+   6. "How many Weekly Resets did you do?" (0–5)
+   7. "Did you lapse for a week or more and come back?" (yes / no / still away — welcome back either way)
+   8. "Is the product making the admin of life lighter, heavier, or no different?" (lighter / heavier / same)
 2. **Anchor Lab panel:** consented, compensated members completing a deeper quarterly survey and occasional interviews; also the recruiting pool for §6 testing.
 3. **Self-score card:** an optional in-template month card users fill for themselves and may paste into the survey if they wish — self-tracking first, research contribution second.
 
@@ -205,6 +213,18 @@ The foundation §11 canonical metrics, made real — with the instrumentation ho
 4. Complete The Weekly Reset unassisted.
 5. **Lapse simulation — mandatory:** "It's been two weeks since you opened this. Open it and do whatever you'd naturally do." Pass = the participant lands in Comeback Mode and restarts with zero manual cleanup (checklist items R1/R2 observed in the wild, not just in review).
 
+**Session agenda (45 minutes, hard stop):**
+
+```
+0–5     Welcome, consent, "you can't fail this test — the product can"
+5–15    First-run task (new artifact) or release-change task (returning)
+15–25   Two core tasks from the set below, participant's real data
+25–30   Break offered; skipped only by participant choice
+30–40   Lapse simulation + one more core task
+40–45   Debrief: overwhelm rating, "what would make you not come back?"
+        Payment sent before the call ends.
+```
+
 **Measures:** task success, time-to-first-value, single-question ease rating, self-reported overwhelm, first place their eyes went. Findings feed Part 06 checklist revisions, §4 retirement reviews, and release go/no-go.
 
 **Quarterly unmoderated pulse:** a 5-task remote test (always including capture and the lapse simulation) between releases.
@@ -215,7 +235,7 @@ The foundation §11 canonical metrics, made real — with the instrumentation ho
 
 ## 7. RCT opportunities: the study we owe the field
 
-All four source reviews converge on the same missing study, and the foundation states it twice (§2, §5): **no trial has ever compared an ADHD-specific planning/budgeting system against the spreadsheet and planner baseline it claims to beat.** Our positioning inherits that gap. The plan is to close it rather than talk around it.
+All four source reviews converge on the same missing study, and the foundation states it twice (its §2 and §5): **no trial has ever compared an ADHD-specific planning/budgeting system against the spreadsheet and planner baseline it claims to beat.** Our positioning inherits that gap. The plan is to close it rather than talk around it.
 
 **Target design (built with academic partners, not alone):**
 
