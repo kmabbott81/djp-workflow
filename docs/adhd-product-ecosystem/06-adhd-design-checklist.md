@@ -20,15 +20,34 @@
 4. Record in the ship log: artifact, version, date, reviewer, failures, N-A justifications, and any logged fix.
 5. Count things literally. "Count the decisions" means: open the artifact as a new user and tally every point where the user must choose, name, configure, or recall something. Estimates in your head don't count; tallies do.
 
+**How to count (so two reviewers get the same number):**
+
+- **Decisions:** every point where the user must choose, name, configure, or recall something before proceeding. A default accepted without noticing = 0. A confirmation dialog = 1. A blank field with no suggestion = 1 decision plus 1 recall.
+- **Elements above the fold:** each card, button, form field, header, navigation item, and badge counts as 1. A tight repeating list (e.g., task rows) counts as 1 element, plus 1 for each distinct interactive control inside a row.
+- **Interactions (capture):** each tap, click, or focus change counts; typing the captured content itself counts as one interaction regardless of length.
+- **First-action timing:** measured from opening the artifact in a new-user state, *including* reading time. If the user must read three paragraphs to find the action, the paragraphs are on the clock.
+
 **On the numeric thresholds.** The *directions* below are evidence-anchored (fewer choices, smaller first actions, external memory, forgiveness). The specific numbers — ≤7 elements, ≤2 interactions, ≤2 minutes, ≤3 committed tasks — are house rules that make the laws reviewable. No study validates the numbers themselves; we state that plainly (no direct evidence) and hold them anyway, because an unreviewable rule ("keep it simple") protects no one.
 
-> **Evidence:** Gate practice is governance anchored in abandonment evidence T1-package ([Kenter-2023], [FOCUS-2023]) and the Ten Design Laws (§7); individual items carry their own keys · **Confidence:** Moderate · **Rationale:** most documented abandonment drivers are inspectable pre-ship, so a mandatory review converts the evidence base into a repeatable quality bar. · **Expected outcome:** fewer artifacts abandoned in week one; consistent law compliance across products and channels. · **Downside:** slower shipping, and checklist theater if items are ticked without literal counting. · **Difficulty:** Low · **Priority:** High
+**Ship log entry template:**
+
+```
+Artifact / version:      Anchor Daily Board v1.0 (Notion edition)
+Date / reviewer:         2026-07-14 / [name, not the builder]
+MUST results:            15 pass / 0 fail
+SHOULD results:          22 pass / 1 fail / 1 N-A
+Failures + fix-by:       T2 (committed-vs-available time) — v1.1, owner [name]
+N-A justifications:      T3 — no timers shipped in this artifact
+Decision:                SHIP / BLOCKED
+```
+
+> **Evidence:** Governance, anchored in T1-package abandonment evidence ([Kenter-2023], [FOCUS-2023]) and the Ten Design Laws (foundation §7); individual items carry their own keys · **Confidence:** Moderate · **Rationale:** most documented abandonment drivers are inspectable pre-ship, so a mandatory review converts the evidence base into a repeatable quality bar. · **Expected outcome:** fewer artifacts abandoned in week one; consistent law compliance across products and channels. · **Downside:** slower shipping, and checklist theater if items are ticked without literal counting. · **Difficulty:** Low · **Priority:** High
 
 ---
 
 ## 2. The checklist
 
-Columns: gate ([MUST]/[SHOULD]) · the yes/no question · one-line pass criterion · law and evidence behind it.
+Columns: gate ([MUST]/[SHOULD]) · the yes/no question · one-line pass criterion · law and evidence behind it. Bare section references (§3, §4, §6, §8, §10) point into [00 — Evidence Foundation](00-evidence-foundation.md); "Law N" means the Ten Design Laws in its §7.
 
 ### 2.1 Capture
 

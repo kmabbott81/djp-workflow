@@ -115,7 +115,7 @@ We say this with respect: some people genuinely enjoy elaborate custom dashboard
 
 ### 3.5 Teams and enterprise
 
-Delegation, approvals, admin, compliance — different jobs, different product, and a guaranteed engine of feature creep. Anchor manages one adult's life. Anchor Home Base supports a shared household checklist; that is the boundary.
+Delegation, approvals, admin, compliance — different jobs, different product, and a reliable engine of feature creep. Anchor manages one adult's life. Anchor Home Base supports a shared household checklist; that is the boundary.
 
 ### 3.6 How refusal shows up in the product
 
