@@ -10,6 +10,8 @@
 
 Fifteen components, one system. The ladder logic: every rung is a complete, honest tool on its own; every upgrade is an expansion of a workflow the user already runs, never a repurchase of the same promise.
 
+How to read the map: **Role** is the job the component does; **Supports the others** is its flywheel wiring (§3); **Evidence caveat** is the honesty constraint that governs its copy; the closing block is the 00 §9 decision record. The format components (1.2–1.6) determine how much of the Ten Laws each product can physically deliver — §2 is their governing table, and no listing may promise past it.
+
 | # | Component | Position | Role in one line |
 |---|---|---|---|
 | 1.1 | Etsy digital products | Channel | Discovery marketplace where the audience already searches |
@@ -27,6 +29,18 @@ Fifteen components, one system. The ladder logic: every rung is a complete, hone
 | 1.13 | Premium products | $34–129 | Anchor Money System, Anchor Planner, Anchor Life OS, Everything Bundle |
 | 1.14 | Membership | $8/mo or $79/yr | Anchor Lab: follow-up, co-working, outcomes panel |
 | 1.15 | Future SaaS | Subscription (future) | Anchor App — the only tier where Laws 5 and 8 fully apply |
+
+The ladder at a glance:
+
+| Rung | Offer | Price | The honest promise of the rung |
+|---|---|---|---|
+| Free | First Action Kit | $0 + email opt-in | One capture, one Daily Board day, one tiny ritual seed |
+| Mini | Weekly Reset Kit · Daily Board Lite · Anchor Routines · Anchor Home Base | $9–19 | One working workflow |
+| Core | Anchor Money System · Anchor Planner | $34–49 | A complete system for one life domain |
+| Flagship | Anchor Life OS | $79 | Every system, one home, fewer seams |
+| Bundle | Everything Bundle | $99–129 | Everything, every format, updates included |
+| Membership | Anchor Lab | $8/mo or $79/yr | Follow-up, humans at a scheduled time, and the outcomes panel |
+| Future | Anchor App | TBD (gated) | The cues and automation that templates cannot deliver |
 
 ### 1.1 Etsy digital products
 
@@ -135,6 +149,23 @@ This is the section a hype-driven competitor would delete. The evidence's centra
 **Say the uncomfortable part plainly.** The trials that justify our designs tested structured *programs* — training, homework, follow-up, often a human in the loop ([Solanto-2010], [Safren-2010], [attexis-2026], [LivingSMART-2015]). The active ingredient is **structure plus practiced ritual — not paper, not Notion blocks, not our color palette.** Our static goods carry the artifacts and scripts of those tested routines: this is real value, since the T1 programs literally taught people to run calendars, task lists, and checklists ([Safren-2010]; [LGO]). But a printable cannot cue you at 8pm, a spreadsheet cannot notice you have been gone two weeks, and Notion cannot move money. Static and semi-active media reproduce the precise weakness the evidence attributes to baseline tools. So: printables are positioned as companions and starters (the Weekly Reset sheet on the fridge, next to the ritual it serves); Notion is positioned as semi-active and is always paired with phone reminders per Law 5; and full Law 5 / Law 8 delivery is reserved for the future Anchor App. Every listing's Evidence Notes states this asymmetry, and the email course and Anchor Lab exist to partially restore the training-and-follow-up wrapper the trials had.
 
 What the static media give back is also real, and we say that too: no notification fatigue, no engagement traps (adverse-effect signals in the digital-ADHD literature concentrate in compulsive-engagement formats [LopezCampos-2025]), no subscription hostage-taking, full data ownership, and total privacy. Inert is a limitation and a kindness at once.
+
+**The Evidence Notes contract (every listing, every format).** Each product's Evidence Notes must state, in plain language:
+
+1. The tier of the workflow it hosts — for example, "the weekly review is drawn from programs tested in randomized trials with adults with ADHD."
+2. The tier of the medium — "no planner or budget tool, including this one, has been trial-tested against a plain spreadsheet."
+3. The medium limitation line — "this is a printable: it cannot remind you. Here is the pairing ritual that can."
+4. The cue-pairing instruction (the Law 5 setup step, below), where the format supports one.
+5. The standing disclosure: a self-help organization tool, not a medical device or therapy; it does not replace diagnosis, medication, or professional care.
+6. What we measure instead of promising: the 00 §11 metrics and the open invitation to the voluntary outcomes panel.
+
+**The cue-pairing pattern (ships with every Notion and spreadsheet product).** A five-minute setup step binds the phone's native reminders to pre-decided actions in implementation-intention form ("if situation X, then action Y" — [Gollwitzer-2006] d = 0.65), under the hard constraint that generic reminders demonstrably fail [Nordby-2022]. Shipped examples:
+
+- "If it is 8:00pm on Tuesday, I open the Anchor Money System and pay one bill."
+- "If it is Sunday at 4:00pm, I start The Weekly Reset — 15-minute timer, checklist from the top."
+- "If it is 9:00am on a workday, I pick today's three on the Anchor Daily Board — then stop picking."
+
+Three cues maximum at setup. A wall of notifications is how cue blindness starts; users can add more later, one at a time, each bound to one action.
 
 > **Evidence:** Medium limitations per 00 §5 (no head-to-head trials; no isolated-feature evidence); reminder-alone null [Nordby-2022]; engagement-harm signals [LopezCampos-2025]; active-ingredient framing from the T1 package trials ([Solanto-2010], [Safren-2010]) · **Confidence:** High that this is the honest description · **Rationale:** selling structure while disclosing that structure-plus-ritual, not the artifact, is the active ingredient is the only position consistent with 00 §10. · **Expected outcome:** buyers with calibrated expectations; reviews that survive scrutiny; a claims ladder we can climb with Part 14 data. · **Downside:** the disclosure hands skeptics a quote and competitors a contrast; conversion may suffer against "clinically proven" liars. · **Difficulty:** Low to write, High to sustain under revenue pressure · **Priority:** High
 

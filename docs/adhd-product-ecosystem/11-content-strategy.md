@@ -398,4 +398,4 @@ Platform engagement is never the goal; it is a *leading indicator* that teaching
 
 ---
 
-*Part 11 of the Anchor blueprint · Prev: Part 10 · Next: Part 12 · Full index: [README](README.md) · Canon: [00 — Evidence Foundation](00-evidence-foundation.md)*
+*Prev: [10 — Email Marketing](10-email-marketing.md) · Next: [12 — Editorial Calendar](12-editorial-calendar.md) · Full index: [README](README.md) · Canon: [00 — Evidence Foundation](00-evidence-foundation.md)*
