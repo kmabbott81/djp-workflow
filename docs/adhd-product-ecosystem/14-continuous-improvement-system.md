@@ -64,7 +64,20 @@ Single positive studies promote **one tier maximum**. T1 requires the tier defin
 - Append-only, dated changelog section; entries never rewritten after publication.
 - Each entry: date · foundation version · what changed (key added / tier changed, shown as old → new / ruling changed) · why, in one sentence with the triggering key · downstream documents affected.
 - Two-person sign-off (evidence lead + second reader), same as registry entry.
-- Tier changes also update the §6 conflict table when they resolve or create a divergence.
+- Tier changes also update the foundation §6 conflict table when they resolve or create a divergence.
+
+Example entry:
+
+```
+### 2027-03-14 — foundation v1.2
+- Added [Hypothetical-2027] to §4E: preregistered adult-ADHD RCT of scheduled
+  co-working, task completion improved (details in entry).
+- Re-graded: body doubling T3 → T2 (single study; confidence Low).
+- §6 ruling "Body doubling" updated; divergence with source reviews resolved.
+- Downstream: Parts 06 (item keys), 13 (§2 phrasing, Evidence Notes), product
+  copy sweep opened (30-day clock).
+Signed: [evidence lead], [second reader]
+```
 
 **Downstream product-update triggers** (the clock starts at changelog publication):
 
@@ -87,6 +100,16 @@ Single positive studies promote **one tier maximum**. T1 requires the tier defin
 - **PATCH — copy and fixes.** Wording, formula bugs, broken links, Evidence Note updates after §2 events.
 
 **Changelogs shipped to buyers.** Every release ships a plain-language changelog with exactly three fields: *What changed* · *Why* (including "the evidence moved" when that is the reason, with the key) · *What you need to do* (usually "nothing"). No internal jargon, no tier codes without their plain-language gloss.
+
+Example (Anchor Money System v2.1.0):
+
+```
+What changed:      A new optional "debt snapshot" view. Off by default.
+Why:               Lab-panel members asked to see balances and next payments
+                   in one place; it passed the Part 06 review in June.
+What you need to do: Nothing. If you want it: Settings → add view →
+                   Debt snapshot (about 2 minutes, steps below).
+```
 
 **Free updates policy.** All updates to a purchased product — including MAJOR — are free for the life of that product line. Charging for evidence-driven corrections would bill the people who trusted us for our own learning. A genuinely different product is sold as a different product; an upgrade toll on the same promise is not.
 

@@ -246,4 +246,106 @@ Recurring micro-series: **Externalize It [EF]** · **Money Mechanics [MO]** · *
 
 ---
 
-<!-- CONT-3 -->
+## Section 2 — 200 TikTok Ideas (native formats)
+
+Recurring native series: **"Things I refuse to put in an ADHD planner/budget/system"** (stitch-able honest takes) · **POV** scenes · **Greenscreen Journal Club [RE]** (real study screenshots) · **Build-in-Public [PW]** · **Stitch this / Duet-bait** prompts · day-in-the-life vlogs · two-character skits. Same rules: honest hooks, one concept each, tier tags visible.
+
+| Theme | EF | MO | PL | HO | HA | TB | DF | OR | PW | RE | Total |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| TikTok count | 22 | 24 | 20 | 16 | 20 | 18 | 16 | 18 | 22 | 24 | **200** |
+
+### EF — Executive Function Scaffolding (1–22)
+
+1. POV: your working memory hands you a blank stare — the externalizing move, mid-skit [EF|T2]
+2. Skit: brain as an overworked intern; the Inbox gets hired as its assistant [EF|T2]
+3. Stitch this: the task you keep re-remembering — capture it with me, live [EF|T2]
+4. Greenscreen over Law 1: "Externalize, don't educate" — why tips alone fail [EF|T2]
+5. Day-in-the-life: every executive function I outsourced today, timestamped [EF|T2]
+6. Things I refuse to put in an ADHD planner #1: motivational quotes [EF|T2]
+7. POV: mid-email, a tangent attacks — watch the write-it-down-return-to-task move [EF|T1]
+8. Two-character skit: "try harder" versus "try differently" — point of performance [EF|T2]
+9. Replying to "isn't this just laziness?" — performance versus knowledge, kindly [EF|T2]
+10. Text-on-screen: five open loops renting my working memory right now [EF|T2]
+11. POV: the task is "clean the garage" — watch it shrink to one box [EF|T1]
+12. Duet-bait: show us your external brain — mine is this board [EF|T2]
+13. Skit: my prospective memory RSVPs to events it will never attend [EF|T2]
+14. Things I refuse #2: features that quiz you on ADHD facts [EF|T4]
+15. POV: 11pm you invents tasks; morning you finds the shutdown note instead [EF|T2]
+16. Greenscreen: problem-solving's incremental SMD 0.42 — the unsexy winner [EF|T1]
+17. Storytime: the appointment I triple-booked before an external calendar owned my time [EF|T2]
+18. Skit: negotiating done criteria — "what does finished even mean here?" [EF|T1]
+19. Replying to "do brain-training games help?" — an honest no, with receipts [EF|T4]
+20. POV: your body double logs on and the boring task suddenly starts [EF|T3]
+21. Voiceover b-roll: setting up a distraction shelf during real work [EF|T1]
+22. Things I refuse #3: red shame-tinted overdue screens [EF|T2]
+
+### MO — Money (23–46)
+
+23. Storytime: three late fees, zero moralizing, one workflow change [MO|T2]
+24. Greenscreen over the registry chart: defaults climbing by middle age — why we build [MO|T2]
+25. POV: payday hits and the plan already made your choices [MO|T2]
+26. Skit: now-me and later-me bidding on the same forty dollars [MO|T2]
+27. Things I refuse to put in an ADHD budget #1: guilt graphs [MO|T2]
+28. Day-in-the-life: my weekly money date — fifteen unglamorous checklist minutes [MO|T2]
+29. Replying to "will this fix my finances?" — no promises; here's what's actually tested [MO|T2]
+30. Greenscreen: 3–4% versus 11% savings — the Milwaukee data, kindly told [MO|T2]
+31. POV: the cart cool-down holds your impulse buy overnight; you decide tomorrow [MO|T3]
+32. Stitch this: your most useful money default — mine auto-moves twenty dollars [MO|T2]
+33. Skit: a financial-literacy course races one automated transfer [MO|T2]
+34. Things I refuse (budget edition) #2: forty-seven-category budgets [MO|T2]
+35. Voiceover: paying one bill on cue — an if-then plan in the wild [MO|T2]
+36. POV: the bill dashboard remembers, so your memory doesn't have to [MO|T2]
+37. Greenscreen: the delay-discounting curve — steeper here, so we pre-commit [MO|T2]
+38. Storytime: the subscription graveyard audit that found sixty-three dollars monthly [MO|T2]
+39. Skit: my bank app's confetti meets my actual overdraft — fintech honesty [MO|T2]
+40. Replying to "is the cool-down proven?" — it's T3, experimental; here's the label [MO|T3]
+41. Day-in-the-life: automating every recurring money move I legally could [MO|T2]
+42. POV: money shame knocks; the system answers the door instead [MO|T2]
+43. Things I refuse (budget edition) #3: guaranteed-savings claims [MO|T2]
+44. Greenscreen: 109 ADHD apps reviewed, none proven — money apps included [MO|T4]
+45. Duet-bait: show your one-tap bill ritual, thirty seconds max [MO|T2]
+46. Skit: "just stop buying coffee" guy meets the actual evidence base [MO|T2]
+
+### PL — Planning (47–66)
+
+47. POV: your day shrinks to Now / Next / Later and your shoulders drop [PL|T1]
+48. One Next Action challenge: comment a stuck task; I shrink it on camera [PL|T1]
+49. Skit: a thirty-item to-do list interviews for a job it cannot do [PL|T1]
+50. Day-in-the-life: Sunday Weekly Reset in real time, no aesthetic filter [PL|T1]
+51. Greenscreen: homework completion correlated with gains — practice beats vibes [PL|T1]
+52. POV: deadline in three weeks; backwards planning fills the gap on screen [PL|T1]
+53. Stitch this: pre-decide tomorrow's first action, right now, out loud [PL|T2]
+54. Skit: calendar and task list finally meet — the classic CBT pairing [PL|T1]
+55. Replying to "planning apps never stick for me" — the review-loop answer [PL|T1]
+56. Things I refuse to put in an ADHD planner #4: yearly goal pyramids [PL|T2]
+57. POV: all three committed tasks feel wrong; the swap rule activates [PL|T1]
+58. Voiceover b-roll: time-blocking with buffers — ugly, effective, unfilmed-influencer style [PL|T1]
+59. Greenscreen: if-then plans at d = 0.65 — the 8pm bill example [PL|T2]
+60. Skit: relapse-prevention me writes a letter to chaos-week me [PL|T1]
+61. Day-in-the-life: three tasks committed, seven captured, zero guilt [PL|T1]
+62. POV: the meeting ends and the next step gets captured before the door [PL|T1]
+63. Duet-bait: your weekly review in fifteen seconds — here's mine [PL|T1]
+64. Replying to "isn't three tasks a day lazy?" — completion-rate math says otherwise [PL|T1]
+65. Skit: prioritizing with one metacognitive question, fully dramatized [PL|T1]
+66. Stitch: the waiting-for list that saved a friendship and a deposit [PL|T2]
+
+### HO — Home (67–82)
+
+67. POV: the launchpad by the door catches your keys, meds, and wallet [HO|T2]
+68. Day-in-the-life: the 20-minute household reset with a shared checklist [HO|T2]
+69. Skit: chore roulette versus pre-assigned chores — couples edition [HO|T2]
+70. Things I refuse to put in an ADHD home system #5: daily deep cleans [HO|T2]
+71. POV: the doom pile meets a containment basket; both survive [HO|T3]
+72. Stitch this: your weirdest working home fix — I'll assign honest tiers [HO|T3]
+73. Voiceover: the rotating seven-meal menu — one decision, repeated forever [HO|T2]
+74. Skit: the laundry loop staged as a relay race with handoff cues [HO|T2]
+75. Greenscreen over the OT consensus: rooms that cue actions [HO|T2]
+76. POV: guests arrive in thirty minutes; the damage-control checklist takes over [HO|T2]
+77. Replying to "my partner does everything" — shared external systems, not blame [HO|T2]
+78. Day-in-the-life: body-doubling the dishes with a friend on video call [HO|T3]
+79. Skit: the mail tray negotiates a weekly decision pass [HO|T2]
+80. POV: you miss a chore and it quietly reschedules itself — no guilt screen [HO|T2]
+81. Duet-bait: show your launchpad; I'll show mine [HO|T2]
+82. Storytime: my chore chart's week-three collapse — and the forgiving redesign [HO|T2]
+
+<!-- CONT-4 -->
