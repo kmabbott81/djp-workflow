@@ -285,7 +285,95 @@ Format: title — target intent + keyword phrase (no invented volumes) + tag. **
 100. LopezCampos-2025: An Umbrella Review's Warning to App Makers — kw: "adhd digital intervention review" (informational) [RE|T1]
 
 ---
-<!--CHUNK6-->
+## Section 3 — Newsletter "The External Brain": 100 topics
+
+Format: subject line — core concept; **act:** the one tiny action (≤8 words) + tag. Issue format is always 1 concept + 1 tiny action.
+
+**Distribution:**
+
+| EF | MO | PL | HO | HA | TB | DF | OR | PW | RE | Total |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 10 | 10 | 10 | 10 | 10 | 10 | 10 | 10 | 10 | 10 | 100 |
+
+### EF — Executive function
+
+1. "Your brain isn't a filing cabinet" — offloading beats remembering; act: write tomorrow's first task down now [EF|T2]
+2. "Knowing isn't the bottleneck" — performance, not knowledge; act: move one reminder to the action's location [EF|T1]
+3. "The first action, not the task" — decomposition; act: split one task; name its first action [EF|T1]
+4. "Write it down, return to task" — distraction capture; act: keep one distraction sheet today [EF|T1]
+5. "One next action" — every plan resolves to one step; act: pick your single next step now [EF|T1]
+6. "Packages beat hacks" — systems are the unit of proof; act: skip one new hack this week [EF|T1]
+7. "Remembering to remember" — prospective memory; act: set one cue for one intention [EF|T2]
+8. "Brain training: keep your money" — null trial results; act: uninstall one brain-training app guilt-free [EF|T4-debunk]
+9. "Problem-solving, the trainable kind" — structured steps; act: define one problem in one sentence [EF|T1]
+10. "Let the tool hold it" — externalize the load; act: offload one nagging worry to paper [EF|T2]
+
+### MO — Money
+
+11. "The money struggle is documented" — problem evidence, zero shame; act: name one recurring money pain point [MO|T1]
+12. "Future money feels smaller" — delay discounting; act: label one purchase now-versus-later [MO|T1]
+13. "One bill at 8pm" — if-then money admin; act: schedule one bill with a cue [MO|T2]
+14. "No app has proven this" — market honesty; act: question one "proven" claim today [MO|T4-debunk]
+15. "Automate one transfer" — defaults over willpower; act: set one tiny automatic transfer [MO|T2]
+16. "The course won't save you" — literacy education's tiny effect; act: replace one lesson with one action [MO|T4-debunk]
+17. "Cool-down before checkout" — experimental friction; act: park one cart for 24 hours [MO|T3]
+18. "The ADHD tax, itemized" — documented avoidable costs; act: list last month's avoidable fees [MO|T1]
+19. "Just-in-time beats just-in-case" — action-linked guidance; act: put one tip where money happens [MO|T2]
+20. "Start smaller than feels serious" — auto-escalation, caveats stated; act: raise one transfer by 1% [MO|T2]
+
+### PL — Planning
+
+21. "Two tools, one system" — calendar + task list; act: put today's list beside your calendar [PL|T1]
+22. "The 15-minute weekly reset" — review ritual; act: book 15 minutes this Sunday [PL|T1]
+23. "If X, then Y" — implementation intentions; act: write one if-then plan now [PL|T2]
+24. "Three tasks max" — prioritization; act: cut today's list to three [PL|T1]
+25. "Plan backward from the deadline" — reverse scheduling; act: date one deadline's first step [PL|T1]
+26. "Reminders need decisions attached" — cue design; act: rewrite one vague reminder as action [PL|T2]
+27. "Stuck? Run the steps" — problem-solving structure; act: brainstorm three options, pick one [PL|T1]
+28. "Buffer your estimates" — documented estimation deficits; act: double one time estimate today [PL|T1]
+29. "Schedule the plan, not the hope" — goal-to-slot; act: give one task a calendar slot [PL|T1]
+30. "Paper or app? Whichever you'll open" — no head-to-head trial; act: choose the lower-friction option once [PL|T4-debunk]
+
+### HO — Home management
+
+31. "Everything gets one home" — environmental structuring; act: give one homeless item a home [HO|T2]
+32. "The launching pad" — offloading at the door; act: clear one spot by the door [HO|T2]
+33. "Chores want checklists" — trained checklist skills; act: write one three-step chore checklist [HO|T1]
+34. "Default dinner night" — decision-free meals; act: pick one weekly default meal [HO|T2]
+35. "Body double the boring stuff" — experimental, community-endorsed; act: invite one person to co-clean [HO|T3]
+36. "Nag less, cue more" — shared pre-decided actions; act: turn one request into a cue [HO|T2]
+37. "Point-of-use storage" — shorten the action path; act: move one tool where it's used [HO|T3]
+38. "The 15-minute home reset" — weekly space review; act: set one weekly reset timer [HO|T2]
+39. "Purges fade, practice sticks" — loops over sprints; act: reset one shelf, skip the purge [HO|T1]
+40. "Automate a chore" — automation over initiation; act: automate or delete one recurring chore [HO|T2]
+
+### HA — Habits
+
+41. "66 days, not 21" — real habit timeline; act: recommit to one habit's week three [HA|T2]
+42. "The 21-day myth" — 2–5 months is honest; act: set one 90-day expectation [HA|T4-debunk]
+43. "A missed day is data" — one miss ≠ failure; act: resume one lapsed habit, smaller [HA|T2]
+44. "Streaks aren't the metric" — momentum over chains; act: count this week's reps instead [HA|T4-debunk]
+45. "The honeymoon ends — plan for it" — gamification decay; act: pre-plan boring week four now [HA|T2]
+46. "Morning helps" — timing evidence; act: move one habit before noon [HA|T2]
+47. "Stack it on coffee" — if-then anchoring; act: attach one habit to an anchor [HA|T2]
+48. "Practice predicted progress" — homework correlation; act: do one tiny practice rep today [HA|T1]
+49. "Shrink it until it's easy" — decomposition; act: halve one habit's size [HA|T1]
+50. "Choose wants over shoulds" — self-selection evidence; act: swap one should-habit for a want [HA|T2]
+
+### TB — Time blindness
+
+51. "Time blindness is measurable" — documented deficits; act: guess a task's length, then time it [TB|T1]
+52. "Training beats widgets" — the proven/experimental split; act: practice one scheduling skill today [TB|T1]
+53. "Visual timers: try, don't trust" — child-study evidence only; act: test one timer, note the effect [TB|T3]
+54. "Alarms need next actions" — cue → action; act: name each alarm's exact action [TB|T2]
+55. "Make the hour visible" — mechanism-based; act: put one analog clock in sight [TB|T3]
+56. "Far deadlines feel fake" — discounting; act: create one earlier interim deadline [TB|T1]
+57. "Late isn't lazy" — estimation deficits; act: add 15 minutes to departure time [TB|T1]
+58. "Waiting mode, named" — community term, labeled honestly; act: book one small pre-appointment task [TB|T3]
+59. "Time-log one day" — calibration practice, unproven; act: log today at three checkpoints [TB|T3]
+60. "Schedule the transition" — buffers between blocks; act: add five-minute buffers between blocks [TB|T2]
+<!--CHUNK7-->
+
 
 
 
