@@ -403,4 +403,4 @@ flowchart LR
 
 ---
 
-*Previous: [03 — Product Line](03-product-line.md) · Next: [05 — Design System](05-design-system.md) · Full index in [README](README.md).*
+*Previous: [03 — Product Architecture](03-product-architecture.md) · Next: [05 — UX Specification](05-ux-specification.md) · Full index in [README](README.md).*
