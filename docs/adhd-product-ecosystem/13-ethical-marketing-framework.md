@@ -64,6 +64,13 @@ Place on every sales page, listing, About page, and product start page. Do not r
 
 > **What this is — and isn't.** Anchor products are self-help organization tools. They are not medical devices, therapy, or treatment for ADHD or any condition, and they don't diagnose anything. They are not a substitute for care from a qualified clinician, for medication, or for therapy. We label the evidence behind every feature in plain language (look for the Evidence Notes); where the evidence is indirect or experimental, we say so.
 
+Placement, per surface:
+
+- **Etsy/marketplace listing:** its own paragraph before the FAQ, plus repeated inside the downloaded file's first page.
+- **Sales page:** above the buy button at full width, not below the fold in gray.
+- **Email:** verbatim in any email that sells; footer link ("what this is and isn't") in the rest.
+- **In-product:** on the start page of every template and the About screen of the future Anchor App.
+
 ---
 
 ## 3. Claims we CANNOT make

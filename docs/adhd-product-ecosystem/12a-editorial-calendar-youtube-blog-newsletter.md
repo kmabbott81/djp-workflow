@@ -41,4 +41,43 @@
 18. The 24-Hour Cart Rule — purchase friction is experimental; mechanism fits discounting evidence [MO|T3]
 19. The Honest Review: Budgeting-App Patterns — category patterns scored against our ten-law checklist; no names [MO|T2]
 20. One Bill at 8pm — implementation intentions applied to money admin [Gollwitzer-2006] [MO|T2]
-<!--CHUNK2-->
+### PL — Planning
+
+21. The Two-Tool Core: Calendar + Task List — the foundation system used in CBT trials [Safren-2010] [PL|T1]
+22. The Weekly Review Ritual — homework completion tracked with improvement in metacognitive therapy [Solanto-2010] [PL|T1]
+23. Plan Three Things, Not Thirty — prioritization training; our ≤3 default labeled as design choice [PL|T1]
+24. If-Then Planning Works — d=0.65 across 8,000+ participants; write triggers, not wishes [Gollwitzer-2006] [PL|T2]
+25. Myth vs. Mechanism: The Magic ADHD Planner — no head-to-head trial beats paper or spreadsheets; mechanisms explained honestly [PL|T4-debunk]
+26. Backward Planning From Deadlines — a time-management training component, demonstrated step by step [Solanto-2010] [PL|T1]
+27. Reminders Need a Decision Attached — cue → pre-decided small action, never generic nags [PL|T2]
+28. Plan With Buffers, Not Optimism — time-estimation deficits are documented; build margins in [TimePerception-Review] [PL|T1]
+29. Stuck Project? Run the Steps — problem-solving structure applied to stalled plans [Matsumoto-2024] [PL|T1]
+30. From Goal to Calendar Slot — scheduling as taught in group time-management training [LGO] [PL|T1]
+
+### HO — Home management
+
+31. What OT Consensus Says About ADHD Homes — environmental structuring and routines, honestly tiered [UKAAN-2021] [HO|T2]
+32. Chore Checklists That Survive Real Life — checklist training from time-management protocols, applied homeward [LGO] [HO|T1]
+33. The Launching Pad — one landing zone for keys, wallet, meds; offloading at the door [HO|T2]
+34. Point-of-Use Storage — cut steps between intention and action; mechanism-based, labeled experimental [HO|T3]
+35. Body Doubling the Dishes — community-endorsed, no RCTs; how to try it honestly [BodyDoubling-HCI] [HO|T3]
+36. Shared Chores Without Nagging — turn requests into cues with pre-decided actions [HO|T2]
+37. Default Dinners — a rotating menu that deletes the 5pm decision [Jachimowicz-2019] [HO|T2]
+38. Automate the Household — recurring, auto-resetting chores; automation over initiation [HO|T2]
+39. The 15-Minute Home Reset — a weekly review loop for shared spaces; extrapolated, labeled [HO|T2]
+40. Why "Just Get Organized" Fails at Home — knowledge isn't the bottleneck; structure is [Fernandes-2014] [HO|T2]
+
+### HA — Habits
+
+41. Habits Take 66 Days (Median) — the real automaticity curve, range 18–254 days [Lally-2010] [HA|T2]
+42. Myth vs. Mechanism: The 21-Day Habit — habits take 2–5 months; where the myth came from [Singh-2024] [HA|T4-debunk]
+43. Missing One Day Doesn't Break It — single misses didn't materially harm habit formation [Lally-2010] [HA|T2]
+44. Myth vs. Mechanism: Punitive Streaks — no durable-driver evidence; forgiveness is the design answer [HA|T4-debunk]
+45. The Gamification Honeymoon — d=1.57 in week one, negative over years [KimCastelli-2021] [HA|T2]
+46. Start It in the Morning — morning habits showed stronger formation [Singh-2024] [HA|T2]
+47. Habit Stacking Is an If-Then Plan — the branded term's actual evidence base [Gollwitzer-2006] [HA|T2]
+48. The Honest Review: Streak-Based Habit Trackers — category patterns vs forgiveness-by-design; no names [HA|T2]
+49. Practice Was the Predictor — homework completion correlated with symptom improvement [Solanto-2010] [HA|T1]
+50. Pick Habits You Actually Want — self-selected habits formed more strongly [Singh-2024] [HA|T2]
+<!--CHUNK3-->
+
