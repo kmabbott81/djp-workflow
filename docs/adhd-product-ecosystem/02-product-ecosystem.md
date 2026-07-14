@@ -191,13 +191,36 @@ flowchart TD
     PANEL -. evidence gate .-> APP["Anchor App - Phase 4"]
 ```
 
+The nine stages, and why each handoff is plausible:
+
+1. **Content → First Action Kit.** An article that demonstrates a workflow earns the right to offer its printable; the ask is an email address, not money.
+2. **First Action Kit → course.** The kit's brain dump and Daily Board give the course something concrete to coach; each day cues one small act (Law 5), never "reflect on your journey."
+3. **Course → mini.** Day 7 tells the truth — habits take months, not a week ([Lally-2010] median 66 days; [Singh-2024] two to five months) — and hands the reader the tool built for months: the Weekly Reset Kit.
+4. **Mini → core.** A working Weekly Reset creates natural demand for the system it reviews (Anchor Planner) or for the domain that hurts most (Anchor Money System).
+5. **Core → flagship / bundle.** Only integration-seekers should climb here, and the sales page says exactly who should not.
+6. **Flagship → Anchor Lab.** Owners who want follow-up and humans get both, plus early access and updates.
+7. **Lab → outcomes panel.** Members opt in under Part 14's consent design; membership never requires participation.
+8. **Panel → better products.** Findings ship as product changes and as public reports — the only rung that can upgrade our claims.
+9. **Better products → content.** Outcome reports and honest changelogs are the most credible content we can publish; the loop closes.
+
 Three honesty rules govern the flywheel:
 
 1. **No invented benchmarks.** We do not know our opt-in, course-completion, or upgrade rates, and no trustworthy external benchmark exists for this exact audience and posture. Cycle one's numbers become the baseline; targets come after baselines (same logic as 01 §6).
 2. **The loop respects Law 7 at the business level.** A subscriber who goes quiet gets a Comeback-style re-entry email ("start at today's, skip the rest"), never a guilt sequence; a lapsed member can rejoin without losing anything.
 3. **The panel is the only rung that upgrades our claims.** Marketing language stays at its 00 §10 ceiling until measured function (00 §11 metrics) says otherwise — in either direction. The flywheel's last arrow is the one competitors skip; it is also the only one that compounds.
 
-Instrumentation per stage (voluntary, consented, minimal): opt-in rate (content → First Action Kit), final-email open or click as course-completion proxy, 60-day mini conversion, mini → core upgrade rate, flagship/bundle attach, Lab join rate, panel volunteer rate, and the 00 §11 functional metrics inside the panel.
+Instrumentation per handoff (voluntary, consented, minimal):
+
+| Handoff | Instrument |
+|---|---|
+| Content → First Action Kit | Opt-in rate |
+| Kit → course | Course-completion proxy: final-email open or click — a proxy, named as one |
+| Course → mini | Conversion within 60 days |
+| Mini → core | Upgrade rate |
+| Core → flagship / bundle | Attach rate |
+| Flagship → Anchor Lab | Join rate |
+| Lab → panel | Volunteer rate |
+| Panel → products | Shipped changes traceable to findings; the 00 §11 functional metrics inside the panel |
 
 > **Evidence:** No direct evidence — funnel architecture is business rationale; its constraints inherit from [Nordby-2022] (email rules), [Lally-2010]/[Kenter-2023] (comeback framing), Law 10 (panel over engagement) · **Confidence:** Moderate · **Rationale:** each stage asks for a slightly larger commitment only after a slightly larger delivered win. · **Expected outcome:** compounding trust and an evidence asset no competitor in [Pasarelu-2020]'s 109 has built. · **Downside:** slow by design; the loop's engine (content + panel) is unpaid work for months. · **Difficulty:** Medium · **Priority:** High
 
@@ -207,9 +230,18 @@ Instrumentation per stage (voluntary, consented, minimal): opt-in rate (content 
 
 Numeric thresholds are business judgments — stated so we can be held to them, not evidence. Each phase has entry criteria (do not start early) and exit criteria (do not scale early).
 
+**Operating principles across all phases.**
+
+- One-builder WIP limit: nothing new ships while a shipped product's onboarding is broken.
+- Every phase re-runs the Part 13 claims audit on all live copy; claim drift is treated as a bug class, not a marketing style.
+- Once "updates included" is sold (Everything Bundle, Anchor Lab), updates ship on a stated cadence — a promise with a calendar, not a vibe.
+- Comeback framing applies to the business too: a missed phase target triggers review and re-planning, not heroics.
+- No phase may borrow the next phase's promises to close this phase's sales — no "app coming soon" on template listings.
+
 ### Phase 1 — Validate (First Action Kit + two minis + Anchor Money System)
 
 **Ships:** First Action Kit; Weekly Reset Kit; Daily Board Lite; Anchor Money System (Notion + Google Sheets editions); Etsy store; landing pages; onboarding emails; blog at a sustainable cadence.
+**Why these two minis first:** they instantiate the two most protected workflows — the ritual (Law 6, [Solanto-2010]) and one-next-action (Law 2, [Safren-2010]) — and they are the two workflows every later product contains, so their demand signal de-risks everything above them.
 **Entry criteria:** documents 00–02 approved; Part 13 claims checklist applied to every listing and page; Evidence Notes written per product; crisis signposting live in all money-product onboarding (01 §3.2).
 **Exit criteria (all):** ≥100 paid customers across Phase-1 products; refund rate <5%; ≥30 structured feedback responses; ≥20 outcomes-panel volunteers; course-completion proxy ≥25%; support load sustainable at <5 hours/week.
 **Kill / pivot trigger:** <30 total sales in the first 90 days with the honest funnel fully live → stop building, re-examine audience and positioning. Low sales with high course completion means fix the offer; high sales with silent users means fix onboarding.
