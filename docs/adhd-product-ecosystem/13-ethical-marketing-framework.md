@@ -134,6 +134,8 @@ A T3 example, because T3 notes are the ones most tempting to soften:
 - "We haven't measured money outcomes yet. We're measuring. We'll publish." — Anchor Money System, all money surfaces
 - "Read the Evidence Notes before you buy. We mean it." — listing close
 
+**What the six examples share:** every one replaces a promised *outcome* with either a described *mechanism* ("one button archives the backlog"), a documented *problem* ("the bill you remembered at 2am"), or a verifiable *practice* ("we label every feature"). That is the whole trick. Uncertainty never appears alone — it always arrives holding something concrete.
+
 ### Six worked copy examples
 
 **1. Hero line — Anchor Money System (sales page)**
@@ -189,6 +191,8 @@ Our buyers are, on average, more prone to impulse purchases they later regret [B
 > "30 days, no questions, no forms-designed-to-tire-you-out. If this doesn't fit the way your brain works, reply to your receipt email with the word 'refund' and it's done. Keeping your money when the product didn't help would make us everything we said we weren't."
 
 **Real-deadline rule in practice.** A deadline may appear in copy only if it is already in the claims log (§7) with: what ends, the exact date/time, and who approved it. When it passes, the offer actually ends. An "extended by popular demand!" pattern is a logged exception usable at most once per year across the whole ecosystem — repeat extensions are false urgency with extra steps.
+
+8. **Advertising targeting rules.** No targeting on distress language ("drowning in debt," "can't cope," crisis phrases); no retargeting pressure sequences that escalate urgency after a visit — the cooling-off logic (item 6) applies to ads too, so a retargeted visitor sees the same calm offer, not a countdown; frequency caps on all paid placements; no lookalike audiences built from purchase-impulsivity signals. We advertise where attention is given, not where defenses are down.
 
 ---
 
