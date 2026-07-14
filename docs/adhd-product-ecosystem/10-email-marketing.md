@@ -448,4 +448,4 @@ And if it's late where you are and this purchase feels *urgent* — close the ta
 
 ---
 
-*Previous: [09 — Landing Page](09-landing-page.md) · Next: [11 — Content & Community](11-content-community.md) · Full index in [README](README.md).*
+*Previous: [09 — Landing Page](09-landing-page.md) · Next: [11 — Content Strategy](11-content-strategy.md) · Full index in [README](README.md).*

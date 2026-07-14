@@ -444,4 +444,4 @@ Not yet. Today Anchor is templates + guides, honestly priced for what they are. 
 
 ---
 
-*Previous: [08 — Anchor Life OS (flagship spec)](08-anchor-life-os.md) · Next: [10 — Email Marketing](10-email-marketing.md) · Full index in [README](README.md).*
+*Previous: [08 — Notion Strategy](08-notion-strategy.md) · Next: [10 — Email Marketing](10-email-marketing.md) · Full index in [README](README.md).*
