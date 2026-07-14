@@ -19,7 +19,7 @@
 
 ## 2. Content pillars: ten themes mapped to the evidence
 
-The ten pillars are exactly the theme codes defined in foundation §9. Every piece of content is tagged with one pillar code plus the tier of the underlying claim it teaches (e.g., `[EF|T1]`, `[TB|T3]`). One piece teaches one concept — never a "17 tips" grab bag.
+The ten pillars are exactly the theme codes defined in foundation §9. Every piece of content is tagged with one pillar code plus the tier of the underlying claim it teaches (e.g., `[EF|T1]`, `[TB|T3]`). One piece teaches one concept — never a "17 tips" grab bag. The one-year editorial calendar built from these pillars and tags lives in [12 — Editorial Calendar](12-editorial-calendar.md); this section defines what each pillar is allowed to promise.
 
 **1. EF — Executive function**
 - **Promise:** understand what executive function is, why effort isn't the missing ingredient, and why external scaffolding works.
@@ -91,8 +91,16 @@ Every piece moves through six gates. Nothing skips gate 3 or 4, ever — not for
 
 1. **Idea → The Inbox.** All content ideas are captured to the channel's Inbox (same capture-first system we sell, Law 4) with a pillar code guess. No idea is evaluated at capture time.
 2. **Script.** Drafted in our two-column script template: left column = the words; right column = a claim ledger. Every factual sentence gets a row: *claim → §4 citation key → tier → confidence*. A sentence that can't be keyed is either (a) rewritten as clearly labeled opinion/experience ("we believe," "in my experience," "mechanism-plausible, untested"), or (b) cut.
+
+   A worked example of the three possible outcomes for a draft line:
+
+   | Draft script line | Claim ledger entry | Verdict |
+   |---|---|---|
+   | "Habits take about two to five months to become automatic." | Habit-formation timeline → [Singh-2024] → T2 (general population) | **Keep**, with the population caveat spoken or captioned |
+   | "Streaks keep you motivated for the long haul." | Gamification durability → [KimCastelli-2021] → effects decay, negative long-term | **Cut or invert** — the registry contradicts it |
+   | "The Weekly Reset feels like a deep breath for your week." | No factual claim — experience | **Keep**, framed as experience ("for me…"), never as evidence |
 3. **Foundation §4 check.** The claim ledger is verified line-by-line against [00 — Evidence Foundation](00-evidence-foundation.md): numbers match the registry exactly (effect sizes, n, populations, caveats); §6 rulings applied (e.g., timer widgets described as T3, reminders never described as standalone fixes); §5 "what the evidence does NOT show" scanned for accidental overclaim.
-4. **Tier language check (§10).** Marketing-language rules applied to educational copy too: no "clinically proven," no "rewires," no "dopamine hack," no outcome promises, no shame hooks. T2/T3 concepts must carry adjacent honesty ("studied in the general population, not yet in ADHD trials"; "community-endorsed, unproven"). The standing disclosure block (§9 below) is attached.
+4. **Tier language check (§10, elaborated in [13 — Ethical Marketing Framework](13-ethical-marketing-framework.md)).** Marketing-language rules applied to educational copy too: no "clinically proven," no "rewires," no "dopamine hack," no outcome promises, no shame hooks. T2/T3 concepts must carry adjacent honesty ("studied in the general population, not yet in ADHD trials"; "community-endorsed, unproven"). The standing disclosure block (§9 below) is attached.
 5. **Publish** with the platform's citation surface (per §5 below) and the correct pillar/tier tag in our content log.
 6. **Corrections policy.** When we get something wrong: fix fast, visibly, without drama. (a) Pin a correction comment on the piece within 24 hours of confirming the error; (b) edit descriptions/captions where the platform allows; (c) log it on the blog's public **Corrections page** (date, error, fix, affected posts); (d) if the error is material to the concept taught, publish a follow-up piece — corrections are RE-pillar content and, done well, they *build* trust rather than spend it.
 

@@ -576,4 +576,4 @@ Three honest lines under the table:
 
 ---
 
-*Prev: [02 — Roadmap](02-roadmap.md) · Next: [04 — Anchor Money System](04-anchor-money-system.md) · Full index in [README](README.md).*
+*Prev: [02 — Product Ecosystem](02-product-ecosystem.md) · Next: [04 — Information Architecture](04-information-architecture.md) · Full index in [README](README.md).*
