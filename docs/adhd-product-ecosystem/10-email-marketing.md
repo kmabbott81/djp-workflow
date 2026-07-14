@@ -20,6 +20,21 @@
 
 **Voice reminder (all emails):** calm friend who has read the research. Grade-7 reading level. Never shame, never hype, never "crush your goals." Sign-off from a named human, not "The Anchor Team."
 
+### Subject-line style guide
+
+The subject *is* the email for most subscribers — many act (or don't) on it alone, and opens can't tell us otherwise (§(a)7). So subjects follow four rules: say what's inside; front-load the concrete noun; ≤55 characters where possible (mobile truncation); sentence case, minimal punctuation, no ALL CAPS, at most one emoji ever (and usually zero).
+
+| Do (ships) | Don't (banned pattern) |
+|---|---|
+| "Your First Action Kit is here (2 minutes, one win)" | "re: your kit" (fake reply) |
+| "Why your last five planners didn't stick" | "You're doing productivity WRONG" (shame + caps) |
+| "21 days is a myth. Here's the real number" | "This 1 weird trick rewires ADHD brains" (§10 violations, clickbait) |
+| "Launch price ends Friday, May 8, 5pm ET" (only if literally true) | "FINAL HOURS ⏰⏰" (urgency theater) |
+| "Please don't buy this if…" | "We miss you 😢" (guilt bait) |
+| "Your board is still there. No catching up required." | "Everything you've built is about to be deleted" (false threat) |
+
+Preview text is written by hand for every send (never left to auto-pull), and it extends the subject honestly rather than teasing it.
+
 **Standard footer (every marketing email):**
 
 > You're getting this because you asked for the First Action Kit (or bought an Anchor product).
@@ -140,6 +155,16 @@ The kit you downloaded is job #1 in miniature. Jobs #2 and #3 are the next two e
 - **Goal:** first and only welcome-sequence offer; informed, pressure-free.
 - **Structure:** (1) Recap what they've practiced: capture, if-then, reset — "the Money System is those three moves, pre-built for paydays and bills." (2) What it is: stepwise paycheck-and-bills workflow + simple dashboard; Notion and spreadsheet editions; $39. (3) **Evidence Notes, verbatim honesty:** built around strategies tested in randomized trials with adults with ADHD <!-- [Safren-2010] [Solanto-2010] -->; *no budgeting tool — ours included — has proven financial outcomes in ADHD trials yet*; every feature carries its evidence tier. (4) 30-day friction-free guarantee. (5) The anti-pressure close: "If now's not the moment, nothing changes — the weekly emails stay free, forever."
 - **Single CTA:** "See the Anchor Money System (and its Evidence Notes)."
+
+### Welcome-sequence QA checklist (pre-launch, per email)
+
+- [ ] Exactly one idea; exactly one CTA/action (Law 2). Action doable in ≤2 minutes without buying anything.
+- [ ] Subject passes the style guide; preview text hand-written.
+- [ ] Every study reference: plain language + `<!-- [key] -->` traceable to §4; indirect evidence labeled as such in the customer-visible text.
+- [ ] §10 pass: no outcome promises, no urgency, no shame; disclosure present in footer.
+- [ ] Skimmable in 30 seconds: bolded skeleton reads as a complete summary on its own.
+- [ ] E6 (and any money-stress content) carries the support-resource footer.
+- [ ] Unsubscribe + monthly-downgrade links present and working.
 
 ---
 

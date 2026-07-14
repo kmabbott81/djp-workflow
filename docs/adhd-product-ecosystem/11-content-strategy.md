@@ -123,11 +123,21 @@ Ten myths we actively counter, each with the exact honest framing we use on came
 9. **"People abandon ADHD tools because they're lazy."** What we say: "In a trial of a self-guided ADHD program, only **29% completed all modules** — and the program still helped [Kenter-2023]. Another app was liked and adopted, yet engagement declined and outcomes didn't move [FOCUS-2023]. When most users 'fail' a tool, the tool failed the users. Abandonment is a design problem — which is why restarting (Comeback Mode) is a first-class feature for us, not an afterthought."
 10. **"Body doubling is clinically proven."** What we say: "Body doubling is **community-endorsed and mechanism-plausible — and there are no randomized trials** [BodyDoubling-HCI]. Both halves matter. Unproven doesn't mean useless; it means unmeasured. We offer it as an experimental, optional practice, labeled exactly that way — and we'd love to see someone run the trial."
 
+**Deploying the library.** Each myth exists in four pre-approved formats so responding never requires fresh research under time pressure: a 45–60s vertical script (TikTok/Shorts/Reels), an 8-slide carousel, a Threads post with source reply, and a standing blog section. The wording above is canonical; derivatives may shorten it but may not sharpen it beyond what the key supports. The library is a living document: myths get retired when the discourse moves on, and new entries only ship after passing §3 gates 2–4.
+
 ---
 
 ## 5. Per-platform strategy
 
 **Standing note (foundation rule):** everything in this section about formats, cadences, and distribution mechanics is **current best practice to validate**, dated 2026-07. We do not claim knowledge of ranking algorithms, and we re-verify platform specs quarterly. No engagement statistic below is presented as a platform fact; internal targets are ours alone.
+
+**The hook honesty test.** Curiosity is allowed; deception is not. Every hook on every platform must pass all five checks before it ships:
+
+1. **Keyed:** any factual claim in the hook appears in the piece's claim ledger with a §4 key. A hook that can't be keyed can't run.
+2. **Paid off early:** the hook's question is answered in the first third of the piece — no bait, no withheld answer, no "wait for it."
+3. **Compression-safe:** the caveat survives the shortening. If the honest version is boring, choose a different hook — never a dishonest one.
+4. **Clean of §10 violations:** no manufactured urgency or scarcity, no fear-bait, no shame ("stop being lazy" is banned as both a hook and a worldview).
+5. **True in isolation:** a person who reads *only* the hook and scrolls on leaves with a true belief.
 
 | Platform | Funnel role | Sustainable solo cadence | Primary CTA |
 |---|---|---|---|
