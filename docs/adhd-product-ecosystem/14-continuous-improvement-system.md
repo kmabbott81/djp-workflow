@@ -1,6 +1,6 @@
 # 14 — Continuous Improvement System
 
-**Executive summary.** The evidence base under this blueprint is young, package-level, and moving — the field's own umbrella review rates its quality as low and reports adverse effects in a minority of formats [LopezCampos-2025], and the strongest trials are recent and unreplicated at component level. So this ecosystem ships with a maintenance system for its *claims*, not just its templates: a quarterly literature scan with explicit registry-entry criteria, a re-grading workflow that can promote a T3 to T2 or demote a T2 to T4 with full changelog and downstream propagation, product versioning with free updates and Notion migration notes, a feature-retirement process, a privacy-respecting measurement panel (templates never spy), an ADHD-adjusted user-testing protocol, a staged pathway toward the preregistered RCT all four source reviews call for, ethics rules for future app analytics, a clinical-partnership pathway, and an annual public State of the Evidence report. The through-line: we promised to label evidence honestly; this document is how the labels stay true over time.
+**Executive summary.** The evidence base under this blueprint is young, package-level, and moving — the field's own umbrella review rates its quality as low, with roughly 30% of its included reviews reporting adverse effects [LopezCampos-2025], and the strongest trials are recent and unreplicated at component level. So this ecosystem ships with a maintenance system for its *claims*, not just its templates: a quarterly literature scan with explicit registry-entry criteria, a re-grading workflow that can promote a T3 to T2 or demote a T2 to T4 with full changelog and downstream propagation, product versioning with free updates and Notion migration notes, a feature-retirement process, a privacy-respecting measurement panel (templates never spy), an ADHD-adjusted user-testing protocol, a staged pathway toward the preregistered RCT all four source reviews call for, ethics rules for future app analytics, a clinical-partnership pathway, and an annual public State of the Evidence report. The through-line: we promised to label evidence honestly; this document is how the labels stay true over time.
 
 ---
 
@@ -8,7 +8,7 @@
 
 **Cadence.** Monthly: skim saved database alerts (~15 minutes; flag, don't analyze). Quarterly: formal screen and a 90-minute review meeting with registry decisions. Annually: deep re-read of the whole registry feeding the State of the Evidence report (§10).
 
-**Where we look.** PubMed/MEDLINE, PsycINFO, and the Cochrane Library for published evidence; ClinicalTrials.gov and equivalent international registries for preregistrations (these feed a watchlist of results to expect, e.g., any registered body-doubling trial); PROSPERO for systematic-review protocols; citation alerts on the §4 anchor studies so follow-ups and corrections surface automatically.
+**Where we look.** PubMed/MEDLINE, PsycINFO, and the Cochrane Library for published evidence; ClinicalTrials.gov and equivalent international registries for preregistrations (these feed a watchlist of results to expect, e.g., any registered body-doubling trial); PROSPERO for systematic-review protocols; citation alerts on the foundation §4 anchor studies so follow-ups and corrections surface automatically.
 
 **Standing queries** (adapt syntax per database):
 
@@ -30,6 +30,18 @@ Child-only studies cap at T3 (the [Hallez-2024] precedent). Vendor blogs, app-st
 
 **Who reviews.** The evidence lead screens titles/abstracts and drafts registry entries; a second reader verifies extraction and tier; disagreements resolve to the conservative reading (foundation prime directive); the advisory clinicians (§9) are consulted on clinical interpretation. Every quarter logs counts — found, screened, added, excluded and why — even when the answer is "nothing new," because "we looked and found nothing" is itself a finding worth recording.
 
+**Quarterly scan log template:**
+
+```
+Quarter:            2026-Q3
+Queries run:        Q1–Q4 (dates per database)
+Hits / screened:    412 / 37 full-text
+Added to registry:  1 ([NewKey-YYYY], T2, §4E) — or "none"
+Watchlist changes:  +1 registered body-doubling RCT (results est. 2027)
+Excluded, notable:  2 child-only RCTs (T3 ceiling rule); 1 vendor white paper
+Reviewers:          [evidence lead] / [second reader]; disagreements: 0
+```
+
 ---
 
 ## 2. Updating the evidence foundation: re-grading workflow
@@ -40,12 +52,12 @@ Tiers move on evidence, in both directions. All changes land in `00-evidence-fou
 
 | Move | Trigger | Worked example |
 |---|---|---|
-| T3 → T2 | One adequately powered adult-ADHD RCT with functional outcomes supports the feature | The body-doubling case: today it is T3, community-endorsed, no RCTs [BodyDoubling-HCI]. If a preregistered adult-ADHD RCT with objective task-completion outcomes reports benefit, body doubling is re-graded T2 with confidence Low ("single study") and the §6 conflict ruling is updated |
+| T3 → T2 | One adequately powered adult-ADHD RCT with functional outcomes supports the feature | The body-doubling case: today it is T3, community-endorsed, no RCTs [BodyDoubling-HCI]. If a preregistered adult-ADHD RCT with objective task-completion outcomes reports benefit, body doubling is re-graded T2 with confidence Low ("single study") and the foundation §6 conflict ruling is updated |
 | T2 → T1 | The component is isolated in adult-ADHD RCT(s) or component-level meta-analysis (the [Matsumoto-2024] standard) | If-then cues would move from [Gollwitzer-2006]-based T2 to T1 only after an adult-ADHD trial isolates them |
 | T2 → T4 | Adult-ADHD trials return null/negative for the mechanism *as deployed* | The precedent already in the registry: generic reminders sit at T4 standalone because direct trials were null ([Nordby-2022], [FOCUS-2023]) despite positive indirect SMS evidence [SMS-Meta-2023] |
 | T1 confidence revision | New meta shrinks effects (e.g., stronger active-control comparisons, per [Knouse-2017] and [Nasri-2023]) | Tier may hold while confidence drops and copy softens; the change is still logged and propagated |
 
-Single positive studies promote **one tier maximum**. T1 requires the tier definition in foundation §3 to be met on its face — no enthusiasm shortcuts. New citation keys enter §4 in the registry's format (key, study, finding, tier) via §1's qualification bar.
+Single positive studies promote **one tier maximum**. T1 requires the tier definition in foundation §3 to be met on its face — no enthusiasm shortcuts. New citation keys enter foundation §4 in the registry's format (key, study, finding, tier) via §1's qualification bar.
 
 **Changelog rules for `00-evidence-foundation.md`:**
 

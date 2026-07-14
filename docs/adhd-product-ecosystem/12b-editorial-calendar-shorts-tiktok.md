@@ -173,4 +173,77 @@ Recurring micro-series: **Externalize It [EF]** · **Money Mechanics [MO]** · *
 137. Setup screens — why we ask three questions, not thirty [DF|T2]
 138. Decision Diet #9: recurring decisions get rules; one-offs get timers [DF|T2]
 
-<!-- CONT-2 -->
+### OR — Organization (139–156)
+
+139. Capture Everything #1: the Inbox — nothing requires filing at capture time [OR|T2]
+140. Organisational strategies doubled response odds in the component meta-analysis [OR|T1]
+141. Capture Everything #2: phone capture in three seconds, demoed in real time [OR|T2]
+142. "Organize later" is a feature — the weekly filing pass, shown [OR|T1]
+143. Capture Everything #3: one inbox, not six — consolidating capture points [OR|T2]
+144. The two-minute triage — today, someday, trash [OR|T1]
+145. Capture Everything #4: voice capture while driving — prospective memory, offloaded [OR|T2]
+146. Piles versus systems — retrieval matters more than tidiness [OR|T2]
+147. Capture Everything #5: the someday list that stops idea-hoarding inside projects [OR|T2]
+148. Digital declutter demo — archiving everything, deleting nothing [OR|T2]
+149. Capture Everything #6: email-to-inbox forwarding — one place to look [OR|T2]
+150. Checklists inside workflows — T1 in packages, honest about standalone use [OR|T1]
+151. Capture Everything #7: photograph paperwork before it vanishes [OR|T2]
+152. The twice rule — if you thought it twice, capture it [OR|T2]
+153. Capture Everything #8: weekly inbox-zero-ish — empty enough, never perfect [OR|T2]
+154. Project support materials — one home per project, shown live [OR|T1]
+155. Capture Everything #9: capturing commitments you made out loud in conversation [OR|T2]
+156. The retrieval test — can you find it in ten seconds? [OR|T2]
+
+### PW — Product Walkthroughs (157–178)
+
+157. Two-Minute Build #1: Anchor Daily Board from a blank Notion page [PW|T1]
+158. Evidence Notes on every feature — the honesty layer, shown on screen [PW|T2]
+159. Two-Minute Build #2: setting up the Inbox capture shortcut [PW|T2]
+160. What Comeback Mode does the day you return — full click-through [PW|T2]
+161. Two-Minute Build #3: Weekly Reset template tour, all seven prompts [PW|T1]
+162. Anchor Money System paycheck flow — every screen, no jump cuts [PW|T2]
+163. Two-Minute Build #4: Routines with momentum metrics, never streaks [PW|T2]
+164. Why onboarding asks three questions — decision-load design made visible [PW|T2]
+165. Two-Minute Build #5: Home Base shared chores with a partner [PW|T2]
+166. The First Action Kit unboxed — exactly what's in the free download [PW|T1]
+167. Two-Minute Build #6: the bill dashboard with externalized due dates [PW|T2]
+168. Speedrun — capturing ten stray thoughts into the Inbox [PW|T2]
+169. Two-Minute Build #7: the archive-not-delete backlog sweep [PW|T2]
+170. What we deliberately left out of Anchor — and the evidence why [PW|T4]
+171. Two-Minute Build #8: the daily shutdown checklist on the Daily Board [PW|T2]
+172. Template versus your setup — three user configurations compared honestly [PW|T2]
+173. Two-Minute Build #9: turning a capture into a committed task [PW|T1]
+174. Time-in-tool should trend down — our anti-engagement dashboard, explained [PW|T2]
+175. Two-Minute Build #10: one cue, one pre-decided action, set up live [PW|T2]
+176. Anchor Lab explained — membership as a research panel, not a paywall [PW|T2]
+177. Two-Minute Build #11: the relapse-prevention page you fill in while well [PW|T1]
+178. Every claim on our sales page, tier-labeled on screen [PW|T2]
+
+### RE — Research Explanations (179–200)
+
+179. 60-Second Evidence Check #1: [Safren-2010] — the CBT modules that moved clinician ratings [RE|T1]
+180. 60-Second Evidence Check #2: [Solanto-2010] — organization and time-management group, response OR 5.41 [RE|T1]
+181. 60-Second Evidence Check #3: [Nordby-2022] — SMS reminders didn't move completion [RE|T4]
+182. 60-Second Evidence Check #4: [Gollwitzer-2006] — if-then plans, d = 0.65 [RE|T2]
+183. 60-Second Evidence Check #5: [Kenter-2023] — d = 0.70, yet 29% finished [RE|T1]
+184. 60-Second Evidence Check #6: [Stern-2016] and [Elbe-2023] — brain training's null story [RE|T4]
+185. 60-Second Evidence Check #7: [attexis-2026] — self-guided digital CBT, d = 0.85, caveats included [RE|T1]
+186. 60-Second Evidence Check #8: [Lally-2010] — 66 days median; one miss forgiven [RE|T2]
+187. 60-Second Evidence Check #9: [IyengarLepper-2000] — 24 jams, one-tenth the purchases [RE|T2]
+188. 60-Second Evidence Check #10: [Pasarelu-2020] — 109 ADHD apps, zero proof of effectiveness [RE|T4]
+189. 60-Second Evidence Check #11: [Inflow-2026] — inattention improved; functional impairment didn't [RE|T1]
+190. 60-Second Evidence Check #12: [Bangma-2019] — the documented ADHD money gap [RE|T2]
+191. 60-Second Evidence Check #13: [NimmoSmith-2020] — neurofeedback versus sham, no difference [RE|T4]
+192. 60-Second Evidence Check #14: [KimCastelli-2021] — gamification's decay curve over time [RE|T2]
+193. 60-Second Evidence Check #15: [Offloading-2025] — external reminders help prospective memory most [RE|T2]
+194. 60-Second Evidence Check #16: [Matsumoto-2024] — which CBT components pull the weight [RE|T1]
+195. 60-Second Evidence Check #17: [FOCUS-2023] — liked, adopted, rated well; primary outcome null [RE|T4]
+196. 60-Second Evidence Check #18: [Singh-2024] — habits take two to five months [RE|T2]
+197. 60-Second Evidence Check #19: [Zhang-2018] — mindfulness looks helpful, evidence stays shaky [RE|T2]
+198. 60-Second Evidence Check #20: [LivingSMART-2015] — coached phone structuring, 33% versus 0% improved [RE|T1]
+199. 60-Second Evidence Check #21: [Selaskowski-2023] — chatbot no better than a conventional app [RE|T3]
+200. 60-Second Evidence Check #22: [LopezCampos-2025] — the umbrella review that prescribes humility [RE|T2]
+
+---
+
+<!-- CONT-3 -->
