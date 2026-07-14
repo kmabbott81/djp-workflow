@@ -73,7 +73,7 @@ Columns: gate ([MUST]/[SHOULD]) · the yes/no question · one-line pass criterio
 | I1 | [MUST] | Does this improve task initiation — is the first action ≤2 minutes and pre-decided? | A new user can see and complete a concrete first action within ~2 minutes without making a plan first | Law 2 · [Gollwitzer-2006] (if-then plans d = 0.65); [Safren-2010] |
 | I2 | [MUST] | Does every screen resolve to one next action? | Each screen has exactly one clearly-primary "do this now" — not a menu of equally weighted possibilities | Law 2 · [Safren-2010], [Solanto-2010] |
 | I3 | [SHOULD] | Is the next action the most visually prominent thing? | The next action outweighs status displays, stats, and navigation in size/contrast | Law 2 · house rule operationalizing [Safren-2010] |
-| I4 | [SHOULD] | Are tasks decomposable into first action → next action → done criteria? | The task structure offers (not demands) breakdown fields, and examples model them | Law 2 · [Matsumoto-2024] (problem-solving iSMD 0.42), [Safren-2010] |
+| I4 | [SHOULD] | Are tasks decomposable into first action → next action → done criteria? | The task structure offers (not demands) breakdown fields, and examples model them | Law 2 · [Matsumoto-2024] (problem-solving, incremental SMD 0.42), [Safren-2010] |
 
 ### 2.4 Memory
 
@@ -138,6 +138,16 @@ Columns: gate ([MUST]/[SHOULD]) · the yes/no question · one-line pass criterio
 | H4 | [SHOULD] | Are all numbers real? | Every number shown to the user comes from their own data or a cited §4 source — never an invented benchmark or fabricated example presented as typical | Law 10 · prime directive §0 |
 
 **Tally: 15 [MUST] items, 23 [SHOULD] items.**
+
+### 2.11 Reading the checklist per artifact type
+
+| Artifact | "Screen" means | Typical N-A items (justify in ship log) | Watch especially |
+|---|---|---|---|
+| App / Notion view | One view or page state | — | C1–C3, R1–R2, A1 |
+| Spreadsheet tab | One tab, top-left screenful | C3 (if single-file), T3 | M1 (cross-tab memory), R2 (manual backfill) |
+| Printable | One printed page | M3, F2, R1 (paper can't auto-trigger — pass = printed Comeback instructions exist) | A5 (B&W legibility), E2 |
+| Email | Content above first scroll | C1–C3, A1 | I2 (one link, one act), F2, H1–H4 |
+| Listing / sales page | First screenful before scroll | C1–C3, R1–R2 | D2, E1, H1–H4 and the Part 13 rules |
 
 ---
 

@@ -91,6 +91,14 @@ We serve both, deliberately:
 - Support replies never speculate about whether someone "really has" ADHD, and always leave the door to professional care open.
 - Evidence Notes use one tier language for everyone; there is no diagnosed-only feature or claim.
 
+### 2.4 Where the personas meet the ladder
+
+- **Maya** typically enters at Daily Board Lite or goes straight to the Anchor Planner; Anchor Life OS only if she genuinely wants integration (the sales page will tell her if she does not); Anchor Lab when follow-up and other humans are the missing ingredient.
+- **Sam** enters at the Anchor Money System — usually the Google Sheets edition, because he already trusts spreadsheets. The cue-pairing setup step is his make-or-break moment, and onboarding treats it that way.
+- **Jordan** starts free with the First Action Kit and adds the Weekly Reset Kit at a student-budget price; timer widgets stay optional and honestly labeled (T3).
+
+One pricing ethic sits under all three paths: the ladder never requires the flagship for a complete experience. Every rung is whole (02 §1), because selling incompleteness to people with follow-through difficulties would be extraction, not design.
+
 ---
 
 ## 3. Who it does NOT serve
@@ -233,6 +241,10 @@ That promise is entirely within our control: provenance, labeling, and forgivene
 - To Jordan: "Deadlines broken into first actions on a calendar — that part is tested — plus timers if you want them, labeled experimental because that is what they are."
 
 **How we speak about competitors.** We never name-and-shame individual products. We state the field fact — 109 ADHD apps, none with published proof of effectiveness [Pasarelu-2020] — and then the standard we hold ourselves to instead. The contrast does the work; contempt would cost us the voice that makes the contrast credible.
+
+**The sentence that appears on every listing, verbatim:**
+
+> "Anchor products are self-help organization tools, not medical devices or therapy. They do not diagnose or treat ADHD, and they do not replace diagnosis, medication, or professional care."
 
 > **Evidence:** Language rules per 00 §10; refusals grounded in 00 §5 and [Pasarelu-2020], [Kenter-2023]; the permitted claim uses the sanctioned T1 framing ([Solanto-2010], [Safren-2010], [Matsumoto-2024]) · **Confidence:** High · **Rationale:** in a market of unprovable promises, the defensible position is provenance plus honesty plus forgiveness. · **Expected outcome:** slower but compounding trust; reviews that cite being leveled with as the reason to buy. · **Downside:** hype outsells honesty in the short term, and refused promises hand competitors easy copy. · **Difficulty:** Low · **Priority:** High
 

@@ -167,6 +167,23 @@ What the static media give back is also real, and we say that too: no notificati
 
 Three cues maximum at setup. A wall of notifications is how cue blindness starts; users can add more later, one at a time, each bound to one action.
 
+**Format ceilings, law by law.** The same honesty, compressed: what each format can deliver per Design Law (✓ = deliverable as designed; partial = deliverable with the shipped workaround; — = not deliverable in this medium, and disclosed).
+
+| Law (00 §7) | Printables | Spreadsheets | Notion | Email | Anchor App (future) |
+|---|---|---|---|---|---|
+| 1 Externalize, don't educate | ✓ | ✓ | ✓ | partial | ✓ |
+| 2 One next action | ✓ | ✓ | ✓ | ✓ (one act per send) | ✓ |
+| 3 Reduce decisions | ✓ (pre-printed) | ✓ (pre-filled) | ✓ (locked defaults) | ✓ | ✓ |
+| 4 Capture first | partial (pocket card) | — (clumsy on mobile) | ✓ (two-tap mobile Inbox) | — | ✓ |
+| 5 Cue → pre-decided action | — (needs pairing) | — (needs pairing) | partial (paired phone reminders) | partial (scheduled sends) | ✓ |
+| 6 Practice loops and rituals | ✓ (ritual scripts) | ✓ | ✓ (guided checklist) | ✓ (cadence) | ✓ (auto-prepared) |
+| 7 Forgiveness by design | ✓ (nothing to reset) | ✓ | partial (manual Comeback Mode) | ✓ (comeback copy) | ✓ (automated) |
+| 8 Automate the automatable | — | partial (formulas) | partial (recurring templates) | — | ✓ |
+| 9 Time made visible | ✓ (planning on the page) | partial | ✓ (calendar workflows) | — | ✓ |
+| 10 Measure function | — (self-log) | partial (self-log in place) | partial (self-log) | — | ✓ (consented) |
+
+No cell in this table may be contradicted by marketing copy. When a listing and this table disagree, the listing is wrong.
+
 > **Evidence:** Medium limitations per 00 §5 (no head-to-head trials; no isolated-feature evidence); reminder-alone null [Nordby-2022]; engagement-harm signals [LopezCampos-2025]; active-ingredient framing from the T1 package trials ([Solanto-2010], [Safren-2010]) · **Confidence:** High that this is the honest description · **Rationale:** selling structure while disclosing that structure-plus-ritual, not the artifact, is the active ingredient is the only position consistent with 00 §10. · **Expected outcome:** buyers with calibrated expectations; reviews that survive scrutiny; a claims ladder we can climb with Part 14 data. · **Downside:** the disclosure hands skeptics a quote and competitors a contrast; conversion may suffer against "clinically proven" liars. · **Difficulty:** Low to write, High to sustain under revenue pressure · **Priority:** High
 
 ---
@@ -245,6 +262,7 @@ Numeric thresholds are business judgments — stated so we can be held to them, 
 **Entry criteria:** documents 00–02 approved; Part 13 claims checklist applied to every listing and page; Evidence Notes written per product; crisis signposting live in all money-product onboarding (01 §3.2).
 **Exit criteria (all):** ≥100 paid customers across Phase-1 products; refund rate <5%; ≥30 structured feedback responses; ≥20 outcomes-panel volunteers; course-completion proxy ≥25%; support load sustainable at <5 hours/week.
 **Kill / pivot trigger:** <30 total sales in the first 90 days with the honest funnel fully live → stop building, re-examine audience and positioning. Low sales with high course completion means fix the offer; high sales with silent users means fix onboarding.
+**Primary risk:** four products at once dilutes onboarding quality — the WIP limit above exists for this phase most of all.
 
 > **Evidence:** Product contents T1-derived as mapped in §1; validation gating is business rationale · **Confidence:** Moderate · **Rationale:** validate the ritual products (Weekly Reset, Daily Board) and the money system — the highest-need, highest-evidence-tension offer — before building the expensive integrated tiers. · **Expected outcome:** demand proof per workflow plus a seeded panel. · **Downside:** four products at once is already a lot for one creator; anything more is scope failure. · **Difficulty:** Medium · **Priority:** High
 
@@ -253,6 +271,7 @@ Numeric thresholds are business judgments — stated so we can be held to them, 
 **Ships:** Anchor Planner; Anchor Life OS; Everything Bundle; upgrade paths (prior purchases credited or discounted — buyers must never feel punished for buying early, Law 7 as pricing policy); expanded onboarding sequences.
 **Entry criteria:** Phase 1 exit met; one full product-update cycle shipped (proves maintenance is real before selling "updates included").
 **Exit criteria:** ≥150 combined Anchor Life OS + Everything Bundle sales; bundle attach ≥20% among flagship-intent buyers; refund rate still <5% at the higher prices; week-12 voluntary check-in shows >40% of panel buyers still using any core workflow (the 00 §11 target).
+**Primary risk:** Anchor Life OS complexity creep — the flagship is where Law 3 goes to die unless the Start Here layer is defended in every update.
 
 > **Evidence:** Integration rationale T3 (§1.13); the week-12 gate operationalizes 00 §11 against the field's decay benchmarks ([Kenter-2023] 29%; [FOCUS-2023] month-3 decline) · **Confidence:** Moderate · **Rationale:** sell the integrated promise only after the parts have proven themselves separately. · **Expected outcome:** a flagship whose buyers were mostly warmed by working minis. · **Downside:** Life OS build and maintenance is the largest fixed cost in the template business. · **Difficulty:** High · **Priority:** High
 
@@ -261,6 +280,7 @@ Numeric thresholds are business judgments — stated so we can be held to them, 
 **Ships:** Anchor Lab membership ($8/mo or $79/yr); monthly co-working sessions labeled T3 body doubling; formalized outcomes panel with consent and privacy design per Part 14; first public outcomes report.
 **Entry criteria:** ≥500 customers or ≥1,500 engaged email subscribers (community needs density to survive); hosting and moderation capacity honestly budgeted; panel instrumentation and consent flow built.
 **Exit criteria:** panel n ≥ 100; member 3-month retention ≥60% (target, ours); first Comeback Rate and Weekly Reset completion figures published — whatever they say. Publishing an unflattering number is a pass, not a fail; hiding it is the only fail.
+**Primary risk:** a community that dies quietly damages trust more than never launching one — entry density thresholds are not optional.
 
 > **Evidence:** Follow-up structure [NICE-NG87]; body doubling T3 [BodyDoubling-HCI], labeled; panel design per Part 14; retention benchmarks to beat: [Kenter-2023], [FOCUS-2023] · **Confidence:** Low to Moderate · **Rationale:** recurring human structure plus measurement is the bridge between template business and evidence-generating product company. · **Expected outcome:** a living panel and the first real numbers behind the 00 §11 metrics. · **Downside:** memberships create forever-obligations; a dead community damages the brand more than no community. · **Difficulty:** Medium · **Priority:** Medium
 
@@ -272,6 +292,7 @@ Numeric thresholds are business judgments — stated so we can be held to them, 
 3. Security, privacy, and support capacity for bank-feed data exists — this is a different liability class than templates.
 4. The wellness/organization regulatory line (§5) is confirmed with counsel.
 **Exit criteria:** owned by Part 14 — a beta cohort with functional outcomes before any public launch.
+**Primary risk:** SaaS envy — building the app because competitors have one, rather than because the gate opened. The gate is the defense.
 
 > **Evidence:** Gate logic per Law 10 and 00 §11; the constraint being tested derives from [Nordby-2022]/[Gollwitzer-2006] (cues work only bound to pre-decided actions) and [Jachimowicz-2019]/[ThalerBenartzi-2004] (automation rationale, with the causal caveat) · **Confidence:** Low until the data exists — that is the point · **Rationale:** the app is the most expensive way to be wrong; the panel makes being wrong cheap first. · **Expected outcome:** a build/no-build decision made on our own users' function, not on SaaS envy. · **Downside:** the gate may stay closed for years; that outcome must remain acceptable. · **Difficulty:** High · **Priority:** Low now
 
