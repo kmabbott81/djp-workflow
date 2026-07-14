@@ -71,8 +71,14 @@ Place on every sales page, listing, About page, and product start page. Do not r
 | "Body doubling — proven to work for ADHD" | Survey/HCI evidence only; no RCTs [BodyDoubling-HCI] | "Body doubling is experimental: community-endorsed, mechanism-plausible, unproven. Try it; keep it only if it helps." |
 | Before/after money screenshots presented as results | Implies typicality we cannot substantiate; money-promise stakes [Swedish-Registry] | No money before/afters in marketing, period. Customer money stories appear only under the testimonial policy (§6), without numbers in ads. |
 | "Only 3 left!" / countdown scarcity on digital goods | False urgency aimed at an impulse-vulnerable audience [Bangma-2019], [Einarsson-2024] | Real deadlines only, stated plainly (§5) |
+| "Loved by 10,000 users" as proof it works | Engagement and satisfaction are not outcomes — an app can be adopted and liked while its primary outcome stays null [FOCUS-2023] | Report reach as reach ("10,000 downloads") only when true, never welded to an efficacy implication |
+| "Works when nothing else has" / "the last planner you'll ever need" | Unfalsifiable superiority; no head-to-head evidence exists for any tool in this category (foundation §5) | "Different by design, and honest about what's tested — here's the list." |
+| "As effective as coaching/therapy" | No comparison data for our products; even strong digital programs weren't superior to active alternatives [Nasri-2023] | Never compare to care. Repeat the disclosure block instead. |
+| "Doctor-designed / clinician-approved" (as a halo) | Banned unless literally true, named, and the relationship disclosed (§6.7); an advisory review is not an endorsement of efficacy | If true: "Reviewed by [name], [credential], who advises us — see our advisory disclosures." |
 
-**Absence-of-evidence rule:** if a claim is not traceable to a §4 key at the tier the copy implies, it is banned by default — the burden is on the copy to prove itself to the reviewer (§7), never on the reviewer to prove it wrong.
+**Images count as claims.** A rising-savings chart implies a savings outcome; brain imagery implies a neurological effect; a serene before/after desk implies a life outcome. Every image on a sales surface passes the same review as the words next to it (§7).
+
+**Absence-of-evidence rule:** if a claim is not traceable to a foundation §4 key at the tier the copy implies, it is banned by default — the burden is on the copy to prove itself to the reviewer (§7), never on the reviewer to prove it wrong.
 
 ---
 

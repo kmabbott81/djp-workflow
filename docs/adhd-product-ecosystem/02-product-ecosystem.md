@@ -344,4 +344,13 @@ The Anchor App is the only tier where the two medium-limited laws — Law 5 (cue
 
 ---
 
+**Ecosystem invariants (carried into every later part).** Wherever later documents elaborate a component, four things may not change without a ruling at the 00 §6 level:
+
+1. Every product is complete at its own rung; no rung sells incompleteness.
+2. Every listing carries Evidence Notes, and no copy may contradict the format-ceilings table in §2.
+3. Membership never gates purchased function; bought tools work forever without a subscription.
+4. Claims move up only through measured 00 §11 outcomes — never through better adjectives.
+
+---
+
 *Previous: [01 — Product Vision](01-product-vision.md) · Next: 03 — forthcoming · Full index in [README](README.md).*
