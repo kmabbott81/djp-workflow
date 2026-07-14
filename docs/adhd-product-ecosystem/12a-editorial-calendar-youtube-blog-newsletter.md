@@ -372,7 +372,82 @@ Format: subject line — core concept; **act:** the one tiny action (≤8 words)
 58. "Waiting mode, named" — community term, labeled honestly; act: book one small pre-appointment task [TB|T3]
 59. "Time-log one day" — calibration practice, unproven; act: log today at three checkpoints [TB|T3]
 60. "Schedule the transition" — buffers between blocks; act: add five-minute buffers between blocks [TB|T2]
-<!--CHUNK7-->
+### DF — Decision fatigue
+
+61. "Six jams beat twenty-four" — choice overload; act: remove options from one choice [DF|T2]
+62. "Decide once" — standing defaults; act: make one recurring choice automatic [DF|T2]
+63. "Templates are pre-made decisions" — structure over blank pages; act: template one repeating task [DF|T2]
+64. "Pick tomorrow's opener tonight" — pre-deciding; act: choose tomorrow's first task now [DF|T2]
+65. "Hide the advanced settings" — progressive disclosure, experimental; act: simplify one screen or shelf [DF|T3]
+66. "Capsule one category" — fewer daily choices; act: pre-pick tomorrow's outfit tonight [DF|T3]
+67. "The two-option rule" — our heuristic, labeled; act: reduce one decision to two options [DF|T3]
+68. "AI won't decide for you" — null chatbot superiority; act: keep your checklist beside the bot [DF|T4-debunk]
+69. "Checklists spend fewer decisions" — workflow structure; act: turn one routine into a checklist [DF|T2]
+70. "Batch the small stuff" — grouping, mechanism-plausible; act: batch replies into one slot [DF|T3]
+
+### OR — Organization
+
+71. "Organization doubled response odds" — component evidence; act: do one five-minute organizing rep [OR|T1]
+72. "Capture now, file never" — inbox principle; act: dump three loose thoughts into inbox [OR|T2]
+73. "Your system died of maintenance" — abandonment evidence; act: delete one high-upkeep list [OR|T1]
+74. "One inbox, not five" — consolidation rationale; act: merge two capture spots into one [OR|T3]
+75. "The reset keeps it alive" — review ritual; act: empty your inbox for ten minutes [OR|T1]
+76. "Findable beats filed" — retrieval cues; act: rename one note for future-you [OR|T2]
+77. "Minimalism isn't medicine" — mechanism ≠ cure; act: keep the stuff; add one home [OR|T4-debunk]
+78. "Borrow a coach's eyes" — accountability evidence, caveats; act: ask one person to check Friday [OR|T2]
+79. "Shelf, label, done" — environmental structuring; act: label one container today [OR|T2]
+80. "Second brains need first actions" — notes → next steps; act: add a next-action to one note [OR|T2]
+
+### PW — Product walkthroughs
+
+81. "Meet the Daily Board" — Now/Next/Later logic; act: try Now/Next/Later on paper [PW|T1]
+82. "The Inbox: nothing gets filed" — zero-friction capture; act: capture five things, file nothing [PW|T2]
+83. "Payday, step by step" — Money System workflow, no promises; act: list bills due before next payday [PW|T2]
+84. "Your first Weekly Reset" — the protected ritual; act: run steps one and two only [PW|T1]
+85. "Comeback Mode exists" — lapse recovery, no guilt; act: archive your backlog; restart today [PW|T2]
+86. "Momentum, not streaks" — Anchor Routines metric; act: track one habit's weekly count [PW|T2]
+87. "Home Base for households" — shared checklists; act: share one checklist with someone [PW|T2]
+88. "Why every feature shows its evidence" — Evidence Notes; act: read one Evidence Note label [PW|T2]
+89. "The Ten Laws on one page" — our design checklist; act: check one tool against Law 7 [PW|T2]
+90. "What we measured this quarter" — function metrics transparency; act: reply with your one metric [PW|T1]
+
+### RE — Research explanations
+
+91. "OR 5.41: the Solanto trial" — [Solanto-2010] MCT results; act: plan tomorrow, MCT-style, tonight [RE|T1]
+92. "The 12-session blueprint" — [Safren-2010] CBT modules; act: start a calendar+list, today only [RE|T1]
+93. "14 trials, graded honestly" — [Cochrane-2018] certainty grades; act: share this issue with one skeptic [RE|T1]
+94. "d = 0.85, with caveats" — [attexis-2026] read critically; act: write one caveat beside one claim [RE|T1]
+95. "The 29% problem" — [Kenter-2023] adherence lesson; act: shrink your system by one module [RE|T1]
+96. "Organization mediated the gains" — [Inflow-2026] OTMP mediation; act: do one small OTMP rep [RE|T1]
+97. "Work outcomes: 0.56 vs 0.19" — [Lauder-2024] comparison; act: pick one work-hour scaffold [RE|T1]
+98. "Brain training flunked" — [Stern-2016] & [Elbe-2023] nulls; act: cancel one 'training' subscription [RE|T4-debunk]
+99. "Sham tied neurofeedback" — [NimmoSmith-2020]; act: ask vendors for sham-controlled trials [RE|T4-debunk]
+100. "Low quality, real harms" — [LopezCampos-2025] umbrella review; act: audit one app for compulsion hooks [RE|T1]
+
+---
+
+## Coverage check — 10 themes × 3 platforms
+
+| Theme | YouTube | Blog | Newsletter | Total |
+|---|---|---|---|---|
+| EF — Executive function | 10 | 10 | 10 | 30 |
+| MO — Money | 10 | 10 | 10 | 30 |
+| PL — Planning | 10 | 10 | 10 | 30 |
+| HO — Home management | 10 | 10 | 10 | 30 |
+| HA — Habits | 10 | 10 | 10 | 30 |
+| TB — Time blindness | 10 | 10 | 10 | 30 |
+| DF — Decision fatigue | 10 | 10 | 10 | 30 |
+| OR — Organization | 10 | 10 | 10 | 30 |
+| PW — Product walkthroughs | 10 | 10 | 10 | 30 |
+| RE — Research explanations | 10 | 10 | 10 | 30 |
+| **Total** | **100** | **100** | **100** | **300** |
+
+Cornerstone blog posts: 20 (★ — two per theme). Every RE idea names a §4 citation key; T4 concepts appear only as labeled debunks; no outcome promises anywhere.
+
+---
+
+*Parent: [12 — Editorial Calendar](12-editorial-calendar.md) · Foundation: [00 — Evidence Foundation](00-evidence-foundation.md) · Full index: [README](README.md)*
+
 
 
 
