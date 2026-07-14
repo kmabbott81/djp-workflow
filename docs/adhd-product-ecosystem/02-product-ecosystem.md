@@ -297,6 +297,24 @@ The Anchor App is the only tier where the two medium-limited laws — Law 5 (cue
 - **Engagement-maximizing mechanics — governance refusal.** Feeds, variable rewards, and compulsion loops are where the umbrella review's adverse-effect signals concentrate [LopezCampos-2025]; our success metric is function per minute, not minutes (Law 10).
 - **A chatbot sold as the active ingredient — T3 ceiling.** Chatbot delivery showed no superiority over a conventional app [Selaskowski-2023]; findings elsewhere are mixed and preliminary [Jang-2021]. At most, an optional T3-labeled interface layer — never a headline.
 
+**Likely build order (sketch, not commitment).**
+
+- **v0.1 — Cues and the board.** Anchor Daily Board + The Inbox + the Law 5 cue engine + Comeback Mode automation: the smallest build that delivers what templates cannot.
+- **v0.2 — The ritual.** Auto-prepared Weekly Reset; the consented 00 §11 measurement view (the user's own scoreboard, not ours).
+- **v0.3 — Money, deliberately last.** Bank feeds and allocation prompts arrive only after the Phase 4 security, privacy, and support bar is met. The highest-value surface is also the highest-risk one; it ships when trust infrastructure exists, not first.
+
+**What would make us not build it (also a sketch, also binding in spirit).**
+
+- Panel data shows cue-pairing users do no better on metrics 1–5 — the constraint hypothesis fails, and the app loses its reason to exist.
+- Phase 3 economics cannot fund sustained maintenance without engagement-style monetization we refuse (Law 10).
+- The security and privacy bar for bank data proves unmeetable at our size — then v0.3 dies even if v0.1 lives.
+
+**Open questions handed to Part 14.**
+
+- Which single 00 §11 metric moves first for cue-paired template users? That metric anchors the app's v0.1 scope.
+- Can Comeback Rate be measured in templates well enough to establish the pre-app baseline the app must beat?
+- What consent design lets panel and app data stay separate without doubling participant burden?
+
 **The regulatory and ethical line.** The Anchor App remains a general wellness / self-help organization product: no diagnosis, no screening that implies diagnosis, no treatment or symptom-reduction claims, no medication features — the full 00 §10 discipline at app-store scale. If we ever want outcome claims, there is exactly one path: the Part 14 clinical-validation route, pre-registered, published whatever the result. Bank data handling: read-only scopes, minimum necessary access, delete-everything on demand, and no monetization of financial data, ever. Harm monitoring ships at launch (adverse-effect check-ins, notification-load review) because the field's own literature warns us [LopezCampos-2025]. And the wall stands: the voluntary outcomes panel and app telemetry stay separate, each under its own consent.
 
 > **Evidence:** Additions: [Jachimowicz-2019], [ThalerBenartzi-2004] (caveated), [Gollwitzer-2006] under [Nordby-2022]/[FOCUS-2023] constraints, [Lally-2010], [Solanto-2010]; refusals: [Stern-2016], [Elbe-2023], [NimmoSmith-2020], [KimCastelli-2021], [LopezCampos-2025], [Selaskowski-2023] · **Confidence:** Moderate for the design logic; Low for any outcome until Part 14 measures it · **Rationale:** the app exists to deliver the two laws templates cannot, and to refuse the features the evidence has already buried. · **Expected outcome:** the first tool in this category that can show its scoreboard. · **Downside:** slower and more expensive than hype-driven competitors; bank-feed liability is real and permanent. · **Difficulty:** High · **Priority:** Gated (Phase 4)
