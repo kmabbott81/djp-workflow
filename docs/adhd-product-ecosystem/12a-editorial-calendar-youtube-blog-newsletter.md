@@ -145,6 +145,81 @@
 100. Evidence Check: [LopezCampos-2025] — umbrella review: low-quality field, real adverse-effect signals [RE|T1]
 
 ---
-<!--CHUNK4-->
+## Section 2 — Blog: 100 article ideas
+
+Format: title — target intent + keyword phrase (no invented volumes) + tag. **★ = cornerstone/pillar post (exactly 20).**
+
+**Distribution:**
+
+| EF | MO | PL | HO | HA | TB | DF | OR | PW | RE | Total |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 10 | 10 | 10 | 10 | 10 | 10 | 10 | 10 | 10 | 10 | 100 |
+
+### EF — Executive function
+
+1. ★ What Is Executive Function? A Plain-Language Guide for Adults With ADHD — kw: "what is executive function adhd" (informational) [EF|T1]
+2. It's Not Laziness: What Executive Dysfunction Research Actually Shows — kw: "executive dysfunction vs laziness" (informational) [EF|T1]
+3. Cognitive Offloading: The Evidence for Writing Everything Down — kw: "cognitive offloading" (informational) [EF|T2]
+4. How to Break Down Tasks the Way CBT Trials Teach It — kw: "how to break down tasks adhd" (informational) [EF|T1]
+5. The "Write It Down, Return to Task" Technique, Explained — kw: "adhd distraction management" (informational) [EF|T1]
+6. Does Brain Training Improve Executive Function? What Trials Found — kw: "does brain training work for adhd" (informational) [EF|T4-debunk]
+7. Prospective Memory: Why You Forget to Do, Not to Know — kw: "adhd prospective memory" (informational) [EF|T2]
+8. Support at the Point of Performance: A Design Principle for ADHD Tools — kw: "point of performance adhd" (informational) [EF|T1]
+9. Problem-Solving Training for ADHD: The Component Evidence — kw: "problem solving therapy adhd" (informational) [EF|T1]
+10. ★ Why Multi-Component Systems Beat Single Hacks — kw: "adhd productivity system" (informational) [EF|T1]
+
+### MO — Money
+
+11. ★ ADHD and Money: What the Research Documents — kw: "adhd and money problems" (informational) [MO|T1]
+12. ADHD Debt and Savings: Registry and Longitudinal Findings — kw: "adhd debt statistics" (informational) [MO|T1]
+13. Delay Discounting: Why Future Money Feels Smaller With ADHD — kw: "adhd impulse spending psychology" (informational) [MO|T1]
+14. ★ Do Budgeting Apps Work for ADHD? An Honest Evidence Review — kw: "best budgeting app for adhd" (commercial-investigation) [MO|T4-debunk]
+15. Why Financial Literacy Courses Barely Change Behavior — kw: "does financial literacy work" (informational) [MO|T4-debunk]
+16. Automatic Savings: The Save More Tomorrow Evidence, With Caveats — kw: "automatic savings psychology" (informational) [MO|T2]
+17. The 24-Hour Purchase Cool-Down: Experimental, Honestly Labeled — kw: "impulse buying cool down" (informational) [MO|T3]
+18. How to Remember Bills: If-Then Plans for Money Admin — kw: "how to remember to pay bills adhd" (informational) [MO|T2]
+19. The "ADHD Tax": Documented Costs and Practical Containment — kw: "adhd tax" (informational) [MO|T1]
+20. Just-in-Time Money Guidance Beats Courses: The Evidence — kw: "financial education effectiveness" (informational) [MO|T2]
+
+### PL — Planning
+
+21. ★ The Calendar + Task List System From ADHD CBT Trials — kw: "adhd planning system" (informational) [PL|T1]
+22. ★ The Weekly Review for ADHD: Evidence and a 15-Minute Method — kw: "weekly review adhd" (informational) [PL|T1]
+23. Implementation Intentions: If-Then Plans With a d=0.65 Evidence Base — kw: "implementation intentions" (informational) [PL|T2]
+24. How Many Tasks Per Day? Prioritization Lessons From MCT — kw: "how many tasks per day adhd" (informational) [PL|T1]
+25. Digital vs Paper Planners for ADHD: No Head-to-Head Trial Exists — kw: "digital vs paper planner adhd" (commercial-investigation) [PL|T4-debunk]
+26. Backward Planning: Working From the Deadline to Today — kw: "backward planning method" (informational) [PL|T1]
+27. Why Reminders Alone Don't Change Behavior — kw: "adhd reminders don't work" (informational) [PL|T4-debunk]
+28. Getting Unstuck: A Problem-Solving Structure for Stalled Projects — kw: "how to get unstuck adhd" (informational) [PL|T1]
+29. Planning an ADHD-Friendly Week: A Structured Walkthrough — kw: "adhd weekly planning" (informational) [PL|T1]
+30. What Is Metacognitive Therapy for ADHD? — kw: "metacognitive therapy adhd" (informational) [PL|T1]
+
+### HO — Home management
+
+31. ★ ADHD Home Organization: What OT Consensus Recommends — kw: "adhd home organization" (informational) [HO|T2]
+32. ★ A Chore System for ADHD Adults: Checklists, Cues, and Resets — kw: "adhd cleaning schedule" (informational) [HO|T1]
+33. The Launching Pad: Stop Losing Keys, Wallet, and Meds — kw: "always losing things adhd" (informational) [HO|T2]
+34. ADHD Meal Planning With Defaults: A Rotating Menu Method — kw: "adhd meal planning" (informational) [HO|T2]
+35. Body Doubling for Housework: Community-Endorsed, Not Yet Proven — kw: "body doubling adhd" (informational) [HO|T3]
+36. Sharing Chores Without Nagging: Cue Design for Households — kw: "sharing chores adhd relationship" (informational) [HO|T2]
+37. Point-of-Use Storage: A Mechanism-Based Home Layout — kw: "point of use storage" (informational) [HO|T3]
+38. The Weekly Home Reset: 15 Minutes for Shared Spaces — kw: "weekly home reset checklist" (informational) [HO|T2]
+39. Why Big Decluttering Sprints Don't Stick — kw: "why can't i stay organized" (informational) [HO|T1]
+40. Automating the Household: What's Worth Automating First — kw: "automate household chores" (informational) [HO|T2]
+
+### HA — Habits
+
+41. ★ How Long Does It Take to Form a Habit? 66 Days, Not 21 — kw: "how long does it take to form a habit" (informational) [HA|T2]
+42. The 21-Day Habit Myth: Its Origins and the Actual Findings — kw: "21 day habit myth" (informational) [HA|T4-debunk]
+43. Missed a Day? What Habit Research Says About Lapses — kw: "broke my habit streak" (informational) [HA|T2]
+44. Habit Tracking Without Streak Anxiety: Momentum Metrics — kw: "habit tracker without streaks" (commercial-investigation) [HA|T2]
+45. Gamification Decay: Why Points Work, Then Don't — kw: "does gamification work long term" (informational) [HA|T2]
+46. Morning Habits Form More Strongly: The Evidence — kw: "best time of day for new habits" (informational) [HA|T2]
+47. Habit Stacking: The Science Behind the Buzzword — kw: "habit stacking science" (informational) [HA|T2]
+48. ★ Building Routines With Adult ADHD: An Evidence-Honest Guide — kw: "adhd routines for adults" (informational) [HA|T2]
+49. Why Practice Predicted Improvement in ADHD Therapy Trials — kw: "adhd therapy homework" (informational) [HA|T1]
+50. Choose Your Own Habit: Self-Selection and Stickiness — kw: "how to pick a habit" (informational) [HA|T2]
+<!--CHUNK5-->
+
 
 
