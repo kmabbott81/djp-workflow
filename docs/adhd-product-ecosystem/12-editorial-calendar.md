@@ -48,6 +48,8 @@ All ten themes stay live all year (the weekly mix always spans several); the arc
 | **Nov** | MO | PW | Money season begins: gift lists, deals, list-price theater everywhere. We publish decide-once spending plans and honest product content — real discounts stated plainly, no countdown timers, no scarcity claims (§10 bans urgency theater). PW content is clearly labeled and Evidence Notes stay visible even in sale creative. |
 | **Dec** | MO | PL | Money season continues (spending peaks, year-end admin lands) plus the year-review instinct. We serve both with the Weekly-Reset-style year review and gentle January planning — skip-never-backfill applies to the calendar year too: no "December guilt audit," no "finish the year strong" pressure. |
 
+Coverage notes: MO leads three months (Feb, Nov, Dec — the real money-attention seasons); PL leads both fresh-start months (Jan, Sep). **DF is deliberately never primary**: fewer-decisions content is a supporting lens (Feb, Jul secondaries) and is embedded in every product anyway (Law 3) — a whole month of "simplify" content would itself be decision-fatiguing. Every other theme leads exactly one month.
+
 ## d) Weekly production rhythm (solo ADHD creator)
 
 **The minimum viable week is the default, not the failure mode.** The full week is a bonus achieved by batching, never by willpower. Both configurations keep the newsletter alive (11 §5: no exception smaller than a 5-line issue).
@@ -84,6 +86,14 @@ flowchart LR
 
 Compression rule from 11 §5.2 applies at every arrow: if the caveat doesn't survive the cut, the claim doesn't ship in that format.
 
+**ADHD-reality adaptations** (the rhythm above is the map, not a test to pass):
+
+- **Two-day compressed week:** when five mode-days won't happen, the minimum viable week fits in two blocks — Block 1: write + record the seed; Block 2: cut 3 short-form, schedule 5 pins from existing assets, send the newsletter. Everything else waits.
+- **One-seed WIP cap:** never two seeds in production at once. A brilliant new idea goes into the Inbox (capture first), not into this week.
+- **Energy-swap rule:** mode-days may trade places freely (design Monday, write Thursday); the only fixed point is the Friday Weekly Reset, because dating and metrics live there (Law 6).
+- **Buffer months:** July's lighter arc is the designated batch-ahead window for the Aug–Oct push; December's second half is a planned half-speed fortnight, announced to the audience as exactly that — modeling the philosophy is content.
+- **Ship at "passes the gates":** an asset that clears the accuracy gates (11 §3) ships; polish beyond that is optional. The gates are the quality bar — perfectionism is not (see 12d pin 135 for the audience version of this rule).
+
 ## e) Counts & links
 
 | File | Platforms | Ideas | Notes |
@@ -109,6 +119,13 @@ Compression rule from 11 §5.2 applies at every arrow: if the caveat doesn't sur
 | PW — Product walkthrough | 30 | 40 | 40 | 20 | 130 |
 | RE — Research explanation | 30 | 40 | 40 | 20 | 130 |
 | **Total** | **300** | **400** | **400** | **200** | **1,300** |
+
+**How the four files interlock:**
+
+- **12a is the source layer** — every 12a seed idea can be traced forward into 2–8 derivative assets via the repurposing chain (§d); when in doubt, pick the 12a idea first and let it populate the week.
+- **12b/12c are the compression layers** — their ideas are either cuts of a 12a seed or native one-concept pieces (myth-responses in 12b, save-able teaching in 12c); they never introduce a claim that has no 12a/blog home to link back to.
+- **12d is the evergreen layer** — pins outlive the week they ship in, so they point at the most durable destinations (blog posts, the printable library, First Action Kit) and get refreshed as honest variants at the quarterly audit (§f), not re-invented.
+- **Same tags everywhere** — `[THEME|Tier]` is identical across all four files, so a monthly theme filter works on the whole 1,300-idea pool at once.
 
 ## f) Quarterly content audit ritual
 

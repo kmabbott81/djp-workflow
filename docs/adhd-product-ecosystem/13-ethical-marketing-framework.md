@@ -171,6 +171,12 @@ Our buyers are, on average, more prone to impulse purchases they later regret [B
 
 7. **Money-distress signposting.** Any content touching debt or financial crisis includes a calm pointer to real help (debt-advice charities, crisis lines appropriate to the reader's region) — because of, not despite, [Swedish-Registry]. Our product is never framed as the answer to a financial emergency.
 
+**Refund copy (verbatim, reusable):**
+
+> "30 days, no questions, no forms-designed-to-tire-you-out. If this doesn't fit the way your brain works, reply to your receipt email with the word 'refund' and it's done. Keeping your money when the product didn't help would make us everything we said we weren't."
+
+**Real-deadline rule in practice.** A deadline may appear in copy only if it is already in the claims log (§7) with: what ends, the exact date/time, and who approved it. When it passes, the offer actually ends. An "extended by popular demand!" pattern is a logged exception usable at most once per year across the whole ecosystem — repeat extensions are false urgency with extra steps.
+
 ---
 
 ## 6. Testimonial policy
@@ -182,6 +188,22 @@ Our buyers are, on average, more prone to impulse purchases they later regret [B
 5. **No money numbers in ads.** A customer may say "I finally have a bill day"; ads never carry "saved $4,000" figures, per §3's before/after ban.
 6. **Placeholders always marked.** Mockups and design comps use "Example quote — illustrative, not a real customer" labels that survive into any screenshot. A placeholder that could be mistaken for a real person's endorsement never ships.
 7. **Disclose material connections.** Anything from affiliates, partners, or anyone compensated (including free products) is labeled as such.
+
+**Typicality disclaimer (verbatim, attach to any outcome-flavored testimonial):**
+
+> "One person's experience. Results vary, and we haven't run outcome studies on this product yet — see our Evidence Notes for what is and isn't tested."
+
+**Consent record (kept per testimonial):**
+
+```
+Quote (exact text approved):     ...
+Name form approved:              first name + initial / full name / anonymous
+Channels approved:               listing / email / social / ads
+Proof of purchase or Lab member: yes (reference)
+Consent date + method:           2026-07-14, email on file
+Revocation status:               active / withdrawn (date)
+Clinical-outcome screen:         passed (no symptom/treatment implications)
+```
 
 ---
 
