@@ -219,7 +219,74 @@ Format: title — target intent + keyword phrase (no invented volumes) + tag. **
 48. ★ Building Routines With Adult ADHD: An Evidence-Honest Guide — kw: "adhd routines for adults" (informational) [HA|T2]
 49. Why Practice Predicted Improvement in ADHD Therapy Trials — kw: "adhd therapy homework" (informational) [HA|T1]
 50. Choose Your Own Habit: Self-Selection and Stickiness — kw: "how to pick a habit" (informational) [HA|T2]
-<!--CHUNK5-->
+### TB — Time blindness
+
+51. ★ Time Blindness Is Real: The Measurement Research — kw: "time blindness adhd" (informational) [TB|T1]
+52. ★ Time Blindness Tools: What's Proven vs Experimental — kw: "time blindness tools" (commercial-investigation) [TB|T1]
+53. Visual Timers for Adults: The Evidence Comes From Children — kw: "visual timer adhd adults" (commercial-investigation) [TB|T3]
+54. Time-Management Training That Worked in Trials — kw: "time management training adhd" (informational) [TB|T1]
+55. Transition Alarms: Attaching a Next Action to Every Alert — kw: "adhd transitions between tasks" (informational) [TB|T2]
+56. Always Late? Estimation Deficits, Not Character Flaws — kw: "why am i always late adhd" (informational) [TB|T1]
+57. Time Boxing With ADHD: Adapting MCT Scheduling — kw: "time boxing adhd" (informational) [TB|T1]
+58. "Waiting Mode": An Honest Look at a Community Term — kw: "adhd waiting mode" (informational) [TB|T3]
+59. Making Time Visible at Home and Work — kw: "how to make time visible" (informational) [TB|T3]
+60. Why Deadlines Only Feel Real at the End — kw: "deadline motivation adhd" (informational) [TB|T1]
+
+### DF — Decision fatigue
+
+61. ★ Choice Overload and ADHD: What the Jam Study Teaches — kw: "choice overload" (informational) [DF|T2]
+62. ★ Decision Fatigue With ADHD: Careful Claims, Useful Levers — kw: "adhd decision fatigue" (informational) [DF|T2]
+63. The Default Effect: d=0.68 and How to Use It on Yourself — kw: "default effect psychology" (informational) [DF|T2]
+64. Pre-Deciding: Remove Choices From Your Hardest Hours — kw: "how to make fewer decisions" (informational) [DF|T2]
+65. Templates as Pre-Made Decisions: An Evidence-Informed Setup — kw: "notion templates adhd" (commercial-investigation) [DF|T2]
+66. Progressive Disclosure: The Experimental Pattern We Use Anyway — kw: "progressive disclosure" (informational) [DF|T3]
+67. Capsule Menus, Wardrobes, and Toolkits: Honest Tiering — kw: "capsule wardrobe decision fatigue" (informational) [DF|T3]
+68. Can AI Assistants Fix Decision Paralysis? The Trial Says Not Yet — kw: "ai for adhd" (commercial-investigation) [DF|T4-debunk]
+69. The Two-Option Rule: A Design Heuristic, Honestly Labeled — kw: "decision paralysis adhd" (informational) [DF|T3]
+70. Checklists Reduce In-the-Moment Decisions — kw: "checklist psychology" (informational) [DF|T2]
+
+### OR — Organization
+
+71. ★ Organizational Strategies: The Therapy Component That Doubled Response Odds — kw: "organization skills adhd adults" (informational) [OR|T1]
+72. ★ Capture First, Organize Later: The Universal Inbox Method — kw: "quick capture system" (informational) [OR|T2]
+73. Why You Abandon Organization Systems (and What Design Can Do) — kw: "why do i abandon planners" (informational) [OR|T1]
+74. One Home for Everything: Environmental Structuring That Lasts — kw: "everything has a home organizing" (informational) [OR|T2]
+75. Digital Declutter With ADHD: Fewer Options, Honest Expectations — kw: "digital declutter adhd" (informational) [OR|T2]
+76. The Weekly Reset as an Organizing Engine — kw: "weekly reset routine" (informational) [OR|T1]
+77. Does Minimalism Help ADHD? Mechanisms Yes, Trials No — kw: "minimalism adhd" (informational) [OR|T4-debunk]
+78. "Second Brain" Note Systems and ADHD: A Checklist Review — kw: "second brain adhd" (commercial-investigation) [OR|T2]
+79. ADHD Coaching for Organization: The College RCT Evidence — kw: "adhd coaching effectiveness" (commercial-investigation) [OR|T2]
+80. Retrieval Cues: Make What You Offload Findable Again — kw: "how to organize notes" (informational) [OR|T2]
+
+### PW — Product walkthroughs
+
+81. ★ Anchor Daily Board: The Design Rationale Behind Now/Next/Later — kw: "adhd daily planner template" (commercial-investigation) [PW|T1]
+82. ★ Anchor Money System: What It Does — and What We Don't Claim — kw: "adhd budget template" (commercial-investigation) [PW|T2]
+83. Setting Up The Inbox: Zero-Friction Capture, Step by Step — kw: "notion quick capture" (informational) [PW|T2]
+84. The Weekly Reset: Complete Guide With Evidence Rationale — kw: "weekly reset template" (informational) [PW|T1]
+85. Comeback Mode: How We Designed Lapse Recovery — kw: "get back on track after falling off routine" (informational) [PW|T2]
+86. Anchor Routines: Momentum Metrics Explained — kw: "habit tracker no streaks" (commercial-investigation) [PW|T2]
+87. Anchor Home Base: Shared Household Checklists Setup — kw: "shared chore checklist template" (commercial-investigation) [PW|T2]
+88. Evidence Notes: Every Feature's Evidence Level, in Plain Language — kw: "evidence based adhd app" (commercial-investigation) [PW|T2]
+89. The Ten Design Laws We Build By (Full Checklist) — kw: "adhd friendly design principles" (informational) [PW|T2]
+90. What We Measured: Function Over Engagement, Every Quarter — kw: "adhd app outcomes" (informational) [PW|T1]
+
+### RE — Research explanations
+
+91. ★ Solanto-2010: The Metacognitive Therapy Trial, Explained — kw: "solanto metacognitive therapy" (informational) [RE|T1]
+92. Safren-2010: The CBT Protocol Behind Serious ADHD Tools — kw: "safren cbt adhd" (informational) [RE|T1]
+93. ★ Cochrane-2018: CBT for Adult ADHD, Graded Honestly — kw: "cbt for adult adhd effectiveness" (informational) [RE|T1]
+94. attexis-2026: Reading a d=0.85 Digital CBT Trial Critically — kw: "digital cbt adhd trial" (informational) [RE|T1]
+95. Inflow-2026: Symptom Gains, OTMP Mediation, and the Missing Function Change — kw: "inflow app research" (informational) [RE|T1]
+96. Kenter-2023: MyADHD's Results and the 29% Completion Problem — kw: "adhd app adherence research" (informational) [RE|T1]
+97. Lauder-2024: Work Outcomes — Psychosocial d=0.56 vs Pharmacological 0.19 — kw: "adhd workplace interventions research" (informational) [RE|T1]
+98. Stern-2016 and Elbe-2023: The Case Against Brain-Training Claims — kw: "cognitive training adhd research" (informational) [RE|T4-debunk]
+99. NimmoSmith-2020: Neurofeedback vs Sham, Reviewed — kw: "neurofeedback adhd evidence" (informational) [RE|T4-debunk]
+100. LopezCampos-2025: An Umbrella Review's Warning to App Makers — kw: "adhd digital intervention review" (informational) [RE|T1]
+
+---
+<!--CHUNK6-->
+
 
 
 
