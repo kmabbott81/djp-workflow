@@ -13,6 +13,15 @@ A 1,300-idea, ten-theme content pool for one year of evidence-honest publishing,
 5. **Honor the tags.** T2/T3 ideas must ship with "indirect" / "experimental" language in the asset itself (§10); T4 ideas are only ever "what doesn't work" content; RE ideas name their §4 citation key and keep the caveat attached to the number (11 §3 gates).
 6. **Keywords and mechanics are hypotheses.** Pinterest keyword phrases in 12d are unvalidated search hypotheses (validate in Pinterest Trends), and all platform-mechanics notes are best-practice-to-validate, dated 2026-07 (11 §5 standing note).
 
+**The Friday picking checklist** (5 minutes inside the Weekly Reset — the whole selection step, pre-decided):
+
+- [ ] Open this file → read the current month's primary + secondary theme (§c).
+- [ ] Pick 1 seed idea (12a pool) matching the primary theme — that's the week's video *or* blog post.
+- [ ] Pick 3–5 short-form ideas (12b/12c pools) — at least one from the secondary theme, at most one PW.
+- [ ] Pick 5 pins (12d pool) — favor printable/checklist pins in printable-heavy months (Mar, Jul–Sep).
+- [ ] Confirm each pick's tier language survives its format (a T3 idea whose "experimental" label won't fit the format gets swapped, not stripped).
+- [ ] Date them for next week. Done — no browsing beyond this.
+
 ## b) Tag legend (restated from foundation §9)
 
 - **Format:** `[THEME|Tier]`, e.g. `[EF|T1]` = executive-function theme, Tier 1 evidence behind the concept taught. The tier grades the underlying claim, per the §4 registry.

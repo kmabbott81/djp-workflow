@@ -353,4 +353,4 @@ The Anchor App is the only tier where the two medium-limited laws — Law 5 (cue
 
 ---
 
-*Previous: [01 — Product Vision](01-product-vision.md) · Next: 03 — forthcoming · Full index in [README](README.md).*
+*Previous: [01 — Product Vision](01-product-vision.md) · Next: [03 — Product Architecture](03-product-architecture.md) · Full index in [README](README.md).*

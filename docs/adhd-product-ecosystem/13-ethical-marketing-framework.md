@@ -90,17 +90,36 @@ Uncertainty, written well, reads as competence. Five house patterns, then worked
 2. **Be concrete about mechanics, humble about results.** We can promise what the product does on screen ("your whole backlog archives in one tap"). We cannot promise what it does in your bank account. Say the first loudly, the second plainly.
 3. **Put the label in the same breath.** A qualifier in a footnote is a confession; a qualifier in the sentence is a character trait. "Community-endorsed, unproven, optional" *is* the voice.
 4. **Anchor to the strategy's evidence, attribute honestly.** T1 belongs to the method class ([Solanto-2010], [Safren-2010]); our implementation is an adaptation and says so.
-5. **Make the honesty inspectable.** Every implied benefit gets an Evidence Note (microformat below). We believe — stated as belief, not evidence — that inspectable honesty converts better with this audience than superlatives; we will test that in our own copy experiments (Part 14 §7 governs which experiments are allowed).
+5. **Make the honesty inspectable.** Every implied benefit gets an Evidence Note (microformat below). We believe — stated as belief, not evidence — that inspectable honesty converts better with this audience than superlatives; we will test that in our own copy experiments (Part 14 §8 governs which experiments are allowed).
 
 ### Evidence Notes microformat (reusable spec)
 
-> **Evidence Note — [feature name]**
+Four fields, always these four, plain words mandatory. In-product and on-listing versions are identical except length limits.
+
+> **Evidence Note — If-then bill cues**
 > **Level:** T2 — moderately supported (indirect for ADHD)
 > **In plain words:** If-then planning has a large evidence base in general populations. It hasn't been isolated in ADHD-specific trials.
 > **Key(s):** [Gollwitzer-2006]
 > **What would upgrade it:** an adult-ADHD trial of this specific feature.
 
-Four lines, always these four fields, plain words mandatory. In-product and on-listing versions are identical except length limits.
+A T3 example, because T3 notes are the ones most tempting to soften:
+
+> **Evidence Note — Body-doubling sessions**
+> **Level:** T3 — experimental
+> **In plain words:** Community-endorsed and mechanism-plausible; survey and design studies only. No randomized trials yet.
+> **Key(s):** [BodyDoubling-HCI]
+> **What would upgrade it:** a randomized trial in adults with ADHD with real task-completion outcomes. If one lands, we re-grade publicly (Part 14 §2).
+
+### Approved microcopy bank (recurring lines, pre-cleared)
+
+- "Not a treatment. A place to put things down." — disclosure-adjacent, all surfaces
+- "Tested strategies, honestly adapted." — T1 anchor, headline-safe
+- "We label every feature's evidence level. All of them." — practice claim, verifiable
+- "Missing a week is in the design." — Comeback Mode, T2 ([Lally-2010])
+- "Months, not 21 days. Anyone who says otherwise is selling something." — habit honesty ([Singh-2024])
+- "Experimental — the community loves it, the trials don't exist yet." — any T3 feature
+- "We haven't measured money outcomes yet. We're measuring. We'll publish." — Anchor Money System, all money surfaces
+- "Read the Evidence Notes before you buy. We mean it." — listing close
 
 ### Six worked copy examples
 
